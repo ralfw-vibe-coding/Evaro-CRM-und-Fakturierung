@@ -30,6 +30,46 @@ export interface Contact {
   updated_at: string;
 }
 
+export interface Address {
+  street?: string;
+  zip?: string;
+  city?: string;
+  country?: string;
+}
+
+export interface BusinessPartnerData {
+  name: string;
+  vat_id?: string;
+  address?: Address;
+  channels: Channel[];
+  business_relationship?: string[];
+  tags?: string[];
+  memo?: string;
+  notes?: string;
+}
+
+export interface BusinessPartner {
+  id: string;
+  types: string[];
+  data: BusinessPartnerData;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactGp {
+  contact_id: string;
+  gp_id: string;
+  role: string;
+  primary: boolean;
+  created_at: string;
+}
+
+export interface Selection {
+  contacts: Contact[];
+  business_partners: BusinessPartner[];
+  contact_gps: ContactGp[];
+}
+
 export interface SessionUser {
   id: string;
   email: string;

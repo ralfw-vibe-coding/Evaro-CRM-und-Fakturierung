@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { requestOtp, verifyOtp } from "@/shell/xproviders/backend-proxy/backend-proxy";
+import { requestOtpRpu, verifyOtpRpu } from "@/composition";
 import type { SessionUser } from "@/domain/model";
 
 type Phase = "email" | "otp";
@@ -20,7 +20,7 @@ export function LoginView({ onLogin }: { onLogin: (user: SessionUser) => void })
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const result = await requestOtp(email.trim());
+    const result = await requestOtpRpu({ email });
     setBusy(false);
     if (result.ok) {
       setPhase("otp");
@@ -33,10 +33,10 @@ export function LoginView({ onLogin }: { onLogin: (user: SessionUser) => void })
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const result = await verifyOtp(email.trim(), otp.trim());
+    const result = await verifyOtpRpu({ email, otp });
     setBusy(false);
     if (result.ok) {
-      onLogin(result.value);
+      onLogin(result.user);
     } else {
       setError(result.error);
     }
@@ -85,8 +85,7 @@ export function LoginView({ onLogin }: { onLogin: (user: SessionUser) => void })
                 <Label htmlFor="otp">Einmal-Code</Label>
                 <Input
                   id="otp"
-                  type="text"
-                  inputMode="numeric"
+                  type="password"
                   autoComplete="one-time-code"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}

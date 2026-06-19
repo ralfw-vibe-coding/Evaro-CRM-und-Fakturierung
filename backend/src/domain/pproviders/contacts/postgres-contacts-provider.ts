@@ -1,6 +1,6 @@
 import type pg from "pg";
 import type { Contact } from "../../model.js";
-import type { ContactsProvider, NewContact } from "./contacts-provider.js";
+import type { ContactsProvider, ContactUpdate, NewContact } from "./contacts-provider.js";
 import { getPool } from "../postgres/pool.js";
 
 interface ContactRow {
@@ -42,5 +42,24 @@ export class PostgresContactsProvider implements ContactsProvider {
        ORDER BY created_at DESC`,
     );
     return rows.map(toContact);
+  }
+
+  async findById(id: string): Promise<Contact | null> {
+    const { rows } = await this.pool.query<ContactRow>(
+      `SELECT id, active, data, created_at, updated_at FROM contacts WHERE id = $1`,
+      [id],
+    );
+    return rows[0] ? toContact(rows[0]) : null;
+  }
+
+  async update(id: string, update: ContactUpdate): Promise<Contact | null> {
+    const { rows } = await this.pool.query<ContactRow>(
+      `UPDATE contacts
+       SET data = $1, active = COALESCE($2, active), updated_at = now()
+       WHERE id = $3
+       RETURNING id, active, data, created_at, updated_at`,
+      [update.data, update.active ?? null, id],
+    );
+    return rows[0] ? toContact(rows[0]) : null;
   }
 }

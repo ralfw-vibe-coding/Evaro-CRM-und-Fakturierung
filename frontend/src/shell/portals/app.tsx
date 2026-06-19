@@ -1,18 +1,18 @@
 import * as React from "react";
-import { getStoredUser, clearSession } from "@/shell/xproviders/backend-proxy/backend-proxy";
+import { getSessionRpu, logoutRpu } from "@/composition";
 import { LoginView } from "./login-view";
 import { AppShell } from "./app-shell";
 import type { SessionUser } from "@/domain/model";
 
 export function App() {
-  const [user, setUser] = React.useState<SessionUser | null>(() => getStoredUser());
+  const [user, setUser] = React.useState<SessionUser | null>(() => getSessionRpu());
 
   if (!user) {
     return <LoginView onLogin={setUser} />;
   }
 
   function logout() {
-    clearSession();
+    logoutRpu();
     setUser(null);
   }
 

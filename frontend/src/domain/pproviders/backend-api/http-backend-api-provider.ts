@@ -1,0 +1,108 @@
+import type { BusinessPartner, Contact, ContactGp, Selection, SessionUser } from "@/domain/model";
+import type {
+  ApiResult,
+  BackendApiProvider,
+  ContactGpInput,
+  CreateBusinessPartnerInput,
+  CreateContactInput,
+  UpdateBusinessPartnerInput,
+  UpdateContactInput,
+} from "./backend-api-provider";
+
+async function request<T>(path: string, init: RequestInit): Promise<ApiResult<T>> {
+  const headers = new Headers(init.headers);
+  headers.set("content-type", "application/json");
+
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, { ...init, headers });
+  } catch {
+    return { ok: false, error: "Server nicht erreichbar." };
+  }
+
+  let body: unknown = null;
+  try {
+    body = await res.json();
+  } catch {
+    /* empty body */
+  }
+
+  if (!res.ok) {
+    const b = (body ?? {}) as { error?: string; fields?: Record<string, string> };
+    return { ok: false, error: b.error ?? `Fehler ${res.status}`, fields: b.fields };
+  }
+  return { ok: true, value: body as T };
+}
+
+export const httpBackendApiProvider: BackendApiProvider = {
+  async requestOtp(email) {
+    const result = await request<{ ok: true }>("/auth/request-otp", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+    return result.ok ? { ok: true, value: undefined } : result;
+  },
+
+  async verifyOtp(email, otp) {
+    return request<{ token: string; user: SessionUser }>("/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ email, otp }),
+    });
+  },
+
+  async loadSelection(token) {
+    return request<Selection>("/selection", {
+      method: "GET",
+      headers: { authorization: `Bearer ${token}` },
+    });
+  },
+
+  async createContact(token, input: CreateContactInput) {
+    return request<{ contact: Contact }>("/contacts", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
+  },
+
+  async updateContact(token, input: UpdateContactInput) {
+    return request<{ contact: Contact; conflict: boolean }>("/contacts", {
+      method: "PATCH",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
+  },
+
+  async createBusinessPartner(token, input: CreateBusinessPartnerInput) {
+    return request<{ business_partner: BusinessPartner }>("/business-partners", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
+  },
+
+  async updateBusinessPartner(token, input: UpdateBusinessPartnerInput) {
+    return request<{ business_partner: BusinessPartner; conflict: boolean }>("/business-partners", {
+      method: "PATCH",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
+  },
+
+  async linkContactGp(token, input: ContactGpInput) {
+    return request<{ link: ContactGp }>("/contact-gps", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
+  },
+
+  async unlinkContactGp(token, input: ContactGpInput) {
+    const result = await request<{ ok: true }>("/contact-gps", {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
+    return result.ok ? { ok: true, value: undefined } : result;
+  },
+};

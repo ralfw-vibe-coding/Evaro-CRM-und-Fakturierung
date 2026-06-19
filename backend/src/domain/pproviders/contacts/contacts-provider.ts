@@ -5,6 +5,11 @@ export interface NewContact {
   data: ContactData;
 }
 
+export interface ContactUpdate {
+  active?: boolean;
+  data: ContactData;
+}
+
 /**
  * Persistence abstraction for contacts. Implementations encapsulate the
  * storage technology (Postgres, in-memory). Only RPUs depend on this.
@@ -15,4 +20,10 @@ export interface ContactsProvider {
 
   /** All active contacts, used for the initial selection and tests. */
   listActive(): Promise<Contact[]>;
+
+  /** A single contact by id, or null if it doesn't exist. */
+  findById(id: string): Promise<Contact | null>;
+
+  /** Overwrite a contact's data (and optionally active) and bump updated_at. Null if not found. */
+  update(id: string, update: ContactUpdate): Promise<Contact | null>;
 }

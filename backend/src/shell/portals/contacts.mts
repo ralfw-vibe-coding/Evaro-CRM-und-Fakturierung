@@ -1,11 +1,15 @@
 import type { Config } from "@netlify/functions";
-import { createContactRpu } from "../../composition.js";
+import { createContactRpu, updateContactRpu } from "../../composition.js";
 import { authenticate } from "../http/auth.js";
 import { json, error, methodNotAllowed } from "../http/responses.js";
 
 /**
  * Portal: /api/contacts
  *  - POST  -> create a contact
+ *  - PATCH -> update a contact (full record overwrite; id in the body, not the
+ *             path — avoids relying on Netlify path-parameter support)
+ *
+ * Loading happens via GET /api/selection (contacts + business partners together).
  */
 export default async function handler(req: Request): Promise<Response> {
   const client = await authenticate(req);
@@ -29,7 +33,31 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ contact: result.contact }, 201);
   }
 
-  return methodNotAllowed(["POST"]);
+  if (req.method === "PATCH") {
+    let body: { id?: string; active?: boolean; data?: unknown; expected_updated_at?: string };
+    try {
+      body = (await req.json()) as typeof body;
+    } catch {
+      return error("Ungültiger Request-Body.", 400);
+    }
+    if (!body.id) return error("Kontakt-ID fehlt.", 400);
+
+    const result = await updateContactRpu()({
+      user_id: client.user_id,
+      id: body.id,
+      active: body.active,
+      expected_updated_at: body.expected_updated_at,
+      data: (body.data ?? {}) as never,
+    });
+
+    if (!result.ok) {
+      const status = result.error === "Kontakt nicht gefunden." ? 404 : 422;
+      return error(result.error, status, { fields: result.fields });
+    }
+    return json({ contact: result.contact, conflict: result.conflict });
+  }
+
+  return methodNotAllowed(["POST", "PATCH"]);
 }
 
 export const config: Config = {

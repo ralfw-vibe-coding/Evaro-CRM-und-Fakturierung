@@ -1,0 +1,775 @@
+{
+  "format": "evaro-odoo-mapping",
+  "version": 1,
+  "createdAt": "2026-06-19T13:40:55.269Z",
+  "source": {
+    "file": "requirements/ressourcen/odoo export.csv",
+    "columns": [
+      {
+        "id": "odoo.0.Aktivitäten",
+        "index": 0,
+        "name": "Aktivitäten",
+        "displayName": "Aktivitäten",
+        "group": "Notizen / Internes"
+      },
+      {
+        "id": "odoo.1.Bundesland",
+        "index": 1,
+        "name": "Bundesland",
+        "displayName": "Bundesland",
+        "group": "Adresse"
+      },
+      {
+        "id": "odoo.2.E-Mail",
+        "index": 2,
+        "name": "E-Mail",
+        "displayName": "E-Mail",
+        "group": "Kommunikation"
+      },
+      {
+        "id": "odoo.3.Interessen",
+        "index": 3,
+        "name": "Interessen",
+        "displayName": "Interessen",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.4.Land",
+        "index": 4,
+        "name": "Land",
+        "displayName": "Land",
+        "group": "Adresse"
+      },
+      {
+        "id": "odoo.5.Mobil",
+        "index": 5,
+        "name": "Mobil",
+        "displayName": "Mobil",
+        "group": "Kommunikation"
+      },
+      {
+        "id": "odoo.6.Produkte",
+        "index": 6,
+        "name": "Produkte",
+        "displayName": "Produkte",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.7.Stadt",
+        "index": 7,
+        "name": "Stadt",
+        "displayName": "Stadt",
+        "group": "Adresse"
+      },
+      {
+        "id": "odoo.8.Stichwörter",
+        "index": 8,
+        "name": "Stichwörter",
+        "displayName": "Stichwörter",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.9.Straße",
+        "index": 9,
+        "name": "Straße",
+        "displayName": "Straße",
+        "group": "Adresse"
+      },
+      {
+        "id": "odoo.10.Telefon",
+        "index": 10,
+        "name": "Telefon",
+        "displayName": "Telefon",
+        "group": "Kommunikation"
+      },
+      {
+        "id": "odoo.11.USt-IdNr.",
+        "index": 11,
+        "name": "USt-IdNr.",
+        "displayName": "USt-IdNr.",
+        "group": "Unternehmen / GP"
+      },
+      {
+        "id": "odoo.12.Verantwortlich",
+        "index": 12,
+        "name": "Verantwortlich",
+        "displayName": "Verantwortlich",
+        "group": "Notizen / Internes"
+      },
+      {
+        "id": "odoo.13.Vertriebsmitarbeiter",
+        "index": 13,
+        "name": "Vertriebsmitarbeiter",
+        "displayName": "Vertriebsmitarbeiter",
+        "group": "Notizen / Internes"
+      },
+      {
+        "id": "odoo.14.Vollständiger Name",
+        "index": 14,
+        "name": "Vollständiger Name",
+        "displayName": "Vollständiger Name",
+        "group": "Person"
+      },
+      {
+        "id": "odoo.15.Übergeordneter Name",
+        "index": 15,
+        "name": "Übergeordneter Name",
+        "displayName": "Übergeordneter Name",
+        "group": "Person"
+      },
+      {
+        "id": "odoo.16.Zusätzliche Infos",
+        "index": 16,
+        "name": "Zusätzliche Infos",
+        "displayName": "Zusätzliche Infos",
+        "group": "Notizen / Internes"
+      },
+      {
+        "id": "odoo.17.Zeitmanagement",
+        "index": 17,
+        "name": "Zeitmanagement",
+        "displayName": "Zeitmanagement",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.18.Website-Link",
+        "index": 18,
+        "name": "Website-Link",
+        "displayName": "Website-Link",
+        "group": "Unternehmen / GP"
+      },
+      {
+        "id": "odoo.19.Vorname",
+        "index": 19,
+        "name": "Vorname",
+        "displayName": "Vorname",
+        "group": "Person"
+      },
+      {
+        "id": "odoo.20.Vollständige Adresse",
+        "index": 20,
+        "name": "Vollständige Adresse",
+        "displayName": "Vollständige Adresse",
+        "group": "Adresse"
+      },
+      {
+        "id": "odoo.21.Unternehmensname",
+        "index": 21,
+        "name": "Unternehmensname",
+        "displayName": "Unternehmensname",
+        "group": "Person"
+      },
+      {
+        "id": "odoo.22.Trello",
+        "index": 22,
+        "name": "Trello",
+        "displayName": "Trello",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.23.Telefon/Mobil",
+        "index": 23,
+        "name": "Telefon/Mobil",
+        "displayName": "Telefon/Mobil",
+        "group": "Kommunikation"
+      },
+      {
+        "id": "odoo.24.Teambuilding",
+        "index": 24,
+        "name": "Teambuilding",
+        "displayName": "Teambuilding",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.25.Rolle",
+        "index": 25,
+        "name": "Rolle",
+        "displayName": "Rolle",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.26.Quelle",
+        "index": 26,
+        "name": "Quelle",
+        "displayName": "Quelle",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.27.PLZ",
+        "index": 27,
+        "name": "PLZ",
+        "displayName": "PLZ",
+        "group": "Adresse"
+      },
+      {
+        "id": "odoo.28.Ordnerstruktur",
+        "index": 28,
+        "name": "Ordnerstruktur",
+        "displayName": "Ordnerstruktur",
+        "group": "Notizen / Internes"
+      },
+      {
+        "id": "odoo.29.Notizen",
+        "index": 29,
+        "name": "Notizen",
+        "displayName": "Notizen",
+        "group": "Notizen / Internes"
+      },
+      {
+        "id": "odoo.30.Notizen",
+        "index": 30,
+        "name": "Notizen",
+        "displayName": "Notizen #2",
+        "group": "Notizen / Internes"
+      },
+      {
+        "id": "odoo.31.Notizen",
+        "index": 31,
+        "name": "Notizen",
+        "displayName": "Notizen #3",
+        "group": "Notizen / Internes"
+      },
+      {
+        "id": "odoo.32.Normalisierte E-Mail",
+        "index": 32,
+        "name": "Normalisierte E-Mail",
+        "displayName": "Normalisierte E-Mail",
+        "group": "Kommunikation"
+      },
+      {
+        "id": "odoo.33.Newsletter",
+        "index": 33,
+        "name": "Newsletter",
+        "displayName": "Newsletter",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.34.Name des Unternehmens",
+        "index": 34,
+        "name": "Name des Unternehmens",
+        "displayName": "Name des Unternehmens",
+        "group": "Person"
+      },
+      {
+        "id": "odoo.35.Name",
+        "index": 35,
+        "name": "Name",
+        "displayName": "Name",
+        "group": "Person"
+      },
+      {
+        "id": "odoo.36.Nachname",
+        "index": 36,
+        "name": "Nachname",
+        "displayName": "Nachname",
+        "group": "Person"
+      },
+      {
+        "id": "odoo.37.MS365",
+        "index": 37,
+        "name": "MS365",
+        "displayName": "MS365",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.38.Ländercode",
+        "index": 38,
+        "name": "Ländercode",
+        "displayName": "Ländercode",
+        "group": "Adresse"
+      },
+      {
+        "id": "odoo.39.KI im Office",
+        "index": 39,
+        "name": "KI im Office",
+        "displayName": "KI im Office",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.40.KanBo",
+        "index": 40,
+        "name": "KanBo",
+        "displayName": "KanBo",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.41.Ist ein Unternehmen",
+        "index": 41,
+        "name": "Ist ein Unternehmen",
+        "displayName": "Ist ein Unternehmen",
+        "group": "Unternehmen / GP"
+      },
+      {
+        "id": "odoo.42.Empfehlung von",
+        "index": 42,
+        "name": "Empfehlung von",
+        "displayName": "Empfehlung von",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.43.Du/Sie",
+        "index": 43,
+        "name": "Du/Sie",
+        "displayName": "Du/Sie",
+        "group": "Person"
+      },
+      {
+        "id": "odoo.44.Digitales Büro",
+        "index": 44,
+        "name": "Digitales Büro",
+        "displayName": "Digitales Büro",
+        "group": "Klassifikation"
+      },
+      {
+        "id": "odoo.45.Anzeigename",
+        "index": 45,
+        "name": "Anzeigename",
+        "displayName": "Anzeigename",
+        "group": "Person"
+      },
+      {
+        "id": "odoo.46.Ansprache",
+        "index": 46,
+        "name": "Ansprache",
+        "displayName": "Ansprache",
+        "group": "Person"
+      }
+    ]
+  },
+  "target": {
+    "model": "Evaro CRM",
+    "tables": [
+      {
+        "name": "contacts",
+        "title": "Kontakte",
+        "fields": [
+          [
+            "contacts.active",
+            "active",
+            "BOOLEAN, default true"
+          ],
+          [
+            "contacts.data.title",
+            "data.title",
+            "Titel, z.B. Prof."
+          ],
+          [
+            "contacts.data.first_name",
+            "data.first_name",
+            "Vorname"
+          ],
+          [
+            "contacts.data.last_name",
+            "data.last_name",
+            "Nachname"
+          ],
+          [
+            "contacts.data.gender",
+            "data.gender",
+            "m / f / d"
+          ],
+          [
+            "contacts.data.salutation",
+            "data.salutation",
+            "formal / informal"
+          ],
+          [
+            "contacts.data.origin",
+            "data.origin",
+            "Quelle / Herkunft"
+          ],
+          [
+            "contacts.data.company_text",
+            "data.company_text",
+            "Freitext-Firma, solange kein Primary-BP verknuepft ist"
+          ],
+          [
+            "contacts.data.channels.email",
+            "data.channels[] email",
+            "Kommunikationskanal E-Mail"
+          ],
+          [
+            "contacts.data.channels.phone",
+            "data.channels[] phone",
+            "Kommunikationskanal Telefon"
+          ],
+          [
+            "contacts.data.channels.mobile",
+            "data.channels[] mobile",
+            "Kommunikationskanal Mobil"
+          ],
+          [
+            "contacts.data.channels.whatsapp",
+            "data.channels[] whatsapp",
+            "Kommunikationskanal WhatsApp"
+          ],
+          [
+            "contacts.data.relationship",
+            "data.relationship[]",
+            "customer, referral, lead, network ..."
+          ],
+          [
+            "contacts.data.role",
+            "data.role[]",
+            "decision_maker, specialist ..."
+          ],
+          [
+            "contacts.data.work_area",
+            "data.work_area[]",
+            "purchasing, marketing, hr ..."
+          ],
+          [
+            "contacts.data.interests",
+            "data.interests[]",
+            "Themeninteressen"
+          ],
+          [
+            "contacts.data.tags",
+            "data.tags[]",
+            "freie Tags"
+          ],
+          [
+            "contacts.data.notes",
+            "data.notes",
+            "Freitext-Notizen zum Kontakt"
+          ]
+        ]
+      },
+      {
+        "name": "business_partners",
+        "title": "Geschaeftspartner",
+        "fields": [
+          [
+            "business_partners.types",
+            "types[]",
+            "customer, supplier, partner, authority"
+          ],
+          [
+            "business_partners.data.name",
+            "data.name",
+            "Rechnungsfaehiger Name"
+          ],
+          [
+            "business_partners.data.vat_id",
+            "data.vat_id",
+            "USt-IdNr."
+          ],
+          [
+            "business_partners.data.address.street",
+            "data.address.street",
+            "Strasse"
+          ],
+          [
+            "business_partners.data.address.zip",
+            "data.address.zip",
+            "PLZ"
+          ],
+          [
+            "business_partners.data.address.city",
+            "data.address.city",
+            "Stadt"
+          ],
+          [
+            "business_partners.data.address.country",
+            "data.address.country",
+            "Land / ISO-Code"
+          ],
+          [
+            "business_partners.data.channels.website",
+            "data.channels[] website",
+            "Website"
+          ],
+          [
+            "business_partners.data.channels.email",
+            "data.channels[] email",
+            "Rechnungs-/Info-E-Mail"
+          ],
+          [
+            "business_partners.data.channels.phone",
+            "data.channels[] phone",
+            "Telefon"
+          ],
+          [
+            "business_partners.data.business_relationship",
+            "data.business_relationship[]",
+            "Geschaeftsbeziehung"
+          ],
+          [
+            "business_partners.data.tags",
+            "data.tags[]",
+            "freie Tags"
+          ],
+          [
+            "business_partners.data.memo",
+            "data.memo",
+            "feste Vereinbarungen, immer sichtbar"
+          ],
+          [
+            "business_partners.data.notes",
+            "data.notes",
+            "Notizen zum Geschaeftspartner"
+          ]
+        ]
+      },
+      {
+        "name": "contact_gp",
+        "title": "Beziehung Kontakt <-> GP",
+        "fields": [
+          [
+            "contact_gp.contact_identity",
+            "contact_id",
+            "aus importiertem Kontakt ableiten"
+          ],
+          [
+            "contact_gp.gp_identity",
+            "gp_id",
+            "aus importiertem Geschaeftspartner ableiten"
+          ],
+          [
+            "contact_gp.role",
+            "role",
+            "employee, owner, billing_contact ..."
+          ],
+          [
+            "contact_gp.primary",
+            "primary",
+            "max. ein Primary-BP pro Kontakt"
+          ]
+        ]
+      }
+    ]
+  },
+  "mappings": [
+    {
+      "sourceId": "odoo.29.Notizen",
+      "sourceName": "Notizen",
+      "targetId": "business_partners.data.memo",
+      "targetName": "Geschaeftspartner: data.memo",
+      "note": "die odoo daten müssen von html bereinigt werden. <p> aber als absätze interpretieren."
+    },
+    {
+      "sourceId": "odoo.31.Notizen",
+      "sourceName": "Notizen #3",
+      "targetId": "contacts.data.notes",
+      "targetName": "Kontakte: data.notes",
+      "note": "odoo daten von html bereinigen. <p> als absatz interpretieren."
+    },
+    {
+      "sourceId": "odoo.27.PLZ",
+      "sourceName": "PLZ",
+      "targetId": "business_partners.data.address.zip",
+      "targetName": "Geschaeftspartner: data.address.zip",
+      "note": ""
+    },
+    {
+      "sourceId": "odoo.9.Straße",
+      "sourceName": "Straße",
+      "targetId": "business_partners.data.address.street",
+      "targetName": "Geschaeftspartner: data.address.street",
+      "note": ""
+    },
+    {
+      "sourceId": "odoo.7.Stadt",
+      "sourceName": "Stadt",
+      "targetId": "business_partners.data.address.city",
+      "targetName": "Geschaeftspartner: data.address.city",
+      "note": ""
+    },
+    {
+      "sourceId": "odoo.4.Land",
+      "sourceName": "Land",
+      "targetId": "business_partners.data.address.country",
+      "targetName": "Geschaeftspartner: data.address.country",
+      "note": ""
+    },
+    {
+      "sourceId": "odoo.3.Interessen",
+      "sourceName": "Interessen",
+      "targetId": "contacts.data.interests",
+      "targetName": "Kontakte: data.interests[]",
+      "note": "interessen werden tags in evaro"
+    },
+    {
+      "sourceId": "odoo.6.Produkte",
+      "sourceName": "Produkte",
+      "targetId": "contacts.data.interests",
+      "targetName": "Kontakte: data.interests[]",
+      "note": "produkte werden auch tags, aber mit dem präfix \"Produkt: \", zb \"Produkt: KI im Office\"."
+    },
+    {
+      "sourceId": "odoo.8.Stichwörter",
+      "sourceName": "Stichwörter",
+      "targetId": "contacts.data.notes",
+      "targetName": "Kontakte: data.notes",
+      "note": "Stichwörter werden am Ende der Notiz kommagetrennt gelistet nach \"Stichwörter: \"."
+    },
+    {
+      "sourceId": "odoo.25.Rolle",
+      "sourceName": "Rolle",
+      "targetId": "contacts.data.role",
+      "targetName": "Kontakte: data.role[]",
+      "note": "rolle wird ein tag in role."
+    },
+    {
+      "sourceId": "odoo.33.Newsletter",
+      "sourceName": "Newsletter",
+      "targetId": "contacts.data.tags",
+      "targetName": "Kontakte: data.tags[]",
+      "note": "wenn newsletter true, dann in tags eintragen \"newsletter\""
+    },
+    {
+      "sourceId": "odoo.37.MS365",
+      "sourceName": "MS365",
+      "targetId": "contacts.data.interests",
+      "targetName": "Kontakte: data.interests[]",
+      "note": "eintragen als produkt"
+    },
+    {
+      "sourceId": "odoo.39.KI im Office",
+      "sourceName": "KI im Office",
+      "targetId": "contacts.data.interests",
+      "targetName": "Kontakte: data.interests[]",
+      "note": "eintragen als produkt"
+    },
+    {
+      "sourceId": "odoo.40.KanBo",
+      "sourceName": "KanBo",
+      "targetId": "contacts.data.interests",
+      "targetName": "Kontakte: data.interests[]",
+      "note": "eintragen als produkt"
+    },
+    {
+      "sourceId": "odoo.42.Empfehlung von",
+      "sourceName": "Empfehlung von",
+      "targetId": "contacts.data.notes",
+      "targetName": "Kontakte: data.notes",
+      "note": "eintragen am anfang der notizen nach \"Empfohlen durch: \"."
+    },
+    {
+      "sourceId": "odoo.44.Digitales Büro",
+      "sourceName": "Digitales Büro",
+      "targetId": "contacts.data.interests",
+      "targetName": "Kontakte: data.interests[]",
+      "note": "eintragen als produkt"
+    },
+    {
+      "sourceId": "odoo.11.USt-IdNr.",
+      "sourceName": "USt-IdNr.",
+      "targetId": "business_partners.data.vat_id",
+      "targetName": "Geschaeftspartner: data.vat_id",
+      "note": ""
+    },
+    {
+      "sourceId": "odoo.41.Ist ein Unternehmen",
+      "sourceName": "Ist ein Unternehmen",
+      "targetId": "business_partners.types",
+      "targetName": "Geschaeftspartner: types[]",
+      "note": "eintragen als \"company\"."
+    },
+    {
+      "sourceId": "odoo.19.Vorname",
+      "sourceName": "Vorname",
+      "targetId": "contacts.data.first_name",
+      "targetName": "Kontakte: data.first_name",
+      "note": ""
+    },
+    {
+      "sourceId": "odoo.21.Unternehmensname",
+      "sourceName": "Unternehmensname",
+      "targetId": "business_partners.data.name",
+      "targetName": "Geschaeftspartner: data.name",
+      "note": ""
+    },
+    {
+      "sourceId": "odoo.36.Nachname",
+      "sourceName": "Nachname",
+      "targetId": "contacts.data.last_name",
+      "targetName": "Kontakte: data.last_name",
+      "note": ""
+    },
+    {
+      "sourceId": "odoo.43.Du/Sie",
+      "sourceName": "Du/Sie",
+      "targetId": "contacts.data.salutation",
+      "targetName": "Kontakte: data.salutation",
+      "note": ""
+    },
+    {
+      "sourceId": "odoo.26.Quelle",
+      "sourceName": "Quelle",
+      "targetId": "contacts.data.origin",
+      "targetName": "Kontakte: data.origin",
+      "note": "als text eintragen"
+    },
+    {
+      "sourceId": "odoo.46.Ansprache",
+      "sourceName": "Ansprache",
+      "targetId": "contacts.data.gender",
+      "targetName": "Kontakte: data.gender",
+      "note": "aus der ansprache m/f/d ableiten: herr=m, frau=f, nur \"hallo\" führt zu \"d\""
+    },
+    {
+      "sourceId": "odoo.18.Website-Link",
+      "sourceName": "Website-Link",
+      "targetId": "business_partners.data.channels.website",
+      "targetName": "Geschaeftspartner: data.channels[] website",
+      "note": "falls es eine firma ist"
+    },
+    {
+      "sourceId": "odoo.32.Normalisierte E-Mail",
+      "sourceName": "Normalisierte E-Mail",
+      "targetId": "contacts.data.channels.email",
+      "targetName": "Kontakte: data.channels[] email",
+      "note": "falls es keine firma ist"
+    },
+    {
+      "sourceId": "odoo.32.Normalisierte E-Mail",
+      "sourceName": "Normalisierte E-Mail",
+      "targetId": "business_partners.data.channels.email",
+      "targetName": "Geschaeftspartner: data.channels[] email",
+      "note": "falls es eine firma ist"
+    },
+    {
+      "sourceId": "odoo.10.Telefon",
+      "sourceName": "Telefon",
+      "targetId": "business_partners.data.channels.phone",
+      "targetName": "Geschaeftspartner: data.channels[] phone",
+      "note": "falls es eine firma ist"
+    },
+    {
+      "sourceId": "odoo.10.Telefon",
+      "sourceName": "Telefon",
+      "targetId": "contacts.data.channels.phone",
+      "targetName": "Kontakte: data.channels[] phone",
+      "note": "falls es keine firma ist"
+    },
+    {
+      "sourceId": "odoo.5.Mobil",
+      "sourceName": "Mobil",
+      "targetId": "contacts.data.channels.phone",
+      "targetName": "Kontakte: data.channels[] phone",
+      "note": "falls es keine firma ist"
+    },
+    {
+      "sourceId": "odoo.5.Mobil",
+      "sourceName": "Mobil",
+      "targetId": "business_partners.data.channels.phone",
+      "targetName": "Geschaeftspartner: data.channels[] phone",
+      "note": "falls es eine firma ist"
+    },
+    {
+      "sourceId": "odoo.2.E-Mail",
+      "sourceName": "E-Mail",
+      "targetId": "business_partners.data.channels.email",
+      "targetName": "Geschaeftspartner: data.channels[] email",
+      "note": "falls es eine firma ist"
+    },
+    {
+      "sourceId": "odoo.2.E-Mail",
+      "sourceName": "E-Mail",
+      "targetId": "contacts.data.channels.email",
+      "targetName": "Kontakte: data.channels[] email",
+      "note": "falls es keine firma ist"
+    }
+  ]
+}

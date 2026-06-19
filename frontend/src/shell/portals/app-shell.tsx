@@ -15,7 +15,7 @@ import type { SessionUser } from "@/domain/model";
 
 export type AppArea = "crm" | "invoicing";
 
-const CLAIM = "Ganz leicht aus Kontakten Kohle machen";
+const CLAIM = "Ganz leicht mit Kontakten Kohle machen";
 
 export function AppShell({ user, onLogout }: { user: SessionUser; onLogout: () => void }) {
   const [area, setArea] = React.useState<AppArea>("crm");

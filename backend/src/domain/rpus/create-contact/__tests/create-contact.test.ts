@@ -74,13 +74,13 @@ describe("createContact RPU", () => {
     expect(result.fields?.last_name).toBeTruthy();
   });
 
-  it("rejects a contact without any channel", async () => {
+  it("creates a contact without any channel", async () => {
     const result = await env.process(
-      validCommand({ data: { first_name: "Petra", channels: [] } }),
+      validCommand({ data: { last_name: "Paulsen", channels: [] } }),
     );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.fields?.channels).toBeTruthy();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.contact.data.channels).toEqual([]);
   });
 
   it("rejects when no user is authenticated", async () => {

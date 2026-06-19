@@ -2,6 +2,7 @@
 
 @theme inline {
   --color-brand: var(--brand);
+  --color-gp: var(--gp);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -32,6 +33,8 @@
   --card-foreground: oklch(0.145 0 0);
   /* Evaro CI color #F60B8A */
   --brand: #f60b8a;
+  /* Secondary accent to distinguish business partners from contacts */
+  --gp: #2563eb;
   --primary: #f60b8a;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);

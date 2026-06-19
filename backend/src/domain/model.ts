@@ -39,6 +39,43 @@ export interface Contact {
   updated_at: string;
 }
 
+export interface Address {
+  street?: string;
+  zip?: string;
+  city?: string;
+  country?: string;
+}
+
+/** A BP type as used in server-side selection (table-level `types` column). */
+export type BusinessPartnerType = "customer" | "supplier" | "partner" | "authority";
+
+export interface BusinessPartnerData {
+  name: string;
+  vat_id?: string;
+  address?: Address;
+  channels: Channel[];
+  business_relationship?: string[];
+  tags?: string[];
+  memo?: string;
+  notes?: string;
+}
+
+export interface BusinessPartner {
+  id: string;
+  types: string[];
+  data: BusinessPartnerData;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactGp {
+  contact_id: string;
+  gp_id: string;
+  role: string;
+  primary: boolean;
+  created_at: string;
+}
+
 export type EntityType = "contact" | "business_partner";
 
 export interface ActivityLogEntry {

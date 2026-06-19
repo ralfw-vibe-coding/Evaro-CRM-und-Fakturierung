@@ -14,12 +14,28 @@ import type { UsersProvider } from "./domain/pproviders/users/users-provider.js"
 import { InMemoryUsersProvider } from "./domain/pproviders/users/in-memory-users-provider.js";
 import { PostgresUsersProvider } from "./domain/pproviders/users/postgres-users-provider.js";
 
+import type { BusinessPartnersProvider } from "./domain/pproviders/business-partners/business-partners-provider.js";
+import { InMemoryBusinessPartnersProvider } from "./domain/pproviders/business-partners/in-memory-business-partners-provider.js";
+import { PostgresBusinessPartnersProvider } from "./domain/pproviders/business-partners/postgres-business-partners-provider.js";
+import type { ContactGpsProvider } from "./domain/pproviders/contact-gps/contact-gps-provider.js";
+import { InMemoryContactGpsProvider } from "./domain/pproviders/contact-gps/in-memory-contact-gps-provider.js";
+import { PostgresContactGpsProvider } from "./domain/pproviders/contact-gps/postgres-contact-gps-provider.js";
+
 import { JwtTokensProvider } from "./shell/xproviders/tokens/jwt-tokens-provider.js";
 import type { TokensProvider } from "./shell/xproviders/tokens/tokens-provider.js";
 
 import { createContact } from "./domain/rpus/create-contact/create-contact.js";
+import { updateContact } from "./domain/rpus/update-contact/update-contact.js";
+import { createBusinessPartner } from "./domain/rpus/create-business-partner/create-business-partner.js";
+import { updateBusinessPartner } from "./domain/rpus/update-business-partner/update-business-partner.js";
+import { linkContactGp } from "./domain/rpus/link-contact-gp/link-contact-gp.js";
+import { unlinkContactGp } from "./domain/rpus/unlink-contact-gp/unlink-contact-gp.js";
 import { authenticateUser } from "./domain/rpus/authenticate-user/authenticate-user.js";
+import { listActiveContacts } from "./domain/rpus/list-active-contacts/list-active-contacts.js";
+import { listBusinessPartners } from "./domain/rpus/list-business-partners/list-business-partners.js";
 import { verifyOtp } from "./reactors/verify-otp/verify-otp.js";
+import { select } from "./reactors/select/select.js";
+import { DEV_CONTACTS, DEV_BUSINESS_PARTNERS } from "./dev-seed.js";
 
 function usePostgres(): boolean {
   const mode = process.env.PERSISTENCE?.toLowerCase();
@@ -28,25 +44,60 @@ function usePostgres(): boolean {
   return Boolean(process.env.DATABASE_URL);
 }
 
+if (!usePostgres()) {
+  process.env.EVARO_SHARED_MEMORY_FILE ??= "/tmp/evaro-crm-memory.json";
+}
+
 // In-memory providers must be process-wide singletons so state survives across
-// requests handled by the same warm function instance.
-let memoryContacts: InMemoryContactsProvider | undefined;
-let memoryActivityLog: InMemoryActivityLogProvider | undefined;
-let memoryUsers: InMemoryUsersProvider | undefined;
+// requests handled by different local Netlify function modules in the same dev
+// process. Module-local variables are not enough there; globalThis is.
+interface MemoryProviders {
+  contacts?: InMemoryContactsProvider;
+  activityLog?: InMemoryActivityLogProvider;
+  users?: InMemoryUsersProvider;
+  businessPartners?: InMemoryBusinessPartnersProvider;
+  contactGps?: InMemoryContactGpsProvider;
+}
+
+const memory = ((globalThis as typeof globalThis & { __evaroMemory?: MemoryProviders })
+  .__evaroMemory ??= {});
+
+// DEV ONLY: in-memory mode is seeded with sample data so the UI has something to
+// show before create flows exist. This must be removed before going to a real
+// (Postgres) database. The warning makes an accidental production use obvious.
+function warnSeed(): void {
+  console.warn(
+    "⚠️  DEV SEED aktiv (PERSISTENCE=memory): Beispiel-Daten geladen. Vor Produktiv-DB entfernen (backend/src/dev-seed.ts).",
+  );
+}
 
 function buildContacts(): ContactsProvider {
   if (usePostgres()) return new PostgresContactsProvider();
-  return (memoryContacts ??= new InMemoryContactsProvider());
+  if (!memory.contacts) {
+    warnSeed();
+    memory.contacts = new InMemoryContactsProvider(DEV_CONTACTS);
+  }
+  return memory.contacts;
+}
+
+function buildBusinessPartners(): BusinessPartnersProvider {
+  if (usePostgres()) return new PostgresBusinessPartnersProvider();
+  return (memory.businessPartners ??= new InMemoryBusinessPartnersProvider(DEV_BUSINESS_PARTNERS));
+}
+
+function buildContactGps(): ContactGpsProvider {
+  if (usePostgres()) return new PostgresContactGpsProvider();
+  return (memory.contactGps ??= new InMemoryContactGpsProvider());
 }
 
 function buildActivityLog(): ActivityLogProvider {
   if (usePostgres()) return new PostgresActivityLogProvider();
-  return (memoryActivityLog ??= new InMemoryActivityLogProvider());
+  return (memory.activityLog ??= new InMemoryActivityLogProvider());
 }
 
 function buildUsers(): UsersProvider {
   if (usePostgres()) return new PostgresUsersProvider();
-  return (memoryUsers ??= new InMemoryUsersProvider());
+  return (memory.users ??= new InMemoryUsersProvider());
 }
 
 let tokensSingleton: TokensProvider | undefined;
@@ -62,6 +113,40 @@ export function tokens(): TokensProvider {
 
 export function createContactRpu() {
   return createContact({ contacts: buildContacts(), activityLog: buildActivityLog() });
+}
+
+export function updateContactRpu() {
+  return updateContact({ contacts: buildContacts(), activityLog: buildActivityLog() });
+}
+
+export function createBusinessPartnerRpu() {
+  return createBusinessPartner({
+    businessPartners: buildBusinessPartners(),
+    activityLog: buildActivityLog(),
+  });
+}
+
+export function updateBusinessPartnerRpu() {
+  return updateBusinessPartner({
+    businessPartners: buildBusinessPartners(),
+    activityLog: buildActivityLog(),
+  });
+}
+
+export function linkContactGpRpu() {
+  return linkContactGp({ contactGps: buildContactGps(), activityLog: buildActivityLog() });
+}
+
+export function unlinkContactGpRpu() {
+  return unlinkContactGp({ contactGps: buildContactGps(), activityLog: buildActivityLog() });
+}
+
+export function selectReactor() {
+  return select({
+    listActiveContacts: listActiveContacts({ contacts: buildContacts() }),
+    listBusinessPartners: listBusinessPartners({ businessPartners: buildBusinessPartners() }),
+    contactGps: buildContactGps(),
+  });
 }
 
 export function verifyOtpReactor() {
