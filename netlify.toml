@@ -1,0 +1,15 @@
+[build]
+  command = "npm run build"
+  publish = "frontend/dist"
+
+[functions]
+  directory = "backend/src/shell/portals"
+  node_bundler = "esbuild"
+
+# Each portal handler is a Netlify v2 function that declares its own route via
+# the exported `config.path` (e.g. "/api/contacts").
+
+[dev]
+  command = "vite"
+  targetPort = 5173
+  framework = "#custom"
