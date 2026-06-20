@@ -7,7 +7,7 @@ import type { Contact } from "@/domain/model";
 import type { MatchHint } from "@/domain/rpus/get-visible-entities/get-visible-entities";
 
 function firstChannelObject(contact: Contact, type: string) {
-  return contact.data.channels.find((c) => c.type === type);
+  return (contact.data.channels ?? []).find((c) => c.type === type);
 }
 
 /**

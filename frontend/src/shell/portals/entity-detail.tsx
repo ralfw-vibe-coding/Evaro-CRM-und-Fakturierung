@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Building2, Heart, PanelRightClose, Plus, Save, SaveOff, Trash2, User, X } from "lucide-react";
+import { Building2, Heart, MapPinned, PanelRightClose, Plus, Save, SaveOff, Trash2, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -168,6 +168,12 @@ function normalizeBusinessPartnerData(data: BusinessPartnerData, channels: Chann
 
 function stableJson(value: unknown): string {
   return JSON.stringify(value);
+}
+
+function googleMapsUrl(parts: Array<string | undefined>): string | null {
+  const query = parts.map((part) => part?.trim()).filter(Boolean).join(" ");
+  if (!query) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -1063,6 +1069,13 @@ function BusinessPartnerEditor({
     onNavigate(ref);
   }
 
+  const mapsHref = googleMapsUrl([
+    data.address?.street,
+    data.address?.zip,
+    data.address?.city,
+    data.address?.country,
+  ]);
+
   return (
     <div className="grid gap-5">
       <DetailToolbar
@@ -1093,7 +1106,7 @@ function BusinessPartnerEditor({
             onChange={(e) => setData({ ...data, address: { ...data.address, street: e.target.value } })}
           />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
           <Field label="PLZ">
             <Input
               value={data.address?.zip ?? ""}
@@ -1102,11 +1115,20 @@ function BusinessPartnerEditor({
             />
           </Field>
           <Field label="Ort">
-            <Input
-              value={data.address?.city ?? ""}
-              {...NO_PASSWORD_MANAGER_PROPS}
-              onChange={(e) => setData({ ...data, address: { ...data.address, city: e.target.value } })}
-            />
+            <div className="flex gap-2">
+              <Input
+                value={data.address?.city ?? ""}
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, address: { ...data.address, city: e.target.value } })}
+              />
+              {mapsHref && (
+                <Button type="button" variant="ghost" size="icon" asChild aria-label="Ort in Google Maps öffnen">
+                  <a href={mapsHref} target="_blank" rel="noreferrer" title="Ort in Google Maps öffnen">
+                    <MapPinned />
+                  </a>
+                </Button>
+              )}
+            </div>
           </Field>
         </div>
         <Field label="Land">

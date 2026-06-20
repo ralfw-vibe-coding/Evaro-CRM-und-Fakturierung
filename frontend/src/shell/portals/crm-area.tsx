@@ -42,7 +42,7 @@ export function CrmArea() {
   const [view, setView] = React.useState<GetVisibleEntitiesResult | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [selected, setSelected] = React.useState<SelectedEntity>(null);
-  const [detailOpen, setDetailOpen] = React.useState(true);
+  const [detailOpen, setDetailOpen] = React.useState(false);
   const [, setDetailDirty] = React.useState(false);
   const [creatingContact, setCreatingContact] = React.useState(false);
   const [newContactLastName, setNewContactLastName] = React.useState("");
@@ -242,8 +242,19 @@ function SearchField({ value, onChange }: { value: string; onChange: (term: stri
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Suchen…"
-        className="pl-8"
+        className="pl-8 pr-8"
       />
+      {value && (
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+          aria-label="Suche löschen"
+          title="Suche löschen"
+          onClick={() => onChange("")}
+        >
+          <X className="size-3.5" />
+        </button>
+      )}
     </div>
   );
 }

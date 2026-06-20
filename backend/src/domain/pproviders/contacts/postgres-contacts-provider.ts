@@ -1,5 +1,5 @@
 import type pg from "pg";
-import type { Contact } from "../../model.js";
+import type { Channel, Contact, ContactData, Gender, Salutation } from "../../model.js";
 import type { ContactsProvider, ContactUpdate, NewContact } from "./contacts-provider.js";
 import { getPool } from "../postgres/pool.js";
 
@@ -15,9 +15,54 @@ function toContact(row: ContactRow): Contact {
   return {
     id: row.id,
     active: row.active,
-    data: row.data,
+    data: normalizeContactData(row.data),
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
+  };
+}
+
+function text(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function stringList(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const values = [...new Set(value.map(text).filter((item): item is string => Boolean(item)))];
+  return values.length > 0 ? values : undefined;
+}
+
+function channels(value: unknown): Channel[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      const record = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+      return { type: text(record.type) ?? "", address: text(record.address) ?? "" };
+    })
+    .filter((channel) => channel.type && channel.address);
+}
+
+function normalizeContactData(raw: unknown): ContactData {
+  const data = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const gender = text(data.gender);
+  const salutation = text(data.salutation);
+  return {
+    title: text(data.title),
+    first_name: text(data.first_name),
+    last_name: text(data.last_name),
+    gender: gender === "m" || gender === "f" || gender === "d" ? (gender as Gender) : undefined,
+    salutation:
+      salutation === "formal" || salutation === "informal" ? (salutation as Salutation) : undefined,
+    origin: text(data.origin),
+    company_text: text(data.company_text),
+    channels: channels(data.channels),
+    relationship: stringList(data.relationship),
+    role: stringList(data.role),
+    work_area: stringList(data.work_area),
+    interests: stringList(data.interests),
+    tags: stringList(data.tags),
+    notes: text(data.notes),
   };
 }
 
