@@ -1,6 +1,6 @@
 import * as React from "react";
 import {
-  Check,
+  Copy,
   FileText,
   Filter,
   Hash,
@@ -15,10 +15,9 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { BusinessPartner, Invoice, InvoiceData, InvoiceLine, PaymentTerm } from "@/domain/model";
+import type { BusinessPartner, Invoice, InvoiceData, InvoiceLine } from "@/domain/model";
 import {
   createInvoiceDraftRpu,
-  createPaymentTermRpu,
   invoiceStore,
   loadInvoicingDataRpu,
   updateInvoiceDraftRpu,
@@ -85,7 +84,6 @@ export function InvoicingArea() {
   }
 
   const invoices = data?.invoices ?? [];
-  const paymentTerms = data?.payment_terms ?? [];
   const businessPartners = data?.business_partners ?? [];
   const selected = invoices.find((invoice) => invoice.id === selectedId) ?? null;
   const filtered = filterInvoices(invoices, searchTerm);
@@ -135,7 +133,6 @@ export function InvoicingArea() {
         <InvoiceDetail
           invoice={selected}
           allInvoices={invoices}
-          paymentTerms={paymentTerms}
           onChanged={refresh}
           onError={setError}
         />
@@ -293,13 +290,11 @@ function InvoiceList({
 function InvoiceDetail({
   invoice,
   allInvoices,
-  paymentTerms,
   onChanged,
   onError,
 }: {
   invoice: Invoice | null;
   allInvoices: Invoice[];
-  paymentTerms: PaymentTerm[];
   onChanged: () => void;
   onError: (error: string | null) => void;
 }) {
@@ -308,13 +303,24 @@ function InvoiceDetail({
   const [saving, setSaving] = React.useState(false);
   const [savedInfo, setSavedInfo] = React.useState<string | null>(null);
   const [deleteLineId, setDeleteLineId] = React.useState<string | null>(null);
+  const [focusLineId, setFocusLineId] = React.useState<string | null>(null);
+  const lineDateRefs = React.useRef(new Map<string, HTMLInputElement>());
 
   React.useEffect(() => {
     setDraft(structuredClone(invoice?.data ?? { lines: [] }));
     setVatRate(invoice?.vat_rate ?? 0);
     setSavedInfo(null);
     setDeleteLineId(null);
+    setFocusLineId(null);
   }, [invoice?.id]);
+
+  React.useEffect(() => {
+    if (!focusLineId) return;
+    const input = lineDateRefs.current.get(focusLineId);
+    if (!input) return;
+    input.focus();
+    setFocusLineId(null);
+  }, [draft.lines, focusLineId]);
 
   if (!invoice) {
     return (
@@ -330,6 +336,7 @@ function InvoiceDetail({
   const dirty = JSON.stringify({ data: draft, vat_rate: vatRate }) !== JSON.stringify({ data: invoice.data, vat_rate: invoice.vat_rate });
   const totals = invoiceTotal({ ...invoice, data: draft, vat_rate: vatRate });
   const tagOptions = getInvoiceTagOptions(allInvoices);
+  const paymentTermSuggestions = getPaymentTermSuggestions(allInvoices, draft.payment_terms);
 
   function patch(next: Partial<InvoiceData>) {
     setDraft((current) => ({ ...current, ...next }));
@@ -345,13 +352,15 @@ function InvoiceDetail({
   }
 
   function addLine() {
+    const id = crypto.randomUUID();
     setDraft((current) => ({
       ...current,
       lines: [
         ...current.lines,
-        { id: crypto.randomUUID(), quantity: 1, unit_price: 0 },
+        { id, quantity: 1, unit_price: 0 },
       ],
     }));
+    setFocusLineId(id);
     setSavedInfo(null);
   }
 
@@ -385,33 +394,22 @@ function InvoiceDetail({
     onChanged();
   }
 
-  async function savePaymentTerm() {
-    const template = draft.payment_terms?.trim();
-    if (!template) return;
-    const result = await createPaymentTermRpu({ label: template.slice(0, 80), template });
-    if (!result.ok) {
-      onError(result.error);
-      return;
-    }
-    onError(null);
-    onChanged();
-    setSavedInfo("Zahlungsbedingung gespeichert");
-  }
-
   return (
     <div className="grid gap-6 p-6">
       <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
-        <div className="flex items-center gap-2 font-semibold">
-          <Receipt className="size-5 text-[var(--brand)]" />
-          <span>{invoice.invoice_number ?? "Entwurf"}</span>
-          <StatusChip status={invoice.status} />
+        <div className="flex items-center font-semibold">
+          <StatusFlow status={invoice.status} />
         </div>
         <div className="flex items-center gap-2">
           {savedInfo && <span className="text-xs text-[var(--muted-foreground)]">{savedInfo}</span>}
           <Button
             type="button"
             size="icon"
-            className="bg-[var(--brand)] text-white hover:opacity-90"
+            className={cn(
+              dirty && invoice.status === "draft"
+                ? "bg-[var(--brand)] text-white hover:opacity-90"
+                : "border border-[var(--border)] bg-transparent text-[var(--muted-foreground)] opacity-40",
+            )}
             disabled={!dirty || saving || invoice.status !== "draft"}
             aria-label="Rechnung speichern"
             title="Rechnung speichern"
@@ -463,68 +461,56 @@ function InvoiceDetail({
         </div>
         <div className="grid gap-3">
           {draft.lines.map((line) => (
-            <div key={line.id} className="rounded-md border border-[var(--border)] p-3">
-              <div className="grid grid-cols-[130px_1fr_1fr_90px_100px_110px_96px_36px] items-end gap-2">
-                <Field label="Leistung">
-                  <Input
-                    type="date"
-                    value={line.service_date ?? ""}
-                    onChange={(event) => patchLine(line.id, { service_date: event.target.value })}
-                    disabled={invoice.status !== "draft"}
-                    {...NO_PASSWORD_MANAGER_PROPS}
-                  />
-                </Field>
-                <Field label="Form">
+            <div key={line.id} className="grid gap-3 rounded-md border border-[var(--border)] p-3">
+              <div className="grid grid-cols-12 items-start gap-3">
+                <Input
+                  type="date"
+                  ref={(node) => {
+                    if (node) lineDateRefs.current.set(line.id, node);
+                    else lineDateRefs.current.delete(line.id);
+                  }}
+                  value={line.service_date ?? ""}
+                  aria-label="Leistungsdatum"
+                  placeholder="Leistungsdatum"
+                  title="Leistungsdatum"
+                  className="col-span-2 min-w-0"
+                  onChange={(event) => patchLine(line.id, { service_date: event.target.value })}
+                  disabled={invoice.status !== "draft"}
+                  {...NO_PASSWORD_MANAGER_PROPS}
+                />
+                <div className="col-span-2 min-w-0">
                   <ChipInput
                     value={line.product_form ?? ""}
                     options={tagOptions.forms}
+                    placeholder="Form"
                     disabled={invoice.status !== "draft"}
                     onChange={(value) => patchLine(line.id, { product_form: value })}
                   />
-                </Field>
-                <Field label="Thema">
+                </div>
+                <div className="col-span-3 min-w-0">
                   <ChipInput
                     value={line.product_topic ?? ""}
                     options={tagOptions.topics}
+                    placeholder="Thema"
                     disabled={invoice.status !== "draft"}
                     onChange={(value) => patchLine(line.id, { product_topic: value })}
                   />
-                </Field>
-                <Field label="Menge">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={line.quantity}
-                    onChange={(event) => patchLine(line.id, { quantity: Number(event.target.value) })}
-                    disabled={invoice.status !== "draft"}
-                    {...NO_PASSWORD_MANAGER_PROPS}
-                  />
-                </Field>
-                <Field label="Einheit">
-                  <ChipInput
-                    value={line.unit ?? ""}
-                    options={tagOptions.units}
-                    disabled={invoice.status !== "draft"}
-                    onChange={(value) => patchLine(line.id, { unit: value })}
-                  />
-                </Field>
-                <Field label="Preis">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={line.unit_price}
-                    onChange={(event) => patchLine(line.id, { unit_price: Number(event.target.value) })}
-                    disabled={invoice.status !== "draft"}
-                    {...NO_PASSWORD_MANAGER_PROPS}
-                  />
-                </Field>
-                <div className="pb-2 text-right font-mono text-sm">{formatMoney(lineTotal(line))}</div>
+                </div>
+                <textarea
+                  value={line.text ?? ""}
+                  onChange={(event) => patchLine(line.id, { text: event.target.value })}
+                  className="col-span-4 min-h-10 w-full min-w-0 resize-y rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm leading-5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  rows={1}
+                  aria-label="Freitext"
+                  disabled={invoice.status !== "draft"}
+                  {...NO_PASSWORD_MANAGER_PROPS}
+                />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
+                  className="col-span-1 justify-self-end"
+                  tabIndex={-1}
                   aria-label="Position löschen"
                   title={deleteLineId === line.id ? "Löschen bestätigen" : "Position löschen"}
                   onClick={() => removeLine(line.id)}
@@ -533,14 +519,42 @@ function InvoiceDetail({
                   {deleteLineId === line.id ? <span className="font-bold">?</span> : <Trash2 />}
                 </Button>
               </div>
-              <textarea
-                value={line.text ?? ""}
-                onChange={(event) => patchLine(line.id, { text: event.target.value })}
-                className="mt-3 min-h-16 w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                placeholder="Freitext"
-                disabled={invoice.status !== "draft"}
-                {...NO_PASSWORD_MANAGER_PROPS}
-              />
+              <div className="grid grid-cols-12 items-center gap-3">
+                <div className="col-span-4" />
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={line.quantity}
+                  aria-label="Menge"
+                  placeholder="Menge"
+                  className="col-span-1 min-w-0 text-right"
+                  onChange={(event) => patchLine(line.id, { quantity: Number(event.target.value) })}
+                  disabled={invoice.status !== "draft"}
+                  {...NO_PASSWORD_MANAGER_PROPS}
+                />
+                <div className="col-span-2 min-w-0">
+                  <ChipInput
+                    value={line.unit ?? ""}
+                    options={tagOptions.units}
+                    placeholder="Einheit"
+                    disabled={invoice.status !== "draft"}
+                    onChange={(value) => patchLine(line.id, { unit: value })}
+                  />
+                </div>
+                <div className="col-span-2 min-w-0">
+                  <MoneyInput
+                    value={line.unit_price}
+                    aria-label="Preis"
+                    placeholder="Preis"
+                    onChange={(value) => patchLine(line.id, { unit_price: value })}
+                    disabled={invoice.status !== "draft"}
+                  />
+                </div>
+                <div className="col-span-3 min-w-0 text-right font-mono text-sm font-semibold">
+                  {formatMoney(lineTotal(line))}
+                </div>
+              </div>
             </div>
           ))}
           {draft.lines.length === 0 && (
@@ -553,38 +567,40 @@ function InvoiceDetail({
 
       <section className="grid grid-cols-[1fr_320px] gap-6 border-t border-[var(--border)] pt-5">
         <div className="grid content-start gap-3">
-          <Field label="Zahlungsbedingungen">
-            <select
-              value=""
-              onChange={(event) => {
-                const term = paymentTerms.find((item) => item.id === event.target.value);
-                if (term) patch({ payment_terms: term.template });
-              }}
-              className="h-10 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm"
+          <div className="grid gap-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm font-medium">Zahlungsbedingungen</span>
+              <span className="text-xs text-[var(--muted-foreground)]">
+                {"{30}"} = Rechnungsdatum plus Tage
+              </span>
+            </div>
+            <textarea
+              value={draft.payment_terms ?? ""}
+              onChange={(event) => patch({ payment_terms: event.target.value })}
+              className="min-h-20 w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
               disabled={invoice.status !== "draft"}
-            >
-              <option value="">Gespeicherte Zahlungsbedingung wählen</option>
-              {paymentTerms.map((term) => (
-                <option key={term.id} value={term.id}>{term.label}</option>
-              ))}
-            </select>
-          </Field>
-          <textarea
-            value={draft.payment_terms ?? ""}
-            onChange={(event) => patch({ payment_terms: event.target.value })}
-            className="min-h-20 w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-            disabled={invoice.status !== "draft"}
-            {...NO_PASSWORD_MANAGER_PROPS}
-          />
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-[var(--muted-foreground)]">
-              {previewPaymentTerms(draft.payment_terms, invoice.invoice_date)}
-            </span>
-            <Button type="button" variant="outline" onClick={savePaymentTerm} disabled={!draft.payment_terms?.trim()}>
-              <Check className="size-4" />
-              Speichern
-            </Button>
+              {...NO_PASSWORD_MANAGER_PROPS}
+            />
           </div>
+          <div className="min-h-5 text-sm text-[var(--muted-foreground)]">
+            {previewPaymentTerms(draft.payment_terms, invoice.invoice_date)}
+          </div>
+          {paymentTermSuggestions.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2 border-t border-[var(--border)] pt-3">
+              {paymentTermSuggestions.map((term) => (
+                <button
+                  key={term}
+                  type="button"
+                  className="max-w-full truncate rounded-full bg-[var(--accent)] px-3 py-1 text-left text-xs text-[var(--foreground)] hover:opacity-80"
+                  title={term}
+                  onClick={() => patch({ payment_terms: term })}
+                  disabled={invoice.status !== "draft"}
+                >
+                  {term}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="grid content-start gap-2 rounded-md border border-[var(--border)] p-4">
           <SummaryRow label="Netto" value={formatMoney(totals.net)} />
@@ -626,7 +642,20 @@ function ReadOnlySnapshot({ invoice }: { invoice: Invoice }) {
       {address?.country && <div className="text-sm">{address.country}</div>}
       <div className="mt-3 grid gap-1 text-sm text-[var(--muted-foreground)]">
         {invoice.gp_snapshot.vat_id && <span>USt-ID: {invoice.gp_snapshot.vat_id}</span>}
-        {invoice.gp_snapshot.email && <span>{invoice.gp_snapshot.email}</span>}
+        {invoice.gp_snapshot.email && (
+          <span className="flex items-center gap-1.5">
+            <span>{invoice.gp_snapshot.email}</span>
+            <button
+              type="button"
+              className="grid size-6 place-items-center rounded-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+              aria-label="E-Mail kopieren"
+              title="E-Mail kopieren"
+              onClick={() => void navigator.clipboard?.writeText(invoice.gp_snapshot.email ?? "")}
+            >
+              <Copy className="size-3.5" />
+            </button>
+          </span>
+        )}
       </div>
     </div>
   );
@@ -644,11 +673,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function ChipInput({
   value,
   options,
+  placeholder,
   disabled,
   onChange,
 }: {
   value: string;
   options: string[];
+  placeholder?: string;
   disabled?: boolean;
   onChange: (value: string) => void;
 }) {
@@ -695,6 +726,8 @@ function ChipInput({
               }
             }}
             disabled={disabled}
+            aria-label={placeholder}
+            placeholder={placeholder}
             className="min-w-0 flex-1 bg-transparent text-sm outline-none"
             {...NO_PASSWORD_MANAGER_PROPS}
           />
@@ -731,9 +764,94 @@ function ChipInput({
   );
 }
 
+function MoneyInput({
+  value,
+  disabled,
+  placeholder,
+  "aria-label": ariaLabel,
+  onChange,
+}: {
+  value: number;
+  disabled?: boolean;
+  placeholder?: string;
+  "aria-label": string;
+  onChange: (value: number) => void;
+}) {
+  const [focused, setFocused] = React.useState(false);
+  const [draft, setDraft] = React.useState("");
+
+  React.useEffect(() => {
+    if (!focused) setDraft(formatMoney(value));
+  }, [focused, value]);
+
+  function parseMoney(input: string): number {
+    const normalized = input
+      .replace(/[^\d,.-]/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".");
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+  }
+
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      value={focused ? draft : formatMoney(value)}
+      aria-label={ariaLabel}
+      placeholder={placeholder}
+      className="text-right font-mono"
+      disabled={disabled}
+      onFocus={() => {
+        setFocused(true);
+        setDraft(value ? String(value).replace(".", ",") : "");
+      }}
+      onChange={(event) => {
+        setDraft(event.target.value);
+        onChange(parseMoney(event.target.value));
+      }}
+      onBlur={() => setFocused(false)}
+      {...NO_PASSWORD_MANAGER_PROPS}
+    />
+  );
+}
+
 function StatusChip({ status }: { status: Invoice["status"] }) {
   const label = status === "draft" ? "Entwurf" : status === "billed" ? "Abgerechnet" : "Bezahlt";
   return <span className="inline-flex rounded-full bg-[var(--accent)] px-2 py-1 text-xs font-medium">{label}</span>;
+}
+
+function StatusFlow({ status }: { status: Invoice["status"] }) {
+  const steps: { id: Invoice["status"]; label: string }[] = [
+    { id: "draft", label: "Entwurf" },
+    { id: "billed", label: "Abgerechnet" },
+    { id: "paid", label: "Bezahlt" },
+  ];
+
+  return (
+    <div className="ml-2 flex items-center text-xs font-semibold">
+      {steps.map((step, index) => {
+        const active = step.id === status;
+        return (
+          <span
+            key={step.id}
+            className={cn(
+              "relative inline-flex h-8 items-center px-4 pl-5",
+              index > 0 && "-ml-2 pl-6",
+              active
+                ? "bg-[var(--brand)] text-white"
+                : "bg-[var(--accent)] text-[var(--muted-foreground)]",
+            )}
+            style={{
+              clipPath: "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)",
+            }}
+          >
+            {step.label}
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
 function SummaryRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
@@ -770,6 +888,33 @@ function getInvoiceTagOptions(invoices: Invoice[]) {
   return { forms: sort(forms), topics: sort(topics), units: sort(units) };
 }
 
+function getPaymentTermSuggestions(invoices: Invoice[], current: string | undefined): string[] {
+  const currentText = current?.trim() ?? "";
+  const terms = [
+    ...new Set(
+      invoices
+        .map((invoice) => invoice.data.payment_terms?.trim())
+        .filter((term): term is string => Boolean(term) && term !== currentText),
+    ),
+  ];
+  const needle = currentText.toLowerCase();
+  if (!needle) return terms.slice(0, 5);
+
+  const words = needle.split(/\s+/).filter((word) => word.length > 1);
+  return terms
+    .map((term) => {
+      const haystack = term.toLowerCase();
+      const score =
+        (haystack.includes(needle) ? 10 : 0) +
+        words.reduce((sum, word) => sum + (haystack.includes(word) ? 1 : 0), 0);
+      return { term, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || a.term.localeCompare(b.term, "de"))
+    .slice(0, 5)
+    .map((item) => item.term);
+}
+
 function lineTotal(line: InvoiceLine): number {
   return Math.max(0, Number(line.quantity) || 0) * Math.max(0, Number(line.unit_price) || 0);
 }
@@ -792,9 +937,16 @@ function previewPaymentTerms(template: string | undefined, invoiceDate: string |
   const text = template?.trim();
   if (!text) return "";
   const base = invoiceDate ? new Date(`${invoiceDate}T00:00:00`) : new Date();
-  return text.replace(/\{(?:rgdatum|rechnungsdatum|rgd|invdate)(?:\s*\+\s*(\d+))?\}/gi, (_, days: string | undefined) => {
-    const date = new Date(base);
-    date.setDate(date.getDate() + Number(days ?? 0));
-    return formatDate(date.toISOString().slice(0, 10));
-  });
+  return text
+    .replace(/\{(\d+)\}/g, (_, days: string) => formatOffsetDate(base, Number(days)))
+    .replace(
+      /\{(?:rgdatum|rechnungsdatum|rgd|invdate)(?:\s*\+\s*(\d+))?\}/gi,
+      (_, days: string | undefined) => formatOffsetDate(base, Number(days ?? 0)),
+    );
+}
+
+function formatOffsetDate(base: Date, days: number): string {
+  const date = new Date(base);
+  date.setDate(date.getDate() + days);
+  return formatDate(date.toISOString().slice(0, 10));
 }
