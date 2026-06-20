@@ -1,4 +1,13 @@
-import type { BusinessPartner, Contact, ContactGp, Selection, SessionUser } from "@/domain/model";
+import type {
+  BusinessPartner,
+  Contact,
+  ContactGp,
+  InvoicingData,
+  Invoice,
+  PaymentTerm,
+  Selection,
+  SessionUser,
+} from "@/domain/model";
 import type {
   ApiResult,
   BackendApiProvider,
@@ -7,6 +16,7 @@ import type {
   CreateContactInput,
   UpdateBusinessPartnerInput,
   UpdateContactInput,
+  UpdateInvoiceDraftInput,
 } from "./backend-api-provider";
 
 async function request<T>(path: string, init: RequestInit): Promise<ApiResult<T>> {
@@ -146,5 +156,36 @@ export const httpBackendApiProvider: BackendApiProvider = {
       body: JSON.stringify(input),
     });
     return result.ok ? { ok: true, value: undefined } : result;
+  },
+
+  async loadInvoicingData(token) {
+    return request<InvoicingData>("/invoices", {
+      method: "GET",
+      headers: { authorization: `Bearer ${token}` },
+    });
+  },
+
+  async createInvoiceDraft(token, businessPartnerId) {
+    return request<{ invoice: Invoice }>("/invoices", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ business_partner_id: businessPartnerId }),
+    });
+  },
+
+  async updateInvoiceDraft(token, input: UpdateInvoiceDraftInput) {
+    return request<{ invoice: Invoice; conflict: boolean }>("/invoices", {
+      method: "PATCH",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
+  },
+
+  async createPaymentTerm(token, input) {
+    return request<{ payment_term: PaymentTerm }>("/payment-terms", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
   },
 };

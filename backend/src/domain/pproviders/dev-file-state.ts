@@ -1,10 +1,12 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import type { BusinessPartner, Contact, ContactGp } from "../model.js";
+import type { BusinessPartner, Contact, ContactGp, Invoice, PaymentTerm } from "../model.js";
 
 interface DevState {
   contacts?: Contact[];
   business_partners?: BusinessPartner[];
   contact_gps?: ContactGp[];
+  invoices?: Invoice[];
+  payment_terms?: PaymentTerm[];
 }
 
 export function devStatePath(): string | undefined {

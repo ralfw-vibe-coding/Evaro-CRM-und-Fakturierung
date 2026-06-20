@@ -4,6 +4,10 @@ import type {
   Contact,
   ContactData,
   ContactGp,
+  Invoice,
+  InvoicingData,
+  InvoiceData,
+  PaymentTerm,
   Selection,
   SessionUser,
 } from "@/domain/model";
@@ -43,6 +47,13 @@ export interface ContactGpInput {
   primary?: boolean;
 }
 
+export interface UpdateInvoiceDraftInput {
+  id: string;
+  data: InvoiceData;
+  vat_rate: number;
+  expected_updated_at?: string;
+}
+
 /**
  * pProvider: encapsulates the parts of the backend API that hold application
  * state — the OTP login flow, the selection, and writes to contacts/business
@@ -75,4 +86,17 @@ export interface BackendApiProvider {
   deleteBusinessPartner(token: string, id: string): Promise<ApiResult<void>>;
   linkContactGp(token: string, input: ContactGpInput): Promise<ApiResult<{ link: ContactGp }>>;
   unlinkContactGp(token: string, input: ContactGpInput): Promise<ApiResult<void>>;
+  loadInvoicingData(token: string): Promise<ApiResult<InvoicingData>>;
+  createInvoiceDraft(
+    token: string,
+    businessPartnerId: string,
+  ): Promise<ApiResult<{ invoice: Invoice }>>;
+  updateInvoiceDraft(
+    token: string,
+    input: UpdateInvoiceDraftInput,
+  ): Promise<ApiResult<{ invoice: Invoice; conflict: boolean }>>;
+  createPaymentTerm(
+    token: string,
+    input: { label?: string; template: string },
+  ): Promise<ApiResult<{ payment_term: PaymentTerm }>>;
 }

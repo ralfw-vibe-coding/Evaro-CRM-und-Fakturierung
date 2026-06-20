@@ -20,6 +20,9 @@ import { PostgresBusinessPartnersProvider } from "./domain/pproviders/business-p
 import type { ContactGpsProvider } from "./domain/pproviders/contact-gps/contact-gps-provider.js";
 import { InMemoryContactGpsProvider } from "./domain/pproviders/contact-gps/in-memory-contact-gps-provider.js";
 import { PostgresContactGpsProvider } from "./domain/pproviders/contact-gps/postgres-contact-gps-provider.js";
+import type { InvoicesProvider } from "./domain/pproviders/invoices/invoices-provider.js";
+import { InMemoryInvoicesProvider } from "./domain/pproviders/invoices/in-memory-invoices-provider.js";
+import { PostgresInvoicesProvider } from "./domain/pproviders/invoices/postgres-invoices-provider.js";
 
 import { JwtTokensProvider } from "./shell/xproviders/tokens/jwt-tokens-provider.js";
 import type { TokensProvider } from "./shell/xproviders/tokens/tokens-provider.js";
@@ -43,6 +46,10 @@ import { generateUserApiKey } from "./domain/rpus/generate-user-api-key/generate
 import { deleteUserApiKey } from "./domain/rpus/delete-user-api-key/delete-user-api-key.js";
 import { listActiveContacts } from "./domain/rpus/list-active-contacts/list-active-contacts.js";
 import { listBusinessPartners } from "./domain/rpus/list-business-partners/list-business-partners.js";
+import { listInvoicingData } from "./domain/rpus/list-invoicing-data/list-invoicing-data.js";
+import { createInvoiceDraft } from "./domain/rpus/create-invoice-draft/create-invoice-draft.js";
+import { updateInvoiceDraft } from "./domain/rpus/update-invoice-draft/update-invoice-draft.js";
+import { createPaymentTerm } from "./domain/rpus/create-payment-term/create-payment-term.js";
 import { verifyOtp } from "./reactors/verify-otp/verify-otp.js";
 import { requestOtp } from "./reactors/request-otp/request-otp.js";
 import { select } from "./reactors/select/select.js";
@@ -68,6 +75,7 @@ interface MemoryProviders {
   users?: InMemoryUsersProvider;
   businessPartners?: InMemoryBusinessPartnersProvider;
   contactGps?: InMemoryContactGpsProvider;
+  invoices?: InMemoryInvoicesProvider;
   otps?: InMemoryOtpProvider;
 }
 
@@ -105,6 +113,11 @@ function buildContactGps(): ContactGpsProvider {
 function buildActivityLog(): ActivityLogProvider {
   if (usePostgres()) return new PostgresActivityLogProvider();
   return (memory.activityLog ??= new InMemoryActivityLogProvider());
+}
+
+function buildInvoices(): InvoicesProvider {
+  if (usePostgres()) return new PostgresInvoicesProvider();
+  return (memory.invoices ??= new InMemoryInvoicesProvider());
 }
 
 function buildUsers(): UsersProvider {
@@ -209,6 +222,29 @@ export function generateUserApiKeyRpu() {
 
 export function deleteUserApiKeyRpu() {
   return deleteUserApiKey({ users: buildUsers() });
+}
+
+export function listInvoicingDataRpu() {
+  return listInvoicingData({
+    invoices: buildInvoices(),
+    businessPartners: buildBusinessPartners(),
+  });
+}
+
+export function createInvoiceDraftRpu() {
+  return createInvoiceDraft({
+    invoices: buildInvoices(),
+    businessPartners: buildBusinessPartners(),
+    activityLog: buildActivityLog(),
+  });
+}
+
+export function updateInvoiceDraftRpu() {
+  return updateInvoiceDraft({ invoices: buildInvoices() });
+}
+
+export function createPaymentTermRpu() {
+  return createPaymentTerm({ invoices: buildInvoices() });
 }
 
 export function requestOtpReactor() {

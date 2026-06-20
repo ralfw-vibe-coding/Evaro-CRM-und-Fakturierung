@@ -76,3 +76,57 @@ export interface SessionUser {
   abbr: string;
   api_key_created_at?: string | null;
 }
+
+export type InvoiceStatus = "draft" | "billed" | "paid";
+
+export interface InvoiceGpSnapshot {
+  name: string;
+  vat_id?: string;
+  address?: Address;
+  email?: string;
+}
+
+export interface InvoiceLine {
+  id: string;
+  service_date?: string;
+  product_form?: string;
+  product_topic?: string;
+  quantity: number;
+  unit?: string;
+  unit_price: number;
+  text?: string;
+}
+
+export interface InvoiceData {
+  reference?: string;
+  comment?: string;
+  payment_terms?: string;
+  lines: InvoiceLine[];
+}
+
+export interface Invoice {
+  id: string;
+  business_partner_id: string;
+  status: InvoiceStatus;
+  invoice_number: string | null;
+  invoice_date: string | null;
+  vat_rate: number;
+  gp_snapshot: InvoiceGpSnapshot;
+  data: InvoiceData;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentTerm {
+  id: string;
+  label: string;
+  template: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoicingData {
+  invoices: Invoice[];
+  payment_terms: PaymentTerm[];
+  business_partners: BusinessPartner[];
+}

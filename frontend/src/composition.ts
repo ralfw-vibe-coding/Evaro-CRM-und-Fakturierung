@@ -5,6 +5,7 @@
 import { httpBackendApiProvider } from "./domain/pproviders/backend-api/http-backend-api-provider.js";
 import { browserSessionProvider } from "./domain/pproviders/session/browser-session-provider.js";
 import { InMemorySelectionStoreProvider } from "./domain/pproviders/selection-store/in-memory-selection-store-provider.js";
+import { InMemoryInvoiceStoreProvider } from "./domain/pproviders/invoice-store/in-memory-invoice-store-provider.js";
 
 import { requestOtp } from "./domain/rpus/request-otp/request-otp.js";
 import { verifyOtp } from "./domain/rpus/verify-otp/verify-otp.js";
@@ -28,10 +29,15 @@ import { deleteBusinessPartner } from "./domain/rpus/delete-business-partner/del
 import { linkContactGp } from "./domain/rpus/link-contact-gp/link-contact-gp.js";
 import { unlinkContactGp } from "./domain/rpus/unlink-contact-gp/unlink-contact-gp.js";
 import { getTagOptions } from "./domain/rpus/get-tag-options/get-tag-options.js";
+import { loadInvoicingData } from "./domain/rpus/load-invoicing-data/load-invoicing-data.js";
+import { createInvoiceDraft } from "./domain/rpus/create-invoice-draft/create-invoice-draft.js";
+import { updateInvoiceDraft } from "./domain/rpus/update-invoice-draft/update-invoice-draft.js";
+import { createPaymentTerm } from "./domain/rpus/create-payment-term/create-payment-term.js";
 
 const backendApi = httpBackendApiProvider;
 const session = browserSessionProvider;
 const selectionStore = new InMemorySelectionStoreProvider();
+export const invoiceStore = new InMemoryInvoiceStoreProvider();
 
 export const requestOtpRpu = requestOtp({ backendApi });
 export const verifyOtpRpu = verifyOtp({ backendApi, session });
@@ -63,3 +69,7 @@ export const deleteBusinessPartnerRpu = deleteBusinessPartner({ backendApi, sess
 export const linkContactGpRpu = linkContactGp({ backendApi, session, selectionStore });
 export const unlinkContactGpRpu = unlinkContactGp({ backendApi, session, selectionStore });
 export const getTagOptionsRpu = getTagOptions({ selectionStore });
+export const loadInvoicingDataRpu = loadInvoicingData({ backendApi, session, invoiceStore });
+export const createInvoiceDraftRpu = createInvoiceDraft({ backendApi, session, invoiceStore });
+export const updateInvoiceDraftRpu = updateInvoiceDraft({ backendApi, session, invoiceStore });
+export const createPaymentTermRpu = createPaymentTerm({ backendApi, session, invoiceStore });
