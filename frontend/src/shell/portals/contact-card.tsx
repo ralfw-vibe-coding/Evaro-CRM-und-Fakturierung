@@ -1,12 +1,13 @@
-import { Mail, Phone, Building2, User } from "lucide-react";
+import { Building2, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { MatchHintLine } from "./match-hint";
+import { OverviewChannelRow } from "./overview-channel-row";
 import type { Contact } from "@/domain/model";
 import type { MatchHint } from "@/domain/rpus/get-visible-entities/get-visible-entities";
 
-function firstChannel(contact: Contact, type: string): string | undefined {
-  return contact.data.channels.find((c) => c.type === type)?.address;
+function firstChannelObject(contact: Contact, type: string) {
+  return contact.data.channels.find((c) => c.type === type);
 }
 
 /**
@@ -29,8 +30,9 @@ export function ContactCard({
 }) {
   const name = [contact.data.first_name, contact.data.last_name].filter(Boolean).join(" ");
   const company = contact.data.company_text;
-  const email = firstChannel(contact, "email");
-  const phone = firstChannel(contact, "phone");
+  const channels = ["email", "phone", "website"]
+    .map((type) => firstChannelObject(contact, type))
+    .filter((channel): channel is NonNullable<typeof channel> => Boolean(channel));
 
   return (
     <Card
@@ -56,20 +58,11 @@ export function ContactCard({
           {company}
         </div>
       )}
-      {(email || phone) && (
+      {channels.length > 0 && (
         <div className="mt-3 grid gap-1 text-sm">
-          {email && (
-            <div className="flex items-center gap-1.5">
-              <Mail className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
-              <span className="truncate">{email}</span>
-            </div>
-          )}
-          {phone && (
-            <div className="flex items-center gap-1.5">
-              <Phone className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
-              <span className="truncate">{phone}</span>
-            </div>
-          )}
+          {channels.map((channel) => (
+            <OverviewChannelRow key={channel.type} channel={channel} />
+          ))}
         </div>
       )}
       {matchHint && <MatchHintLine hint={matchHint} />}

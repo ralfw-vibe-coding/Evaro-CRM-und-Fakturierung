@@ -1,17 +1,13 @@
-import { Building2, MapPin, Link as LinkIcon, User } from "lucide-react";
+import { Building2, MapPin, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { MatchHintLine } from "./match-hint";
+import { OverviewChannelRow } from "./overview-channel-row";
 import type { BusinessPartner } from "@/domain/model";
 import type { MatchHint } from "@/domain/rpus/get-visible-entities/get-visible-entities";
 
-function primaryChannel(bp: BusinessPartner): string | undefined {
-  const channels = bp.data.channels;
-  return (
-    channels.find((c) => c.type === "website")?.address ??
-    channels.find((c) => c.type === "email")?.address ??
-    channels[0]?.address
-  );
+function firstChannelObject(bp: BusinessPartner, type: string) {
+  return bp.data.channels.find((c) => c.type === type);
 }
 
 /**
@@ -33,7 +29,9 @@ export function GpCard({
   onClick?: () => void;
 }) {
   const city = bp.data.address?.city;
-  const channel = primaryChannel(bp);
+  const channels = ["email", "phone", "website"]
+    .map((type) => firstChannelObject(bp, type))
+    .filter((channel): channel is NonNullable<typeof channel> => Boolean(channel));
 
   return (
     <Card
@@ -67,20 +65,19 @@ export function GpCard({
         </div>
       )}
 
-      <div className="mt-3 grid gap-1 text-sm">
-        {city && (
-          <div className="flex items-center gap-1.5">
-            <MapPin className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
-            <span className="truncate">{city}</span>
-          </div>
-        )}
-        {channel && (
-          <div className="flex items-center gap-1.5">
-            <LinkIcon className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
-            <span className="truncate">{channel}</span>
-          </div>
-        )}
-      </div>
+      {(city || channels.length > 0) && (
+        <div className="mt-3 grid gap-1 text-sm">
+          {city && (
+            <div className="flex items-center gap-1.5">
+              <MapPin className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
+              <span className="truncate">{city}</span>
+            </div>
+          )}
+          {channels.map((channel) => (
+            <OverviewChannelRow key={channel.type} channel={channel} />
+          ))}
+        </div>
+      )}
       {matchHint && <MatchHintLine hint={matchHint} />}
     </Card>
   );
