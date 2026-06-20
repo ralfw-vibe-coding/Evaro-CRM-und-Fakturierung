@@ -4,6 +4,8 @@ import type {
   Contact,
   ContactData,
   ContactGp,
+  AppSettings,
+  InvoicingAppSettings,
   Invoice,
   InvoicingData,
   InvoiceData,
@@ -107,4 +109,9 @@ export interface BackendApiProvider {
     token: string,
     input: { label?: string; template: string },
   ): Promise<ApiResult<{ payment_term: PaymentTerm }>>;
+  loadAppSettings(token: string): Promise<ApiResult<{ settings: AppSettings }>>;
+  updateAppSettings(
+    token: string,
+    input: { invoicing: InvoicingAppSettings },
+  ): Promise<ApiResult<{ settings: AppSettings }>>;
 }

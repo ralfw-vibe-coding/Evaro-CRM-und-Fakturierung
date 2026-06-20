@@ -136,3 +136,19 @@ export interface PaymentTerm {
   created_at: string;
   updated_at: string;
 }
+
+export interface InvoicingAppSettings {
+  company_name?: string;
+  sender_address?: string;
+  bank_details?: string;
+  vat_number?: string;
+  contact_person?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+}
+
+export interface AppSettings {
+  invoicing: InvoicingAppSettings;
+  updated_at: string | null;
+}

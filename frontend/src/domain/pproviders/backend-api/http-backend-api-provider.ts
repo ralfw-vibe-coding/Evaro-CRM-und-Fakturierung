@@ -2,7 +2,9 @@ import type {
   BusinessPartner,
   Contact,
   ContactGp,
+  AppSettings,
   InvoicingData,
+  InvoicingAppSettings,
   Invoice,
   InvoiceStatus,
   PaymentTerm,
@@ -210,6 +212,21 @@ export const httpBackendApiProvider: BackendApiProvider = {
   async createPaymentTerm(token, input) {
     return request<{ payment_term: PaymentTerm }>("/payment-terms", {
       method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
+  },
+
+  async loadAppSettings(token) {
+    return request<{ settings: AppSettings }>("/app-settings", {
+      method: "GET",
+      headers: { authorization: `Bearer ${token}` },
+    });
+  },
+
+  async updateAppSettings(token, input: { invoicing: InvoicingAppSettings }) {
+    return request<{ settings: AppSettings }>("/app-settings", {
+      method: "PATCH",
       headers: { authorization: `Bearer ${token}` },
       body: JSON.stringify(input),
     });

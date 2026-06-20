@@ -130,3 +130,19 @@ export interface InvoicingData {
   payment_terms: PaymentTerm[];
   business_partners: BusinessPartner[];
 }
+
+export interface InvoicingAppSettings {
+  company_name?: string;
+  sender_address?: string;
+  bank_details?: string;
+  vat_number?: string;
+  contact_person?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+}
+
+export interface AppSettings {
+  invoicing: InvoicingAppSettings;
+  updated_at: string | null;
+}

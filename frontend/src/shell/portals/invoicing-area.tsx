@@ -6,6 +6,7 @@ import {
   Hash,
   Loader2,
   Plus,
+  Printer,
   Receipt,
   Save,
   Search,
@@ -15,13 +16,14 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { BusinessPartner, Invoice, InvoiceData, InvoiceLine, InvoiceStatus } from "@/domain/model";
+import type { AppSettings, BusinessPartner, Invoice, InvoiceData, InvoiceLine, InvoiceStatus } from "@/domain/model";
 import {
   billInvoiceRpu,
   changeInvoiceStatusRpu,
   createInvoiceDraftRpu,
   deleteInvoiceDraftRpu,
   invoiceStore,
+  loadAppSettingsRpu,
   loadInvoicingDataRpu,
   updateInvoiceDraftRpu,
 } from "@/composition";
@@ -34,8 +36,11 @@ const NO_PASSWORD_MANAGER_PROPS = {
   "data-form-type": "other",
 } as const;
 
+const EMPTY_APP_SETTINGS: AppSettings = { invoicing: {}, updated_at: null };
+
 export function InvoicingArea() {
   const [data, setData] = React.useState(invoiceStore.get());
+  const [loading, setLoading] = React.useState(!invoiceStore.get());
   const [selectedId, setSelectedId] = React.useState<string | null>(invoiceStore.getSelectedInvoiceId());
   const [searchTerm, setSearchTerm] = React.useState(invoiceStore.getSearchTerm());
   const [error, setError] = React.useState<string | null>(null);
@@ -48,6 +53,7 @@ export function InvoicingArea() {
     let cancelled = false;
     loadInvoicingDataRpu().then((result) => {
       if (cancelled) return;
+      setLoading(false);
       if (!result.ok) setError(result.error);
       setData(invoiceStore.get());
       setSelectedId(invoiceStore.getSelectedInvoiceId());
@@ -136,7 +142,7 @@ export function InvoicingArea() {
             />
           )}
           {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-          <InvoiceList invoices={filtered} selectedId={selectedId} onSelect={selectInvoice} />
+          <InvoiceList loading={loading} invoices={filtered} selectedId={selectedId} onSelect={selectInvoice} />
         </div>
       </Column>
 
@@ -299,14 +305,23 @@ function BusinessPartnerPicker({
 }
 
 function InvoiceList({
+  loading,
   invoices,
   selectedId,
   onSelect,
 }: {
+  loading: boolean;
   invoices: Invoice[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
+  if (loading) {
+    return (
+      <div className="grid h-full place-items-center text-[var(--muted-foreground)]">
+        <Loader2 className="size-5 animate-spin" />
+      </div>
+    );
+  }
   if (invoices.length === 0) {
     return (
       <div className="grid place-items-center rounded-md border border-dashed border-[var(--border)] px-4 py-12 text-sm text-[var(--muted-foreground)]">
@@ -369,6 +384,9 @@ function InvoiceDetail({
   const [billing, setBilling] = React.useState(false);
   const [draftResetArmed, setDraftResetArmed] = React.useState(false);
   const [deleteInvoiceArmed, setDeleteInvoiceArmed] = React.useState(false);
+  const [loadingPrint, setLoadingPrint] = React.useState(false);
+  const [printInvoice, setPrintInvoice] = React.useState<Invoice | null>(null);
+  const [printSettings, setPrintSettings] = React.useState<AppSettings>(EMPTY_APP_SETTINGS);
   const [savedInfo, setSavedInfo] = React.useState<string | null>(null);
   const [deleteLineId, setDeleteLineId] = React.useState<string | null>(null);
   const [focusLineId, setFocusLineId] = React.useState<string | null>(null);
@@ -425,6 +443,7 @@ function InvoiceDetail({
   const vatRule = determineInvoiceVatRule(invoice);
   const showReverseChargeNote = vatRule.reverseCharge && vatRate === 0;
   const canDeleteInvoice = invoice.status === "draft" && !invoice.invoice_number;
+  const canPrint = draft.lines.length > 0;
 
   function patch(next: Partial<InvoiceData>) {
     setDraft((current) => ({ ...current, ...next }));
@@ -548,6 +567,25 @@ function InvoiceDetail({
     onChanged();
   }
 
+  async function openPrintPreview() {
+    if (!invoice || !canPrint || loadingPrint) return;
+    setLoadingPrint(true);
+    const savedInvoice = await saveDraft();
+    if (!savedInvoice) {
+      setLoadingPrint(false);
+      return;
+    }
+    const result = await loadAppSettingsRpu();
+    setLoadingPrint(false);
+    if (!result.ok) {
+      onError(result.error);
+      return;
+    }
+    onError(null);
+    setPrintSettings(result.settings);
+    setPrintInvoice(savedInvoice);
+  }
+
   function requestDraftReset() {
     if (!invoice || invoice.status !== "billed") return;
     if (!draftResetArmed) {
@@ -583,6 +621,17 @@ function InvoiceDetail({
         </div>
         <div className="flex items-center gap-2">
           {savedInfo && <span className="text-xs text-[var(--muted-foreground)]">{savedInfo}</span>}
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            disabled={!canPrint || loadingPrint}
+            aria-label="Rechnung drucken"
+            title="Rechnung drucken"
+            onClick={openPrintPreview}
+          >
+            {loadingPrint ? <Loader2 className="animate-spin" /> : <Printer />}
+          </Button>
           <Button
             type="button"
             size="icon"
@@ -772,7 +821,8 @@ function InvoiceDetail({
             <textarea
               value={draft.payment_terms ?? ""}
               onChange={(event) => patch({ payment_terms: event.target.value })}
-              className="min-h-20 w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              className="min-h-10 w-full resize-y rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm leading-5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              rows={1}
               disabled={invoice.status !== "draft"}
               {...NO_PASSWORD_MANAGER_PROPS}
             />
@@ -827,6 +877,177 @@ function InvoiceDetail({
           )}
         </div>
       </section>
+      {printInvoice && (
+        <InvoicePrintPreview
+          invoice={printInvoice}
+          settings={printSettings}
+          onClose={() => setPrintInvoice(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function InvoicePrintPreview({
+  invoice,
+  settings,
+  onClose,
+}: {
+  invoice: Invoice;
+  settings: AppSettings;
+  onClose: () => void;
+}) {
+  const totals = invoiceTotal(invoice);
+  const seller = settings.invoicing;
+  const sellerName = seller.company_name?.trim() || "Evaro";
+  const sellerLines = [sellerName, ...splitLines(seller.sender_address)];
+  const sellerAddressLines = splitLines(seller.sender_address);
+  const bankLines = splitLines(seller.bank_details);
+  const address = invoice.gp_snapshot.address;
+  const buyerLines = [
+    invoice.gp_snapshot.name,
+    address?.street,
+    [address?.zip, address?.city].filter(Boolean).join(" "),
+    address?.country,
+  ].filter((line): line is string => Boolean(line));
+  const invoiceNumber = invoice.invoice_number ?? "0000000000";
+  const invoiceDate = invoice.invoice_date ? formatDate(invoice.invoice_date) : "DD.MM.YYYY";
+  const reverseCharge = determineInvoiceVatRule(invoice).reverseCharge && invoice.vat_rate === 0;
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-auto bg-zinc-950/50 p-6">
+      <div className="no-print sticky top-0 mx-auto mb-4 flex max-w-[210mm] items-center justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onClose}>
+          <X /> Schließen
+        </Button>
+        <Button type="button" className="bg-[var(--brand)] text-white hover:opacity-90" onClick={() => window.print()}>
+          <Printer /> Drucken
+        </Button>
+      </div>
+
+      <article className="invoice-print-surface mx-auto min-h-[297mm] w-[210mm] bg-white px-[18mm] py-[16mm] text-black shadow-2xl">
+        <header className="border-b border-zinc-300 pb-3">
+          <div className="flex items-baseline justify-between gap-12">
+            <div className="text-2xl font-bold">{sellerName}</div>
+            <div className="text-right text-2xl font-bold tracking-normal">Invoice #{invoiceNumber}</div>
+          </div>
+          <div className="mt-1 text-right text-sm text-zinc-600">{invoiceDate}</div>
+        </header>
+
+        <section className="mt-8 grid grid-cols-2 gap-12">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Bill To</div>
+            <div className="mt-3 whitespace-pre-line text-sm leading-6">{buyerLines.join("\n")}</div>
+            {invoice.gp_snapshot.vat_id && (
+              <div className="mt-3 text-sm text-zinc-700">VAT ID: {invoice.gp_snapshot.vat_id}</div>
+            )}
+            {invoice.data.reference && (
+              <div className="mt-1 text-sm text-zinc-700">Customer Ref.: {invoice.data.reference}</div>
+            )}
+          </div>
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Seller</div>
+            <div className="mt-3 grid gap-1 text-sm leading-6 text-zinc-700">
+              <div className="font-medium text-black">{sellerName}</div>
+              {sellerAddressLines.length > 0 && (
+                <div className="whitespace-pre-line">{sellerAddressLines.join("\n")}</div>
+              )}
+              {seller.vat_number && <div>VAT No.: {seller.vat_number}</div>}
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-10">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-zinc-300 text-left text-xs uppercase tracking-wide text-zinc-500">
+                <th className="py-2 pr-3 font-bold">Service Date</th>
+                <th className="py-2 pr-3 font-bold">Description</th>
+                <th className="py-2 pr-3 text-right font-bold">Qty</th>
+                <th className="py-2 pr-3 font-bold">Unit</th>
+                <th className="py-2 pr-3 text-right font-bold">Unit Price</th>
+                <th className="py-2 text-right font-bold">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoice.data.lines.map((line) => (
+                <tr key={line.id} className="break-inside-avoid border-b border-zinc-200 align-top">
+                  <td className="py-3 pr-3">{line.service_date ? formatDate(line.service_date) : ""}</td>
+                  <td className="py-3 pr-3">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 font-medium">
+                      {line.product_form && <span>{line.product_form}</span>}
+                      {line.product_topic && <span>{line.product_topic}</span>}
+                    </div>
+                    {line.text && <div className="mt-1 whitespace-pre-line text-zinc-700">{line.text}</div>}
+                  </td>
+                  <td className="py-3 pr-3 text-right">{formatNumber(line.quantity)}</td>
+                  <td className="py-3 pr-3">{line.unit ?? ""}</td>
+                  <td className="py-3 pr-3 text-right">{formatMoney(line.unit_price)}</td>
+                  <td className="py-3 text-right font-medium">{formatMoney(lineTotal(line))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        <section className="mt-8 grid grid-cols-[1fr_70mm] gap-10">
+          <div className="grid content-start gap-6 text-sm">
+            {invoice.data.comment && (
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Comment</div>
+                <div className="mt-2 whitespace-pre-line leading-6">{invoice.data.comment}</div>
+              </div>
+            )}
+            {invoice.data.payment_terms && (
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Payment Terms</div>
+                <div className="mt-2 whitespace-pre-line leading-6">
+                  {previewPaymentTerms(invoice.data.payment_terms, invoice.invoice_date)}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="grid gap-2 border-t border-zinc-300 pt-3 text-sm">
+            <PrintTotal label="Net" value={formatMoney(totals.net)} />
+            <PrintTotal label={`VAT (${formatNumber(invoice.vat_rate)}%)`} value={formatMoney(totals.vat)} />
+            <div className="mt-2 border-t border-zinc-300 pt-3">
+              <PrintTotal label="Amount Due" value={formatMoney(totals.gross)} strong />
+            </div>
+          </div>
+        </section>
+
+        {reverseCharge && (
+          <div className="mt-6 break-inside-avoid border-t border-zinc-300 pt-4 text-sm">
+            Tax liability of the recipient of the service (reverse charge).
+          </div>
+        )}
+
+        <footer className="mt-12 grid break-inside-avoid grid-cols-3 gap-6 border-t border-zinc-300 pt-5 text-xs leading-5 text-zinc-600">
+          <div>
+            <div className="font-bold text-zinc-800">Seller</div>
+            <div className="mt-1 whitespace-pre-line">{sellerLines.join("\n")}</div>
+          </div>
+          <div>
+            <div className="font-bold text-zinc-800">Bank</div>
+            <div className="mt-1 whitespace-pre-line">{bankLines.join("\n")}</div>
+          </div>
+          <div>
+            <div className="font-bold text-zinc-800">Contact</div>
+            <div className="mt-1 whitespace-pre-line">
+              {[seller.contact_person, seller.email, seller.phone, seller.website].filter(Boolean).join("\n")}
+            </div>
+          </div>
+        </footer>
+      </article>
+    </div>
+  );
+}
+
+function PrintTotal({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className={cn("flex justify-between gap-6", strong && "text-base font-bold")}>
+      <span>{label}</span>
+      <span className="font-mono">{value}</span>
     </div>
   );
 }
@@ -1232,8 +1453,19 @@ function formatMoney(value: number): string {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(value);
 }
 
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(Number(value) || 0);
+}
+
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("de-DE").format(new Date(`${value}T00:00:00`));
+}
+
+function splitLines(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function previewPaymentTerms(template: string | undefined, invoiceDate: string | null): string {

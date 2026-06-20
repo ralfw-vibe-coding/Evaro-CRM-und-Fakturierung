@@ -36,6 +36,8 @@ import { deleteInvoiceDraft } from "./domain/rpus/delete-invoice-draft/delete-in
 import { billInvoice } from "./domain/rpus/bill-invoice/bill-invoice.js";
 import { changeInvoiceStatus } from "./domain/rpus/change-invoice-status/change-invoice-status.js";
 import { createPaymentTerm } from "./domain/rpus/create-payment-term/create-payment-term.js";
+import { loadAppSettings } from "./domain/rpus/load-app-settings/load-app-settings.js";
+import { updateAppSettings } from "./domain/rpus/update-app-settings/update-app-settings.js";
 
 const backendApi = httpBackendApiProvider;
 const session = browserSessionProvider;
@@ -79,3 +81,5 @@ export const deleteInvoiceDraftRpu = deleteInvoiceDraft({ backendApi, session, i
 export const billInvoiceRpu = billInvoice({ backendApi, session, invoiceStore });
 export const changeInvoiceStatusRpu = changeInvoiceStatus({ backendApi, session, invoiceStore });
 export const createPaymentTermRpu = createPaymentTerm({ backendApi, session, invoiceStore });
+export const loadAppSettingsRpu = loadAppSettings({ backendApi, session });
+export const updateAppSettingsRpu = updateAppSettings({ backendApi, session });

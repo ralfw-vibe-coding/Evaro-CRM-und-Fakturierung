@@ -23,6 +23,9 @@ import { PostgresContactGpsProvider } from "./domain/pproviders/contact-gps/post
 import type { InvoicesProvider } from "./domain/pproviders/invoices/invoices-provider.js";
 import { InMemoryInvoicesProvider } from "./domain/pproviders/invoices/in-memory-invoices-provider.js";
 import { PostgresInvoicesProvider } from "./domain/pproviders/invoices/postgres-invoices-provider.js";
+import type { AppSettingsProvider } from "./domain/pproviders/app-settings/app-settings-provider.js";
+import { InMemoryAppSettingsProvider } from "./domain/pproviders/app-settings/in-memory-app-settings-provider.js";
+import { PostgresAppSettingsProvider } from "./domain/pproviders/app-settings/postgres-app-settings-provider.js";
 
 import { JwtTokensProvider } from "./shell/xproviders/tokens/jwt-tokens-provider.js";
 import type { TokensProvider } from "./shell/xproviders/tokens/tokens-provider.js";
@@ -53,6 +56,8 @@ import { deleteInvoiceDraft } from "./domain/rpus/delete-invoice-draft/delete-in
 import { billInvoice } from "./domain/rpus/bill-invoice/bill-invoice.js";
 import { changeInvoiceStatus } from "./domain/rpus/change-invoice-status/change-invoice-status.js";
 import { createPaymentTerm } from "./domain/rpus/create-payment-term/create-payment-term.js";
+import { getAppSettings } from "./domain/rpus/get-app-settings/get-app-settings.js";
+import { updateAppSettings } from "./domain/rpus/update-app-settings/update-app-settings.js";
 import { verifyOtp } from "./reactors/verify-otp/verify-otp.js";
 import { requestOtp } from "./reactors/request-otp/request-otp.js";
 import { select } from "./reactors/select/select.js";
@@ -79,6 +84,7 @@ interface MemoryProviders {
   businessPartners?: InMemoryBusinessPartnersProvider;
   contactGps?: InMemoryContactGpsProvider;
   invoices?: InMemoryInvoicesProvider;
+  appSettings?: InMemoryAppSettingsProvider;
   otps?: InMemoryOtpProvider;
 }
 
@@ -121,6 +127,11 @@ function buildActivityLog(): ActivityLogProvider {
 function buildInvoices(): InvoicesProvider {
   if (usePostgres()) return new PostgresInvoicesProvider();
   return (memory.invoices ??= new InMemoryInvoicesProvider());
+}
+
+function buildAppSettings(): AppSettingsProvider {
+  if (usePostgres()) return new PostgresAppSettingsProvider();
+  return (memory.appSettings ??= new InMemoryAppSettingsProvider());
 }
 
 function buildUsers(): UsersProvider {
@@ -275,6 +286,14 @@ export function changeInvoiceStatusRpu() {
 
 export function createPaymentTermRpu() {
   return createPaymentTerm({ invoices: buildInvoices() });
+}
+
+export function getAppSettingsRpu() {
+  return getAppSettings({ appSettings: buildAppSettings() });
+}
+
+export function updateAppSettingsRpu() {
+  return updateAppSettings({ appSettings: buildAppSettings() });
 }
 
 export function requestOtpReactor() {
