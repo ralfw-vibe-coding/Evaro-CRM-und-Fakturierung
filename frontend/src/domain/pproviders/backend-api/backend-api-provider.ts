@@ -96,6 +96,7 @@ export interface BackendApiProvider {
     token: string,
     input: UpdateInvoiceDraftInput,
   ): Promise<ApiResult<{ invoice: Invoice; conflict: boolean }>>;
+  deleteInvoiceDraft(token: string, id: string): Promise<ApiResult<void>>;
   billInvoice(token: string, id: string): Promise<ApiResult<{ invoice: Invoice }>>;
   changeInvoiceStatus(
     token: string,

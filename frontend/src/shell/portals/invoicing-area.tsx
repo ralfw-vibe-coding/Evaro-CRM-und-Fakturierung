@@ -20,6 +20,7 @@ import {
   billInvoiceRpu,
   changeInvoiceStatusRpu,
   createInvoiceDraftRpu,
+  deleteInvoiceDraftRpu,
   invoiceStore,
   loadInvoicingDataRpu,
   updateInvoiceDraftRpu,
@@ -367,6 +368,7 @@ function InvoiceDetail({
   const [saving, setSaving] = React.useState(false);
   const [billing, setBilling] = React.useState(false);
   const [draftResetArmed, setDraftResetArmed] = React.useState(false);
+  const [deleteInvoiceArmed, setDeleteInvoiceArmed] = React.useState(false);
   const [savedInfo, setSavedInfo] = React.useState<string | null>(null);
   const [deleteLineId, setDeleteLineId] = React.useState<string | null>(null);
   const [focusLineId, setFocusLineId] = React.useState<string | null>(null);
@@ -379,6 +381,7 @@ function InvoiceDetail({
     setDeleteLineId(null);
     setFocusLineId(null);
     setDraftResetArmed(false);
+    setDeleteInvoiceArmed(false);
   }, [invoice?.id]);
 
   React.useEffect(() => {
@@ -388,6 +391,21 @@ function InvoiceDetail({
     input.focus();
     setFocusLineId(null);
   }, [draft.lines, focusLineId]);
+
+  React.useEffect(() => {
+    if (!draftResetArmed && !deleteInvoiceArmed && !deleteLineId) return;
+
+    function resetConfirmation(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Element && target.closest("[data-confirmation-control]")) return;
+      setDraftResetArmed(false);
+      setDeleteInvoiceArmed(false);
+      setDeleteLineId(null);
+    }
+
+    document.addEventListener("pointerdown", resetConfirmation, true);
+    return () => document.removeEventListener("pointerdown", resetConfirmation, true);
+  }, [draftResetArmed, deleteInvoiceArmed, deleteLineId]);
 
   if (!invoice) {
     return (
@@ -406,6 +424,7 @@ function InvoiceDetail({
   const paymentTermSuggestions = getPaymentTermSuggestions(allInvoices, draft.payment_terms);
   const vatRule = determineInvoiceVatRule(invoice);
   const showReverseChargeNote = vatRule.reverseCharge && vatRate === 0;
+  const canDeleteInvoice = invoice.status === "draft" && !invoice.invoice_number;
 
   function patch(next: Partial<InvoiceData>) {
     setDraft((current) => ({ ...current, ...next }));
@@ -510,6 +529,25 @@ function InvoiceDetail({
     onChanged();
   }
 
+  async function deleteInvoice() {
+    if (!invoice || saving || billing || !canDeleteInvoice) return;
+    if (!deleteInvoiceArmed) {
+      setDeleteInvoiceArmed(true);
+      return;
+    }
+    setBilling(true);
+    const result = await deleteInvoiceDraftRpu(invoice.id);
+    setBilling(false);
+    if (!result.ok) {
+      onError(result.error);
+      setDeleteInvoiceArmed(false);
+      return;
+    }
+    onError(null);
+    setSavedInfo(null);
+    onChanged();
+  }
+
   function requestDraftReset() {
     if (!invoice || invoice.status !== "billed") return;
     if (!draftResetArmed) {
@@ -559,6 +597,19 @@ function InvoiceDetail({
             onClick={save}
           >
             {saving || billing ? <Loader2 className="animate-spin" /> : <Save />}
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="text-[var(--foreground)] disabled:bg-transparent disabled:text-[var(--muted-foreground)] disabled:opacity-30"
+            disabled={!canDeleteInvoice || saving || billing}
+            aria-label="Rechnungsentwurf löschen"
+            title={deleteInvoiceArmed ? "Löschen bestätigen" : "Rechnungsentwurf löschen"}
+            onClick={deleteInvoice}
+            data-confirmation-control
+          >
+            {deleteInvoiceArmed ? <span className="font-bold">?</span> : <Trash2 />}
           </Button>
         </div>
       </div>
@@ -658,6 +709,7 @@ function InvoiceDetail({
                   title={deleteLineId === line.id ? "Löschen bestätigen" : "Position löschen"}
                   onClick={() => removeLine(line.id)}
                   disabled={invoice.status !== "draft"}
+                  data-confirmation-control
                 >
                   {deleteLineId === line.id ? <span className="font-bold">?</span> : <Trash2 />}
                 </Button>
@@ -1038,6 +1090,7 @@ function StatusFlow({
               disabled={busy}
               title={canPay ? "Rechnung als bezahlt markieren" : "Zurück zu Entwurf"}
               onClick={canPay ? onPay : onDraft}
+              data-confirmation-control={canReturnToDraft ? true : undefined}
             >
               {canReturnToDraft && draftResetArmed ? (
                 <>

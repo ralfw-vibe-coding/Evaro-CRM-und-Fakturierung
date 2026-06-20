@@ -80,6 +80,15 @@ export class InMemoryInvoicesProvider implements InvoicesProvider {
     return structuredClone(updated);
   }
 
+  async deleteUnnumberedDraft(id: string): Promise<boolean> {
+    this.hydrate();
+    const existing = this.invoices.get(id);
+    if (!existing || existing.status !== "draft" || existing.invoice_number) return false;
+    const deleted = this.invoices.delete(id);
+    this.persist();
+    return deleted;
+  }
+
   async billDraft(id: string, input: { first_invoice_number: number; invoice_date: string }): Promise<Invoice | null> {
     this.hydrate();
     const existing = this.invoices.get(id);

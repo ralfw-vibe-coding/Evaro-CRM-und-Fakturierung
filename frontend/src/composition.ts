@@ -32,6 +32,7 @@ import { getTagOptions } from "./domain/rpus/get-tag-options/get-tag-options.js"
 import { loadInvoicingData } from "./domain/rpus/load-invoicing-data/load-invoicing-data.js";
 import { createInvoiceDraft } from "./domain/rpus/create-invoice-draft/create-invoice-draft.js";
 import { updateInvoiceDraft } from "./domain/rpus/update-invoice-draft/update-invoice-draft.js";
+import { deleteInvoiceDraft } from "./domain/rpus/delete-invoice-draft/delete-invoice-draft.js";
 import { billInvoice } from "./domain/rpus/bill-invoice/bill-invoice.js";
 import { changeInvoiceStatus } from "./domain/rpus/change-invoice-status/change-invoice-status.js";
 import { createPaymentTerm } from "./domain/rpus/create-payment-term/create-payment-term.js";
@@ -74,6 +75,7 @@ export const getTagOptionsRpu = getTagOptions({ selectionStore });
 export const loadInvoicingDataRpu = loadInvoicingData({ backendApi, session, invoiceStore });
 export const createInvoiceDraftRpu = createInvoiceDraft({ backendApi, session, invoiceStore });
 export const updateInvoiceDraftRpu = updateInvoiceDraft({ backendApi, session, invoiceStore });
+export const deleteInvoiceDraftRpu = deleteInvoiceDraft({ backendApi, session, invoiceStore });
 export const billInvoiceRpu = billInvoice({ backendApi, session, invoiceStore });
 export const changeInvoiceStatusRpu = changeInvoiceStatus({ backendApi, session, invoiceStore });
 export const createPaymentTermRpu = createPaymentTerm({ backendApi, session, invoiceStore });

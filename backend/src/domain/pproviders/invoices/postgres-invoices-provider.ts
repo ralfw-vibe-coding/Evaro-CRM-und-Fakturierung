@@ -177,6 +177,15 @@ export class PostgresInvoicesProvider implements InvoicesProvider {
     return rows[0] ? toInvoice(rows[0]) : null;
   }
 
+  async deleteUnnumberedDraft(id: string): Promise<boolean> {
+    const result = await this.pool.query(
+      `DELETE FROM invoices
+       WHERE id = $1 AND status = 'draft' AND invoice_number IS NULL`,
+      [id],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async billDraft(id: string, input: { first_invoice_number: number; invoice_date: string }): Promise<Invoice | null> {
     const client = await this.pool.connect();
     try {

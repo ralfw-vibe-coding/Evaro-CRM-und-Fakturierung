@@ -5,6 +5,7 @@ export interface InvoiceStoreProvider {
   set(data: InvoicingData): void;
   replaceInvoice(invoice: Invoice): void;
   addInvoice(invoice: Invoice): void;
+  removeInvoice(id: string): void;
   addPaymentTerm(paymentTerm: PaymentTerm): void;
   getSearchTerm(): string;
   setSearchTerm(term: string): void;

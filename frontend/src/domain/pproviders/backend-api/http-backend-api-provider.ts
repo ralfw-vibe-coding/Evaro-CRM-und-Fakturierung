@@ -182,6 +182,15 @@ export const httpBackendApiProvider: BackendApiProvider = {
     });
   },
 
+  async deleteInvoiceDraft(token, id) {
+    const result = await request<{ ok: true }>("/invoices", {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id }),
+    });
+    return result.ok ? { ok: true, value: undefined } : result;
+  },
+
   async billInvoice(token, id) {
     return request<{ invoice: Invoice }>("/invoices", {
       method: "PATCH",

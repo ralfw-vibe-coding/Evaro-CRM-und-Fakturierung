@@ -26,6 +26,7 @@ export interface InvoicesProvider {
   listAll(): Promise<Invoice[]>;
   findById(id: string): Promise<Invoice | null>;
   updateDraft(id: string, update: InvoiceDraftUpdate): Promise<Invoice | null>;
+  deleteUnnumberedDraft(id: string): Promise<boolean>;
   billDraft(id: string, input: BillInvoiceInput): Promise<Invoice | null>;
   updateStatus(id: string, status: InvoiceStatus): Promise<Invoice | null>;
   listPaymentTerms(): Promise<PaymentTerm[]>;

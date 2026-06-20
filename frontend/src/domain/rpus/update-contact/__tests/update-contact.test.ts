@@ -37,6 +37,7 @@ function fakeBackendApi(overrides: Partial<BackendApiProvider> = {}): BackendApi
     updateInvoiceDraft: async () => ({ ok: false, error: "not used" }),
     billInvoice: async () => ({ ok: false, error: "not used" }),
     changeInvoiceStatus: async () => ({ ok: false, error: "not used" }),
+    deleteInvoiceDraft: async () => ({ ok: false, error: "not used" }),
     createPaymentTerm: async () => ({ ok: false, error: "not used" }),
     ...overrides,
   };

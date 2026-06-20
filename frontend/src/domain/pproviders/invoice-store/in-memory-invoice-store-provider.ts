@@ -33,6 +33,15 @@ export class InMemoryInvoiceStoreProvider implements InvoiceStoreProvider {
     };
   }
 
+  removeInvoice(id: string): void {
+    if (!this.data) return;
+    this.data = {
+      ...this.data,
+      invoices: this.data.invoices.filter((item) => item.id !== id),
+    };
+    if (this.selectedInvoiceId === id) this.selectedInvoiceId = null;
+  }
+
   addPaymentTerm(paymentTerm: PaymentTerm): void {
     if (!this.data) return;
     this.data = {
