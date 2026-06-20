@@ -4,6 +4,7 @@ export interface NewInvoiceDraft {
   business_partner_id: string;
   gp_snapshot: InvoiceGpSnapshot;
   vat_rate: number;
+  reverse_charge?: boolean;
 }
 
 export interface InvoiceDraftUpdate {

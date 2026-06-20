@@ -48,10 +48,12 @@ export function createInvoiceDraft(deps: CreateInvoiceDraftDeps) {
     if (!businessPartner) return { ok: false, error: "Geschäftspartner nicht gefunden." };
 
     const gp_snapshot = snapshotFromBusinessPartner(businessPartner);
+    const vatRule = determineInvoiceVatRule(gp_snapshot);
     const invoice = await deps.invoices.insertDraft({
       business_partner_id,
       gp_snapshot,
-      vat_rate: determineInvoiceVatRule(gp_snapshot).vat_rate,
+      vat_rate: vatRule.vat_rate,
+      reverse_charge: vatRule.reverse_charge,
     });
 
     await deps.activityLog.append({

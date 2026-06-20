@@ -101,6 +101,7 @@ export interface InvoiceData {
   reference?: string;
   comment?: string;
   payment_terms?: string;
+  reverse_charge?: boolean;
   lines: InvoiceLine[];
 }
 

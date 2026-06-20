@@ -440,8 +440,7 @@ function InvoiceDetail({
   const totals = invoiceTotal({ ...invoice, data: draft, vat_rate: vatRate });
   const tagOptions = getInvoiceTagOptions(allInvoices);
   const paymentTermSuggestions = getPaymentTermSuggestions(allInvoices, draft.payment_terms);
-  const vatRule = determineInvoiceVatRule(invoice);
-  const showReverseChargeNote = vatRule.reverseCharge && vatRate === 0;
+  const showReverseChargeNote = draft.reverse_charge === true;
   const canDeleteInvoice = invoice.status === "draft" && !invoice.invoice_number;
   const canPrint = draft.lines.length > 0;
 
@@ -455,6 +454,12 @@ function InvoiceDetail({
       ...current,
       lines: current.lines.map((line) => (line.id === id ? { ...line, ...next } : line)),
     }));
+    setSavedInfo(null);
+  }
+
+  function setReverseCharge(enabled: boolean) {
+    setDraft((current) => ({ ...current, reverse_charge: enabled }));
+    if (enabled) setVatRate(0);
     setSavedInfo(null);
   }
 
@@ -858,7 +863,11 @@ function InvoiceDetail({
                 max="100"
                 step="0.01"
                 value={vatRate}
-                onChange={(event) => setVatRate(Number(event.target.value))}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setVatRate(next);
+                  if (next > 0 && draft.reverse_charge) setReverseCharge(false);
+                }}
                 className="h-8 w-20 text-right"
                 disabled={invoice.status !== "draft"}
                 {...NO_PASSWORD_MANAGER_PROPS}
@@ -866,6 +875,16 @@ function InvoiceDetail({
               <span>%</span>
             </div>
           </div>
+          <label className="flex items-center justify-between gap-3 rounded-md border border-[var(--border)] px-3 py-2 text-sm">
+            <span>Reverse Charge</span>
+            <input
+              type="checkbox"
+              checked={draft.reverse_charge === true}
+              onChange={(event) => setReverseCharge(event.target.checked)}
+              disabled={invoice.status !== "draft"}
+              className="size-4 accent-[var(--brand)]"
+            />
+          </label>
           <SummaryRow label="USt.-Betrag" value={formatMoney(totals.vat)} />
           <div className="mt-2 border-t border-[var(--border)] pt-3">
             <SummaryRow label="Betrag" value={formatMoney(totals.gross)} strong />
@@ -912,7 +931,7 @@ function InvoicePrintPreview({
   ].filter((line): line is string => Boolean(line));
   const invoiceNumber = invoice.invoice_number ?? "0000000000";
   const invoiceDate = invoice.invoice_date ? formatDate(invoice.invoice_date) : "DD.MM.YYYY";
-  const reverseCharge = determineInvoiceVatRule(invoice).reverseCharge && invoice.vat_rate === 0;
+  const reverseCharge = invoice.data.reverse_charge === true;
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-zinc-950/50 p-6">
@@ -1105,6 +1124,7 @@ function ChipInput({
   onChange: (value: string) => void;
 }) {
   const [draft, setDraft] = React.useState("");
+  const [focused, setFocused] = React.useState(false);
   const normalized = value.trim();
   const typed = draft.trim().toLowerCase();
   const suggestions = options
@@ -1140,6 +1160,8 @@ function ChipInput({
           <input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
@@ -1154,7 +1176,7 @@ function ChipInput({
           />
         )}
       </div>
-      {!disabled && !normalized && draft && (
+      {!disabled && !normalized && focused && (suggestions.length > 0 || draft.trim()) && (
         <div className="absolute z-20 mt-1 max-h-44 w-full overflow-auto rounded-md border border-[var(--border)] bg-white shadow-xl">
           {suggestions.map((option) => (
             <button
@@ -1169,16 +1191,18 @@ function ChipInput({
               {option}
             </button>
           ))}
-          <button
-            type="button"
-            className="block w-full px-3 py-2 text-left text-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)]"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              commit();
-            }}
-          >
-            Neu: {draft.trim()}
-          </button>
+          {draft.trim() && (
+            <button
+              type="button"
+              className="block w-full px-3 py-2 text-left text-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)]"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                commit();
+              }}
+            >
+              Neu: {draft.trim()}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -1422,31 +1446,6 @@ function invoiceTotal(invoice: Invoice) {
   const net = invoice.data.lines.reduce((sum, line) => sum + lineTotal(line), 0);
   const vat = net * (Math.max(0, Number(invoice.vat_rate) || 0) / 100);
   return { net, vat, gross: net + vat };
-}
-
-function normalizeCountry(value: string | undefined): string {
-  return (value ?? "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/[^a-z]/g, "");
-}
-
-function determineInvoiceVatRule(invoice: Invoice): { vatRate: number; reverseCharge: boolean } {
-  const country = normalizeCountry(invoice.gp_snapshot.address?.country);
-  const hasVatId = Boolean(invoice.gp_snapshot.vat_id?.trim());
-
-  if (["bulgarien", "bulgaria", "bg", "bgr"].includes(country)) {
-    return { vatRate: 20, reverseCharge: false };
-  }
-  if (["deutschland", "germany", "de", "deu"].includes(country)) {
-    return hasVatId ? { vatRate: 0, reverseCharge: true } : { vatRate: 19, reverseCharge: false };
-  }
-  if (["osterreich", "austria", "at", "aut"].includes(country)) {
-    return hasVatId ? { vatRate: 0, reverseCharge: true } : { vatRate: 20, reverseCharge: false };
-  }
-  return { vatRate: 0, reverseCharge: false };
 }
 
 function formatMoney(value: number): string {

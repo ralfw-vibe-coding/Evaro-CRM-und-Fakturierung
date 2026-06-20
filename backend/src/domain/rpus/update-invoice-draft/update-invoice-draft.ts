@@ -54,6 +54,7 @@ function normalizeData(raw: unknown): { data: InvoiceData; fields: Record<string
       reference: text(data.reference),
       comment: text(data.comment),
       payment_terms: text(data.payment_terms),
+      reverse_charge: data.reverse_charge === true,
       lines: rawLines.map((line, index) => normalizeLine(line, index, fields)),
     },
     fields,
@@ -74,7 +75,8 @@ export function updateInvoiceDraft(deps: UpdateInvoiceDraftDeps) {
     }
 
     const { data, fields } = normalizeData(command.data);
-    const vat_rate = Math.max(0, number(command.vat_rate, 0));
+    let vat_rate = Math.max(0, number(command.vat_rate, 0));
+    if (data.reverse_charge) vat_rate = 0;
     if (vat_rate > 100) fields.vat_rate = "USt.-Satz darf höchstens 100% sein.";
     if (Object.keys(fields).length > 0) {
       return { ok: false, error: "Validierung fehlgeschlagen.", fields };

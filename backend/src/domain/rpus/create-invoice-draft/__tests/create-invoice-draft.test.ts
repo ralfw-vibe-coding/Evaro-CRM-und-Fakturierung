@@ -39,6 +39,7 @@ describe("createInvoiceDraft RPU", () => {
     expect(result.invoice.status).toBe("draft");
     expect(result.invoice.invoice_number).toBeNull();
     expect(result.invoice.vat_rate).toBe(0);
+    expect(result.invoice.data.reverse_charge).toBe(true);
     expect(result.invoice.gp_snapshot).toEqual({
       name: "Acme GmbH",
       vat_id: "DE123",
@@ -87,6 +88,7 @@ describe("createInvoiceDraft RPU", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.invoice.vat_rate).toBe(20);
+    expect(result.invoice.data.reverse_charge).toBe(false);
   });
 
   it("sets domestic VAT for German recipients without VAT ID", async () => {
@@ -104,5 +106,6 @@ describe("createInvoiceDraft RPU", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.invoice.vat_rate).toBe(19);
+    expect(result.invoice.data.reverse_charge).toBe(false);
   });
 });
