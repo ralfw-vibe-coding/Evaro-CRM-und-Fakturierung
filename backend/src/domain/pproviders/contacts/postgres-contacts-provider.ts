@@ -62,4 +62,9 @@ export class PostgresContactsProvider implements ContactsProvider {
     );
     return rows[0] ? toContact(rows[0]) : null;
   }
+
+  async delete(id: string): Promise<boolean> {
+    const result = await this.pool.query(`DELETE FROM contacts WHERE id = $1`, [id]);
+    return (result.rowCount ?? 0) > 0;
+  }
 }

@@ -67,4 +67,14 @@ export class PostgresContactGpsProvider implements ContactGpsProvider {
     ]);
     return (result.rowCount ?? 0) > 0;
   }
+
+  async deleteForContact(contact_id: string): Promise<number> {
+    const result = await this.pool.query(`DELETE FROM contact_gp WHERE contact_id = $1`, [contact_id]);
+    return result.rowCount ?? 0;
+  }
+
+  async deleteForBusinessPartner(gp_id: string): Promise<number> {
+    const result = await this.pool.query(`DELETE FROM contact_gp WHERE gp_id = $1`, [gp_id]);
+    return result.rowCount ?? 0;
+  }
 }

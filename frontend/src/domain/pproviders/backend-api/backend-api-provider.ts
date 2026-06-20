@@ -60,6 +60,7 @@ export interface BackendApiProvider {
     token: string,
     input: UpdateContactInput,
   ): Promise<ApiResult<{ contact: Contact; conflict: boolean }>>;
+  deleteContact(token: string, id: string): Promise<ApiResult<void>>;
   createBusinessPartner(
     token: string,
     input: CreateBusinessPartnerInput,
@@ -68,6 +69,7 @@ export interface BackendApiProvider {
     token: string,
     input: UpdateBusinessPartnerInput,
   ): Promise<ApiResult<{ business_partner: BusinessPartner; conflict: boolean }>>;
+  deleteBusinessPartner(token: string, id: string): Promise<ApiResult<void>>;
   linkContactGp(token: string, input: ContactGpInput): Promise<ApiResult<{ link: ContactGp }>>;
   unlinkContactGp(token: string, input: ContactGpInput): Promise<ApiResult<void>>;
 }

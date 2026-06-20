@@ -81,4 +81,11 @@ export class InMemoryBusinessPartnersProvider implements BusinessPartnersProvide
     this.persist();
     return structuredClone(updated);
   }
+
+  async delete(id: string): Promise<boolean> {
+    this.hydrate();
+    const deleted = this.bps.delete(id);
+    this.persist();
+    return deleted;
+  }
 }

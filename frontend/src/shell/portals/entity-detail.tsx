@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   createBusinessPartnerRpu,
   createContactRpu,
+  deleteBusinessPartnerRpu,
+  deleteContactRpu,
   getTagOptionsRpu,
   linkContactGpRpu,
   unlinkContactGpRpu,
@@ -177,10 +179,21 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <section className="grid gap-3 border-t border-[var(--border)] pt-4 first-of-type:border-t-0 first-of-type:pt-0">
-      <h3 className="text-xs font-semibold uppercase text-[var(--muted-foreground)]">{title}</h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold uppercase text-[var(--muted-foreground)]">{title}</h3>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -191,6 +204,7 @@ function DetailToolbar({
   dirty,
   busy,
   onSave,
+  onDelete,
   onClose,
   onCollapse,
 }: {
@@ -198,9 +212,12 @@ function DetailToolbar({
   dirty: boolean;
   busy: boolean;
   onSave: () => void;
+  onDelete: () => void;
   onClose: () => void;
   onCollapse: () => void;
 }) {
+  const [deleteArmed, setDeleteArmed] = React.useState(false);
+
   return (
     <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border)] bg-[var(--background)] pb-3">
       <div className="flex items-center gap-2 text-sm font-medium">
@@ -219,6 +236,25 @@ function DetailToolbar({
       <div className="flex items-center gap-1">
         <Button type="button" size="icon" onClick={onSave} disabled={!dirty || busy} aria-label="Speichern">
           <Save />
+        </Button>
+        <Button
+          type="button"
+          variant={deleteArmed ? "destructive" : "ghost"}
+          size="icon"
+          disabled={busy}
+          title={deleteArmed ? "Zum Löschen erneut klicken" : "Löschen"}
+          aria-label={deleteArmed ? "Zum Löschen erneut klicken" : "Löschen"}
+          onBlur={() => setDeleteArmed(false)}
+          onClick={() => {
+            if (!deleteArmed) {
+              setDeleteArmed(true);
+              return;
+            }
+            setDeleteArmed(false);
+            onDelete();
+          }}
+        >
+          {deleteArmed ? "?" : <Trash2 />}
         </Button>
         <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Schließen">
           <X />
@@ -339,11 +375,13 @@ function SingleTagField({
   value,
   options,
   placeholder,
+  inputRef,
   onChange,
 }: {
   value: string;
   options: string[];
   placeholder: string;
+  inputRef?: React.Ref<HTMLInputElement>;
   onChange: (value: string) => void;
 }) {
   const [draft, setDraft] = React.useState("");
@@ -371,6 +409,7 @@ function SingleTagField({
   return (
     <div className="relative">
       <Input
+        ref={inputRef}
         value={draft}
         placeholder={placeholder}
         {...NO_PASSWORD_MANAGER_PROPS}
@@ -429,12 +468,26 @@ function SingleTagField({
 function ChannelsEditor({
   channels,
   channelTypeOptions,
+  focusLastType,
+  onFocusedLastType,
   onChange,
 }: {
   channels: Channel[];
   channelTypeOptions: string[];
+  focusLastType: boolean;
+  onFocusedLastType: () => void;
   onChange: (channels: Channel[]) => void;
 }) {
+  const lastTypeRef = React.useRef<HTMLInputElement | null>(null);
+
+  React.useEffect(() => {
+    if (!focusLastType) return;
+    window.setTimeout(() => {
+      lastTypeRef.current?.focus();
+      onFocusedLastType();
+    }, 0);
+  }, [channels.length, focusLastType, onFocusedLastType]);
+
   return (
     <div className="grid gap-2">
       {channels.map((channel, index) => (
@@ -443,6 +496,7 @@ function ChannelsEditor({
             value={channel.type}
             placeholder="Typ"
             options={channelTypeOptions}
+            inputRef={index === channels.length - 1 ? lastTypeRef : undefined}
             onChange={(value) => onChange(channels.map((c, i) => (i === index ? { ...c, type: value } : c)))}
           />
           <Input
@@ -465,14 +519,6 @@ function ChannelsEditor({
           </Button>
         </div>
       ))}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => onChange([...channels, { type: "", address: "" }])}
-      >
-        <Plus /> Kanal
-      </Button>
     </div>
   );
 }
@@ -644,6 +690,7 @@ function ContactEditor({
   const [active, setActive] = React.useState(contact.active);
   const [data, setData] = React.useState<ContactData>(contact.data);
   const [channels, setChannels] = React.useState<Channel[]>(contact.data.channels);
+  const [focusNewChannelType, setFocusNewChannelType] = React.useState(false);
   const [status, setStatus] = React.useState<string | null>(null);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [busy, setBusy] = React.useState(false);
@@ -661,6 +708,7 @@ function ContactEditor({
     setActive(contact.active);
     setData(contact.data);
     setChannels(contact.data.channels);
+    setFocusNewChannelType(false);
     setStatus(null);
     setErrors({});
   }, [contact.id, contact.updated_at, contact.data, contact.active]);
@@ -695,6 +743,20 @@ function ContactEditor({
     return true;
   }
 
+  async function remove(): Promise<void> {
+    if (busy) return;
+    setBusy(true);
+    setStatus("Lösche...");
+    const result = await deleteContactRpu({ id: contact.id });
+    setBusy(false);
+    if (!result.ok) {
+      setStatus(result.error);
+      return;
+    }
+    onChanged();
+    onClose();
+  }
+
   function navigateFromDetails(ref: EntityRef) {
     if (dirty) {
       setPendingNavigation(ref);
@@ -710,6 +772,7 @@ function ContactEditor({
         dirty={dirty}
         busy={busy}
         onSave={save}
+        onDelete={remove}
         onClose={onClose}
         onCollapse={onCollapse}
       />
@@ -792,8 +855,31 @@ function ContactEditor({
         </Field>
       </Section>
 
-      <Section title="Kanäle">
-        <ChannelsEditor channels={channels} channelTypeOptions={tagOptions.channelTypes} onChange={setChannels} />
+      <Section
+        title="Kanäle"
+        action={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Kanal hinzufügen"
+            title="Kanal hinzufügen"
+            onClick={() => {
+              setChannels([...channels, { type: "", address: "" }]);
+              setFocusNewChannelType(true);
+            }}
+          >
+            <Plus />
+          </Button>
+        }
+      >
+        <ChannelsEditor
+          channels={channels}
+          channelTypeOptions={tagOptions.channelTypes}
+          focusLastType={focusNewChannelType}
+          onFocusedLastType={() => setFocusNewChannelType(false)}
+          onChange={setChannels}
+        />
         {errors.channels && <p className="text-xs text-[var(--destructive)]">{errors.channels}</p>}
       </Section>
 
@@ -896,6 +982,7 @@ function BusinessPartnerEditor({
   const [types, setTypes] = React.useState<string[]>(bp.types);
   const [data, setData] = React.useState<BusinessPartnerData>(bp.data);
   const [channels, setChannels] = React.useState<Channel[]>(bp.data.channels);
+  const [focusNewChannelType, setFocusNewChannelType] = React.useState(false);
   const [status, setStatus] = React.useState<string | null>(null);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [busy, setBusy] = React.useState(false);
@@ -919,6 +1006,7 @@ function BusinessPartnerEditor({
     setTypes(bp.types);
     setData(bp.data);
     setChannels(bp.data.channels);
+    setFocusNewChannelType(false);
     setStatus(null);
     setErrors({});
   }, [bp.id, bp.updated_at, bp.types, bp.data]);
@@ -953,6 +1041,20 @@ function BusinessPartnerEditor({
     return true;
   }
 
+  async function remove(): Promise<void> {
+    if (busy) return;
+    setBusy(true);
+    setStatus("Lösche...");
+    const result = await deleteBusinessPartnerRpu({ id: bp.id });
+    setBusy(false);
+    if (!result.ok) {
+      setStatus(result.error);
+      return;
+    }
+    onChanged();
+    onClose();
+  }
+
   function navigateFromDetails(ref: EntityRef) {
     if (dirty) {
       setPendingNavigation(ref);
@@ -968,6 +1070,7 @@ function BusinessPartnerEditor({
         dirty={dirty}
         busy={busy}
         onSave={save}
+        onDelete={remove}
         onClose={onClose}
         onCollapse={onCollapse}
       />
@@ -1023,8 +1126,31 @@ function BusinessPartnerEditor({
         <TagField label="Typen" values={types} options={tagOptions.businessPartner.types} onChange={(next) => setTypes(next ?? [])} />
       </Section>
 
-      <Section title="Kanäle">
-        <ChannelsEditor channels={channels} channelTypeOptions={tagOptions.channelTypes} onChange={setChannels} />
+      <Section
+        title="Kanäle"
+        action={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Kanal hinzufügen"
+            title="Kanal hinzufügen"
+            onClick={() => {
+              setChannels([...channels, { type: "", address: "" }]);
+              setFocusNewChannelType(true);
+            }}
+          >
+            <Plus />
+          </Button>
+        }
+      >
+        <ChannelsEditor
+          channels={channels}
+          channelTypeOptions={tagOptions.channelTypes}
+          focusLastType={focusNewChannelType}
+          onFocusedLastType={() => setFocusNewChannelType(false)}
+          onChange={setChannels}
+        />
       </Section>
 
       <Section title="Klassifizierungen">

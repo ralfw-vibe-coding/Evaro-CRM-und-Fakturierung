@@ -1,5 +1,5 @@
 import type { Config } from "@netlify/functions";
-import { createBusinessPartnerRpu, updateBusinessPartnerRpu } from "../../composition.js";
+import { createBusinessPartnerRpu, deleteBusinessPartnerRpu, updateBusinessPartnerRpu } from "../../composition.js";
 import { authenticate } from "../http/auth.js";
 import { error, json, methodNotAllowed } from "../http/responses.js";
 
@@ -49,7 +49,27 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ business_partner: result.business_partner, conflict: result.conflict });
   }
 
-  return methodNotAllowed(["POST", "PATCH"]);
+  if (req.method === "DELETE") {
+    let body: { id?: string };
+    try {
+      body = (await req.json()) as typeof body;
+    } catch {
+      return error("Ungültiger Request-Body.", 400);
+    }
+    if (!body.id) return error("Geschäftspartner-ID fehlt.", 400);
+
+    const result = await deleteBusinessPartnerRpu()({
+      user_id: client.user_id,
+      id: body.id,
+    });
+    if (!result.ok) {
+      const status = result.error === "Geschäftspartner nicht gefunden." ? 404 : 422;
+      return error(result.error, status);
+    }
+    return json({ ok: true });
+  }
+
+  return methodNotAllowed(["POST", "PATCH", "DELETE"]);
 }
 
 export const config: Config = {

@@ -73,6 +73,15 @@ export const httpBackendApiProvider: BackendApiProvider = {
     });
   },
 
+  async deleteContact(token, id: string) {
+    const result = await request<{ ok: true }>("/contacts", {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id }),
+    });
+    return result.ok ? { ok: true, value: undefined } : result;
+  },
+
   async createBusinessPartner(token, input: CreateBusinessPartnerInput) {
     return request<{ business_partner: BusinessPartner }>("/business-partners", {
       method: "POST",
@@ -87,6 +96,15 @@ export const httpBackendApiProvider: BackendApiProvider = {
       headers: { authorization: `Bearer ${token}` },
       body: JSON.stringify(input),
     });
+  },
+
+  async deleteBusinessPartner(token, id: string) {
+    const result = await request<{ ok: true }>("/business-partners", {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id }),
+    });
+    return result.ok ? { ok: true, value: undefined } : result;
   },
 
   async linkContactGp(token, input: ContactGpInput) {

@@ -1,4 +1,4 @@
-import { tokens } from "../../composition.js";
+import { authenticateUserRpu, tokens } from "../../composition.js";
 
 export interface AuthenticatedClient {
   user_id: string;
@@ -16,10 +16,12 @@ export interface AuthenticatedClient {
 export async function authenticate(req: Request): Promise<AuthenticatedClient | null> {
   const apiKey = req.headers.get("x-api-key");
   if (apiKey && process.env.API_KEY && apiKey === process.env.API_KEY) {
+    const result = await authenticateUserRpu()({ email: process.env.API_USER_EMAIL ?? "api@evaro.local" });
+    if (!result.ok) return null;
     return {
-      user_id: process.env.API_USER_ID ?? "00000000-0000-0000-0000-000000000000",
-      email: "api@evaro.local",
-      abbr: "API",
+      user_id: result.user.id,
+      email: result.user.email,
+      abbr: result.user.abbr,
     };
   }
 
@@ -27,7 +29,9 @@ export async function authenticate(req: Request): Promise<AuthenticatedClient | 
   if (header?.startsWith("Bearer ")) {
     const payload = await tokens().verify(header.slice("Bearer ".length).trim());
     if (payload) {
-      return { user_id: payload.user_id, email: payload.email, abbr: payload.abbr };
+      const result = await authenticateUserRpu()({ email: payload.email });
+      if (!result.ok) return null;
+      return { user_id: result.user.id, email: result.user.email, abbr: result.user.abbr };
     }
   }
 

@@ -25,4 +25,7 @@ export interface BusinessPartnersProvider {
 
   /** Overwrite a business partner and bump updated_at. Null if not found. */
   update(id: string, update: BusinessPartnerUpdate): Promise<BusinessPartner | null>;
+
+  /** Delete a business partner. Returns true when a row was deleted. */
+  delete(id: string): Promise<boolean>;
 }

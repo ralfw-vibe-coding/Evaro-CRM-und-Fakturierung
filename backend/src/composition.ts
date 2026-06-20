@@ -26,8 +26,10 @@ import type { TokensProvider } from "./shell/xproviders/tokens/tokens-provider.j
 
 import { createContact } from "./domain/rpus/create-contact/create-contact.js";
 import { updateContact } from "./domain/rpus/update-contact/update-contact.js";
+import { deleteContact } from "./domain/rpus/delete-contact/delete-contact.js";
 import { createBusinessPartner } from "./domain/rpus/create-business-partner/create-business-partner.js";
 import { updateBusinessPartner } from "./domain/rpus/update-business-partner/update-business-partner.js";
+import { deleteBusinessPartner } from "./domain/rpus/delete-business-partner/delete-business-partner.js";
 import { linkContactGp } from "./domain/rpus/link-contact-gp/link-contact-gp.js";
 import { unlinkContactGp } from "./domain/rpus/unlink-contact-gp/unlink-contact-gp.js";
 import { authenticateUser } from "./domain/rpus/authenticate-user/authenticate-user.js";
@@ -119,6 +121,14 @@ export function updateContactRpu() {
   return updateContact({ contacts: buildContacts(), activityLog: buildActivityLog() });
 }
 
+export function deleteContactRpu() {
+  return deleteContact({
+    contacts: buildContacts(),
+    contactGps: buildContactGps(),
+    activityLog: buildActivityLog(),
+  });
+}
+
 export function createBusinessPartnerRpu() {
   return createBusinessPartner({
     businessPartners: buildBusinessPartners(),
@@ -129,6 +139,14 @@ export function createBusinessPartnerRpu() {
 export function updateBusinessPartnerRpu() {
   return updateBusinessPartner({
     businessPartners: buildBusinessPartners(),
+    activityLog: buildActivityLog(),
+  });
+}
+
+export function deleteBusinessPartnerRpu() {
+  return deleteBusinessPartner({
+    businessPartners: buildBusinessPartners(),
+    contactGps: buildContactGps(),
     activityLog: buildActivityLog(),
   });
 }
@@ -155,4 +173,8 @@ export function verifyOtpReactor() {
     authenticateUser: authenticateUser({ users: buildUsers() }),
     tokens: tokens(),
   });
+}
+
+export function authenticateUserRpu() {
+  return authenticateUser({ users: buildUsers() });
 }

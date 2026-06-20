@@ -58,4 +58,28 @@ export class InMemoryContactGpsProvider implements ContactGpsProvider {
     this.persist();
     return deleted;
   }
+
+  async deleteForContact(contact_id: string): Promise<number> {
+    this.hydrate();
+    let count = 0;
+    for (const [existingKey, link] of this.links) {
+      if (link.contact_id !== contact_id) continue;
+      this.links.delete(existingKey);
+      count += 1;
+    }
+    this.persist();
+    return count;
+  }
+
+  async deleteForBusinessPartner(gp_id: string): Promise<number> {
+    this.hydrate();
+    let count = 0;
+    for (const [existingKey, link] of this.links) {
+      if (link.gp_id !== gp_id) continue;
+      this.links.delete(existingKey);
+      count += 1;
+    }
+    this.persist();
+    return count;
+  }
 }

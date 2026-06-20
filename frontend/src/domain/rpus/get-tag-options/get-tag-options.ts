@@ -1,5 +1,7 @@
 import type { SelectionStoreProvider } from "@/domain/pproviders/selection-store/selection-store-provider";
 
+const FIXED_CHANNEL_TYPES = ["phone", "email", "website"];
+
 export interface TagOptions {
   channelTypes: string[];
   linkRoles: string[];
@@ -34,6 +36,7 @@ export function getTagOptions(deps: { selectionStore: SelectionStoreProvider }) 
 
     return {
       channelTypes: sorted([
+        ...FIXED_CHANNEL_TYPES,
         ...contacts.flatMap((contact) => contact.data.channels.map((channel) => channel.type)),
         ...bps.flatMap((bp) => bp.data.channels.map((channel) => channel.type)),
       ]),

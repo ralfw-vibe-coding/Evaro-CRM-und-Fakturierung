@@ -18,8 +18,10 @@ import { selectEntity } from "./domain/rpus/select-entity/select-entity.js";
 import { getSelectedEntity } from "./domain/rpus/get-selected-entity/get-selected-entity.js";
 import { createContact } from "./domain/rpus/create-contact/create-contact.js";
 import { updateContact } from "./domain/rpus/update-contact/update-contact.js";
+import { deleteContact } from "./domain/rpus/delete-contact/delete-contact.js";
 import { createBusinessPartner } from "./domain/rpus/create-business-partner/create-business-partner.js";
 import { updateBusinessPartner } from "./domain/rpus/update-business-partner/update-business-partner.js";
+import { deleteBusinessPartner } from "./domain/rpus/delete-business-partner/delete-business-partner.js";
 import { linkContactGp } from "./domain/rpus/link-contact-gp/link-contact-gp.js";
 import { unlinkContactGp } from "./domain/rpus/unlink-contact-gp/unlink-contact-gp.js";
 import { getTagOptions } from "./domain/rpus/get-tag-options/get-tag-options.js";
@@ -40,6 +42,7 @@ export const selectEntityRpu = selectEntity({ selectionStore });
 export const getSelectedEntityRpu = getSelectedEntity({ selectionStore });
 export const createContactRpu = createContact({ backendApi, session, selectionStore });
 export const updateContactRpu = updateContact({ backendApi, session, selectionStore });
+export const deleteContactRpu = deleteContact({ backendApi, session, selectionStore });
 export const createBusinessPartnerRpu = createBusinessPartner({
   backendApi,
   session,
@@ -50,6 +53,7 @@ export const updateBusinessPartnerRpu = updateBusinessPartner({
   session,
   selectionStore,
 });
+export const deleteBusinessPartnerRpu = deleteBusinessPartner({ backendApi, session, selectionStore });
 export const linkContactGpRpu = linkContactGp({ backendApi, session, selectionStore });
 export const unlinkContactGpRpu = unlinkContactGp({ backendApi, session, selectionStore });
 export const getTagOptionsRpu = getTagOptions({ selectionStore });

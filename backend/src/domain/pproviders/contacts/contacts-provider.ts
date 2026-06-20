@@ -26,4 +26,7 @@ export interface ContactsProvider {
 
   /** Overwrite a contact's data (and optionally active) and bump updated_at. Null if not found. */
   update(id: string, update: ContactUpdate): Promise<Contact | null>;
+
+  /** Delete a contact. Returns true when a row was deleted. */
+  delete(id: string): Promise<boolean>;
 }

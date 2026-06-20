@@ -16,4 +16,10 @@ export interface ContactGpsProvider {
 
   /** Delete a relationship. Returns true when a row was deleted. */
   delete(contact_id: string, gp_id: string): Promise<boolean>;
+
+  /** Delete every relationship for one contact. */
+  deleteForContact(contact_id: string): Promise<number>;
+
+  /** Delete every relationship for one business partner. */
+  deleteForBusinessPartner(gp_id: string): Promise<number>;
 }

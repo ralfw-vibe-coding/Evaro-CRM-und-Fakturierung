@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "netlify dev",
+    "dev:memory": "PERSISTENCE=memory netlify dev",
+    "dev:postgres": "PERSISTENCE=postgres netlify dev",
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "typecheck": "tsc -p backend/tsconfig.json --noEmit && tsc -p frontend/tsconfig.json --noEmit",
-    "migrate": "node --experimental-strip-types backend/scripts/migrate.ts"
+    "migrate": "node --experimental-strip-types backend/scripts/migrate.ts",
+    "db:migrate": "npm run migrate"
   },
   "dependencies": {
     "@netlify/functions": "^2.8.2",

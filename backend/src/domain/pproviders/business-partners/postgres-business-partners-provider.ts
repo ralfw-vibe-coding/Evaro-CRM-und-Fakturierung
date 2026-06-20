@@ -67,4 +67,9 @@ export class PostgresBusinessPartnersProvider implements BusinessPartnersProvide
     );
     return rows[0] ? toBp(rows[0]) : null;
   }
+
+  async delete(id: string): Promise<boolean> {
+    const result = await this.pool.query(`DELETE FROM business_partners WHERE id = $1`, [id]);
+    return (result.rowCount ?? 0) > 0;
+  }
 }

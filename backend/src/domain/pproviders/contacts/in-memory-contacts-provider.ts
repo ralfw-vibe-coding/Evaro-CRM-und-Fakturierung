@@ -80,4 +80,11 @@ export class InMemoryContactsProvider implements ContactsProvider {
     this.persist();
     return structuredClone(updated);
   }
+
+  async delete(id: string): Promise<boolean> {
+    this.hydrate();
+    const deleted = this.contacts.delete(id);
+    this.persist();
+    return deleted;
+  }
 }
