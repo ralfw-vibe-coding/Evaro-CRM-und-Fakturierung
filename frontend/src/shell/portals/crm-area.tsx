@@ -266,37 +266,49 @@ function ScopeFilter({
   view: GetVisibleEntitiesResult | null;
   onChange: (scope: Scope) => void;
 }) {
-  const options: { id: Scope; label: string }[] = [
-    { id: "both", label: "Beide" },
-    { id: "contacts", label: "Kontakte" },
-    { id: "gp", label: "Geschäftspartner" },
-  ];
-  const counts: Record<Scope, number | null> = {
-    both: view ? view.counts.contacts + view.counts.businessPartners : null,
-    contacts: view ? view.counts.contacts : null,
-    gp: view ? view.counts.businessPartners : null,
-  };
+  const contactsActive = view?.scope === "both" || view?.scope === "contacts";
+  const gpActive = view?.scope === "both" || view?.scope === "gp";
+
+  function toggle(kind: "contacts" | "gp") {
+    if (kind === "contacts") {
+      if (contactsActive && gpActive) onChange("gp");
+      else if (contactsActive) onChange("both");
+      else onChange(gpActive ? "both" : "contacts");
+      return;
+    }
+    if (contactsActive && gpActive) onChange("contacts");
+    else if (gpActive) onChange("both");
+    else onChange(contactsActive ? "both" : "gp");
+  }
 
   return (
-    <div className="grid gap-1">
-      {options.map((opt) => (
-        <button
-          key={opt.id}
-          type="button"
-          onClick={() => onChange(opt.id)}
-          className={cn(
-            "flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors",
-            view?.scope === opt.id
-              ? "bg-[var(--accent)] font-medium"
-              : "text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
-          )}
-        >
-          <span>{opt.label}</span>
-          {counts[opt.id] !== null && (
-            <span className="text-xs text-[var(--muted-foreground)]">{counts[opt.id]}</span>
-          )}
-        </button>
-      ))}
+    <div className="flex flex-wrap gap-2">
+      <button
+        type="button"
+        onClick={() => toggle("contacts")}
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+          contactsActive
+            ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+            : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
+        )}
+      >
+        <span>Kontakte</span>
+        {view && <span className="text-xs opacity-80">{view.counts.contacts}</span>}
+      </button>
+      <button
+        type="button"
+        onClick={() => toggle("gp")}
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+          gpActive
+            ? "border-[var(--gp)] bg-[var(--gp)] text-white"
+            : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
+        )}
+      >
+        <span>Geschäftspartner</span>
+        {view && <span className="text-xs opacity-80">{view.counts.businessPartners}</span>}
+      </button>
     </div>
   );
 }

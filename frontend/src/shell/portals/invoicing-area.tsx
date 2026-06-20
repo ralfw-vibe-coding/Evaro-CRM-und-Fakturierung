@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { BusinessPartner, Invoice, InvoiceData, InvoiceLine } from "@/domain/model";
+import type { BusinessPartner, Invoice, InvoiceData, InvoiceLine, InvoiceStatus } from "@/domain/model";
 import {
   billInvoiceRpu,
   changeInvoiceStatusRpu,
@@ -41,6 +41,7 @@ export function InvoicingArea() {
   const [creating, setCreating] = React.useState(false);
   const [createFilter, setCreateFilter] = React.useState("");
   const [busyCreate, setBusyCreate] = React.useState(false);
+  const [statusFilter, setStatusFilter] = React.useState<InvoiceStatus[]>(["draft", "billed", "paid"]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -88,7 +89,7 @@ export function InvoicingArea() {
   const invoices = data?.invoices ?? [];
   const businessPartners = data?.business_partners ?? [];
   const selected = invoices.find((invoice) => invoice.id === selectedId) ?? null;
-  const filtered = filterInvoices(invoices, searchTerm);
+  const filtered = filterInvoices(invoices, searchTerm, statusFilter);
 
   return (
     <div
@@ -96,7 +97,14 @@ export function InvoicingArea() {
       style={{ gridTemplateColumns: "260px minmax(360px,0.55fr) minmax(560px,1fr)" }}
     >
       <Column icon={<Filter className="size-4" />} title="Filter">
-        <SearchField value={searchTerm} onChange={changeSearch} />
+        <div className="grid gap-4">
+          <SearchField value={searchTerm} onChange={changeSearch} />
+          <InvoiceStatusFilter
+            invoices={invoices}
+            selected={statusFilter}
+            onChange={setStatusFilter}
+          />
+        </div>
       </Column>
 
       <Column
@@ -190,6 +198,60 @@ function SearchField({ value, onChange }: { value: string; onChange: (term: stri
           <X className="size-3.5" />
         </button>
       )}
+    </div>
+  );
+}
+
+function InvoiceStatusFilter({
+  invoices,
+  selected,
+  onChange,
+}: {
+  invoices: Invoice[];
+  selected: InvoiceStatus[];
+  onChange: (statuses: InvoiceStatus[]) => void;
+}) {
+  const statuses: { id: InvoiceStatus; label: string }[] = [
+    { id: "draft", label: "Entwurf" },
+    { id: "billed", label: "Abgerechnet" },
+    { id: "paid", label: "Bezahlt" },
+  ];
+  const counts = statuses.reduce<Record<InvoiceStatus, number>>(
+    (result, status) => {
+      result[status.id] = invoices.filter((invoice) => invoice.status === status.id).length;
+      return result;
+    },
+    { draft: 0, billed: 0, paid: 0 },
+  );
+
+  function toggle(status: InvoiceStatus) {
+    const active = selected.includes(status);
+    const next = active ? selected.filter((item) => item !== status) : [...selected, status];
+    onChange(next.length === 0 ? statuses.map((item) => item.id) : next);
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {statuses.map((status) => {
+        const active = selected.includes(status.id);
+        return (
+          <button
+            key={status.id}
+            type="button"
+            onClick={() => toggle(status.id)}
+            aria-label={`${status.label} anzeigen`}
+            title={status.label}
+            className={cn(
+              "grid h-9 min-w-9 place-items-center rounded-full border px-3 text-sm font-semibold transition-colors",
+              active
+                ? statusTone(status.id, true)
+                : "border-[var(--border)] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
+            )}
+          >
+            {counts[status.id]}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -1021,14 +1083,19 @@ function SummaryRow({ label, value, strong }: { label: string; value: string; st
   );
 }
 
-function filterInvoices(invoices: Invoice[], searchTerm: string): Invoice[] {
+function filterInvoices(
+  invoices: Invoice[],
+  searchTerm: string,
+  statuses: InvoiceStatus[],
+): Invoice[] {
   const term = searchTerm.trim().toLowerCase();
-  if (!term) return invoices;
-  return invoices.filter((invoice) =>
-    [invoice.invoice_number, invoice.gp_snapshot.name, invoice.data.reference]
+  return invoices.filter((invoice) => {
+    if (!statuses.includes(invoice.status)) return false;
+    if (!term) return true;
+    return [invoice.invoice_number, invoice.gp_snapshot.name, invoice.data.reference]
       .filter(Boolean)
-      .some((value) => String(value).toLowerCase().includes(term)),
-  );
+      .some((value) => String(value).toLowerCase().includes(term));
+  });
 }
 
 function getInvoiceTagOptions(invoices: Invoice[]) {
