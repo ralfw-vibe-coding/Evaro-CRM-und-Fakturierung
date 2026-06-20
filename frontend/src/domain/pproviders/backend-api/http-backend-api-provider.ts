@@ -58,6 +58,22 @@ export const httpBackendApiProvider: BackendApiProvider = {
     });
   },
 
+  async generateApiKey(token) {
+    return request<{ user: SessionUser; api_key: string }>("/profile", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({}),
+    });
+  },
+
+  async deleteApiKey(token) {
+    return request<{ user: SessionUser }>("/profile", {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({}),
+    });
+  },
+
   async loadSelection(token) {
     return request<Selection>("/selection", {
       method: "GET",

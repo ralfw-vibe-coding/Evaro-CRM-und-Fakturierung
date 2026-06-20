@@ -37,7 +37,10 @@ import { deleteBusinessPartner } from "./domain/rpus/delete-business-partner/del
 import { linkContactGp } from "./domain/rpus/link-contact-gp/link-contact-gp.js";
 import { unlinkContactGp } from "./domain/rpus/unlink-contact-gp/unlink-contact-gp.js";
 import { authenticateUser } from "./domain/rpus/authenticate-user/authenticate-user.js";
+import { authenticateApiKey } from "./domain/rpus/authenticate-api-key/authenticate-api-key.js";
 import { updateUserProfile } from "./domain/rpus/update-user-profile/update-user-profile.js";
+import { generateUserApiKey } from "./domain/rpus/generate-user-api-key/generate-user-api-key.js";
+import { deleteUserApiKey } from "./domain/rpus/delete-user-api-key/delete-user-api-key.js";
 import { listActiveContacts } from "./domain/rpus/list-active-contacts/list-active-contacts.js";
 import { listBusinessPartners } from "./domain/rpus/list-business-partners/list-business-partners.js";
 import { verifyOtp } from "./reactors/verify-otp/verify-otp.js";
@@ -192,8 +195,20 @@ export function authenticateUserRpu() {
   return authenticateUser({ users: buildUsers() });
 }
 
+export function authenticateApiKeyRpu() {
+  return authenticateApiKey({ users: buildUsers() });
+}
+
 export function updateUserProfileRpu() {
   return updateUserProfile({ users: buildUsers() });
+}
+
+export function generateUserApiKeyRpu() {
+  return generateUserApiKey({ users: buildUsers() });
+}
+
+export function deleteUserApiKeyRpu() {
+  return deleteUserApiKey({ users: buildUsers() });
 }
 
 export function requestOtpReactor() {

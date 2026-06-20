@@ -55,6 +55,8 @@ export interface BackendApiProvider {
   requestOtp(email: string): Promise<ApiResult<void>>;
   verifyOtp(email: string, otp: string): Promise<ApiResult<{ token: string; user: SessionUser }>>;
   updateProfile(token: string, input: { abbr: string }): Promise<ApiResult<{ user: SessionUser }>>;
+  generateApiKey(token: string): Promise<ApiResult<{ user: SessionUser; api_key: string }>>;
+  deleteApiKey(token: string): Promise<ApiResult<{ user: SessionUser }>>;
   loadSelection(token: string): Promise<ApiResult<Selection>>;
   createContact(token: string, input: CreateContactInput): Promise<ApiResult<{ contact: Contact }>>;
   updateContact(

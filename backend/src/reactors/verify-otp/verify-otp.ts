@@ -12,7 +12,7 @@ export interface VerifyOtpCommand {
 }
 
 export type VerifyOtpResult =
-  | { ok: true; token: string; user: { id: string; email: string; abbr: string } }
+  | { ok: true; token: string; user: { id: string; email: string; abbr: string; api_key_created_at: string | null } }
   | { ok: false; error: string };
 
 export interface VerifyOtpDeps {
@@ -50,7 +50,12 @@ export function verifyOtp(deps: VerifyOtpDeps) {
     return {
       ok: true,
       token,
-      user: { id: auth.user.id, email: auth.user.email, abbr: auth.user.abbr },
+      user: {
+        id: auth.user.id,
+        email: auth.user.email,
+        abbr: auth.user.abbr,
+        api_key_created_at: auth.user.api_key_created_at,
+      },
     };
   };
 }

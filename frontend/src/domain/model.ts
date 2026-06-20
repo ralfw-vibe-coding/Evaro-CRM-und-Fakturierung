@@ -74,4 +74,5 @@ export interface SessionUser {
   id: string;
   email: string;
   abbr: string;
+  api_key_created_at?: string | null;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { updateProfile } from "../update-profile.js";
+import { generateApiKey } from "../generate-api-key.js";
 import type { BackendApiProvider } from "@/domain/pproviders/backend-api/backend-api-provider";
 import type { Session, SessionProvider } from "@/domain/pproviders/session/session-provider";
 
@@ -7,11 +7,14 @@ function fakeBackendApi(overrides: Partial<BackendApiProvider> = {}): BackendApi
   return {
     requestOtp: async () => ({ ok: false, error: "not used" }),
     verifyOtp: async () => ({ ok: false, error: "not used" }),
-    updateProfile: async () => ({
+    updateProfile: async () => ({ ok: false, error: "not used" }),
+    generateApiKey: async () => ({
       ok: true,
-      value: { user: { id: "u1", email: "rk@example.com", abbr: "RW" } },
+      value: {
+        api_key: "00000000-0000-4000-8000-000000000000",
+        user: { id: "u1", email: "rk@example.com", abbr: "RK", api_key_created_at: "2026-01-01T00:00:00.000Z" },
+      },
     }),
-    generateApiKey: async () => ({ ok: false, error: "not used" }),
     deleteApiKey: async () => ({ ok: false, error: "not used" }),
     loadSelection: async () => ({ ok: false, error: "not used" }),
     createContact: async () => ({ ok: false, error: "not used" }),
@@ -36,32 +39,16 @@ function fakeSession(initial: Session | null): SessionProvider & { saved: Sessio
   };
 }
 
-describe("updateProfile RPU", () => {
-  it("updates the profile and keeps the session token", async () => {
-    const session = fakeSession({ token: "tok-1", user: { id: "u1", email: "rk@example.com", abbr: "RK" } });
-    const process = updateProfile({ backendApi: fakeBackendApi(), session });
+describe("generateApiKey RPU", () => {
+  it("returns the one-time key and updates the session user", async () => {
+    const session = fakeSession({ token: "tok", user: { id: "u1", email: "rk@example.com", abbr: "RK" } });
+    const process = generateApiKey({ backendApi: fakeBackendApi(), session });
 
-    const result = await process({ abbr: "RW" });
+    const result = await process();
 
-    expect(result).toEqual({ ok: true, user: { id: "u1", email: "rk@example.com", abbr: "RW" } });
-    expect(session.saved).toEqual([{ token: "tok-1", user: { id: "u1", email: "rk@example.com", abbr: "RW" } }]);
-  });
-
-  it("fails without a session and does not call the backend", async () => {
-    let called = false;
-    const process = updateProfile({
-      backendApi: fakeBackendApi({
-        updateProfile: async () => {
-          called = true;
-          return { ok: true, value: { user: { id: "u1", email: "rk@example.com", abbr: "RW" } } };
-        },
-      }),
-      session: fakeSession(null),
-    });
-
-    const result = await process({ abbr: "RW" });
-
-    expect(result.ok).toBe(false);
-    expect(called).toBe(false);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.api_key).toBe("00000000-0000-4000-8000-000000000000");
+    expect(session.saved[0].user.api_key_created_at).toBe("2026-01-01T00:00:00.000Z");
   });
 });

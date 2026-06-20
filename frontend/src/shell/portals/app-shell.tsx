@@ -1,7 +1,7 @@
 import * as React from "react";
-import { LogOut, Save, UserCog, X } from "lucide-react";
+import { Copy, KeyRound, LogOut, Save, Trash2, UserCog, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { updateProfileRpu } from "@/composition";
+import { deleteApiKeyRpu, generateApiKeyRpu, updateProfileRpu } from "@/composition";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -49,6 +49,9 @@ export function AppShell({
         <ProfileDialog
           user={user}
           onClose={() => setEditingProfile(false)}
+          onUserChange={(nextUser) => {
+            onUserChange(nextUser);
+          }}
           onSaved={(nextUser) => {
             onUserChange(nextUser);
             setEditingProfile(false);
@@ -164,17 +167,22 @@ function UserMenu({
 
 function ProfileDialog({
   user,
+  onUserChange,
   onSaved,
   onClose,
 }: {
   user: SessionUser;
+  onUserChange: (user: SessionUser) => void;
   onSaved: (user: SessionUser) => void;
   onClose: () => void;
 }) {
   const [abbr, setAbbr] = React.useState(user.abbr);
+  const [generatedKey, setGeneratedKey] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState<string | null>(null);
+  const [statusTone, setStatusTone] = React.useState<"info" | "error">("info");
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [busy, setBusy] = React.useState(false);
+  const [deleteKeyArmed, setDeleteKeyArmed] = React.useState(false);
   const dirty = abbr.trim().toUpperCase() !== user.abbr;
 
   async function save(event: React.FormEvent) {
@@ -182,15 +190,68 @@ function ProfileDialog({
     if (!dirty || busy) return;
     setBusy(true);
     setStatus(null);
+    setStatusTone("info");
     setErrors({});
     const result = await updateProfileRpu({ abbr });
     setBusy(false);
     if (!result.ok) {
       setStatus(result.error);
+      setStatusTone("error");
       setErrors(result.fields ?? {});
       return;
     }
     onSaved(result.user);
+  }
+
+  async function generateKey() {
+    if (busy) return;
+    setBusy(true);
+    setStatus(null);
+    setStatusTone("info");
+    setGeneratedKey(null);
+    setDeleteKeyArmed(false);
+    const result = await generateApiKeyRpu();
+    setBusy(false);
+    if (!result.ok) {
+      setStatus(result.error);
+      setStatusTone("error");
+      return;
+    }
+    setGeneratedKey(result.api_key);
+    onUserChange(result.user);
+    setStatusTone("info");
+    setStatus("API-Key erzeugt. Er wird nur jetzt angezeigt.");
+  }
+
+  async function deleteKey() {
+    if (busy) return;
+    setBusy(true);
+    setStatus(null);
+    setStatusTone("info");
+    setGeneratedKey(null);
+    const result = await deleteApiKeyRpu();
+    setBusy(false);
+    setDeleteKeyArmed(false);
+    if (!result.ok) {
+      setStatus(result.error);
+      setStatusTone("error");
+      return;
+    }
+    onUserChange(result.user);
+    setStatusTone("info");
+    setStatus("API-Key gelöscht.");
+  }
+
+  async function copyGeneratedKey() {
+    if (!generatedKey) return;
+    try {
+      await navigator.clipboard.writeText(generatedKey);
+      setStatusTone("info");
+      setStatus("API-Key kopiert.");
+    } catch {
+      setStatusTone("error");
+      setStatus("Kopieren nicht möglich.");
+    }
   }
 
   return (
@@ -222,7 +283,64 @@ function ProfileDialog({
           />
           {errors.abbr && <p className="text-xs text-[var(--destructive)]">{errors.abbr}</p>}
         </div>
-        {status && <p className="text-sm text-[var(--destructive)]">{status}</p>}
+        <div className="grid gap-2 border-t border-[var(--border)] pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="grid gap-0.5">
+              <Label>API-Key</Label>
+              <span className="text-xs text-[var(--muted-foreground)]">
+                {user.api_key_created_at ? "Generiert" : "Nicht generiert"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button type="button" variant="outline" size="sm" onClick={generateKey} disabled={busy}>
+                <KeyRound /> {user.api_key_created_at ? "Neu" : "Generieren"}
+              </Button>
+              {user.api_key_created_at && (
+                <Button
+                  type="button"
+                  variant={deleteKeyArmed ? "destructive" : "ghost"}
+                  size="icon"
+                  disabled={busy}
+                  aria-label={deleteKeyArmed ? "Zum Löschen erneut klicken" : "API-Key löschen"}
+                  title={deleteKeyArmed ? "Zum Löschen erneut klicken" : "API-Key löschen"}
+                  onBlur={() => setDeleteKeyArmed(false)}
+                  onClick={() => {
+                    if (!deleteKeyArmed) {
+                      setDeleteKeyArmed(true);
+                      return;
+                    }
+                    deleteKey();
+                  }}
+                >
+                  {deleteKeyArmed ? "?" : <Trash2 />}
+                </Button>
+              )}
+            </div>
+          </div>
+          {generatedKey && (
+            <div className="grid gap-1.5 rounded-md border border-[var(--border)] bg-[var(--accent)] p-3">
+              <Label htmlFor="profile-api-key">Nur jetzt sichtbar</Label>
+              <div className="flex gap-2">
+                <Input id="profile-api-key" readOnly value={generatedKey} className="font-mono text-xs" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="API-Key kopieren"
+                  title="API-Key kopieren"
+                  onClick={copyGeneratedKey}
+                >
+                  <Copy />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+        {status && (
+          <p className={cn("text-sm", statusTone === "error" && "text-[var(--destructive)]")}>
+            {status}
+          </p>
+        )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>
             Abbrechen
