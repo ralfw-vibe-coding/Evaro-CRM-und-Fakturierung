@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { NewUser, User, UsersProvider } from "./users-provider.js";
+import { UserAbbrAlreadyExistsError, type NewUser, type User, type UsersProvider } from "./users-provider.js";
 
 export class InMemoryUsersProvider implements UsersProvider {
   private readonly users = new Map<string, User>();
@@ -23,5 +23,19 @@ export class InMemoryUsersProvider implements UsersProvider {
     };
     this.users.set(user.id, user);
     return structuredClone(user);
+  }
+
+  async updateAbbr(id: string, abbr: string): Promise<User | null> {
+    const existing = this.users.get(id);
+    if (!existing) return null;
+    const duplicate = [...this.users.values()].some((user) => user.id !== id && user.abbr === abbr);
+    if (duplicate) throw new UserAbbrAlreadyExistsError();
+    const updated: User = {
+      ...existing,
+      abbr,
+      updated_at: new Date().toISOString(),
+    };
+    this.users.set(id, updated);
+    return structuredClone(updated);
   }
 }

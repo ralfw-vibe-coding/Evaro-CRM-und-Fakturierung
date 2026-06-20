@@ -1,5 +1,5 @@
 import type pg from "pg";
-import type { NewUser, User, UsersProvider } from "./users-provider.js";
+import { UserAbbrAlreadyExistsError, type NewUser, type User, type UsersProvider } from "./users-provider.js";
 import { getPool } from "../postgres/pool.js";
 
 interface UserRow {
@@ -39,4 +39,24 @@ export class PostgresUsersProvider implements UsersProvider {
     );
     return toUser(rows[0]);
   }
+
+  async updateAbbr(id: string, abbr: string): Promise<User | null> {
+    try {
+      const { rows } = await this.pool.query<UserRow>(
+        `UPDATE users
+         SET abbr = $1, updated_at = now()
+         WHERE id = $2
+         RETURNING id, email, abbr, created_at, updated_at`,
+        [abbr, id],
+      );
+      return rows[0] ? toUser(rows[0]) : null;
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new UserAbbrAlreadyExistsError();
+      throw error;
+    }
+  }
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "23505";
 }

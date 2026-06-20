@@ -11,7 +11,15 @@ export interface NewUser {
   abbr: string;
 }
 
+export class UserAbbrAlreadyExistsError extends Error {
+  constructor() {
+    super("User abbreviation already exists.");
+    this.name = "UserAbbrAlreadyExistsError";
+  }
+}
+
 export interface UsersProvider {
   findByEmail(email: string): Promise<User | null>;
   insert(input: NewUser): Promise<User>;
+  updateAbbr(id: string, abbr: string): Promise<User | null>;
 }

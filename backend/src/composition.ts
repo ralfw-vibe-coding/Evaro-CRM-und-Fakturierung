@@ -37,6 +37,7 @@ import { deleteBusinessPartner } from "./domain/rpus/delete-business-partner/del
 import { linkContactGp } from "./domain/rpus/link-contact-gp/link-contact-gp.js";
 import { unlinkContactGp } from "./domain/rpus/unlink-contact-gp/unlink-contact-gp.js";
 import { authenticateUser } from "./domain/rpus/authenticate-user/authenticate-user.js";
+import { updateUserProfile } from "./domain/rpus/update-user-profile/update-user-profile.js";
 import { listActiveContacts } from "./domain/rpus/list-active-contacts/list-active-contacts.js";
 import { listBusinessPartners } from "./domain/rpus/list-business-partners/list-business-partners.js";
 import { verifyOtp } from "./reactors/verify-otp/verify-otp.js";
@@ -189,6 +190,10 @@ export function verifyOtpReactor() {
 
 export function authenticateUserRpu() {
   return authenticateUser({ users: buildUsers() });
+}
+
+export function updateUserProfileRpu() {
+  return updateUserProfile({ users: buildUsers() });
 }
 
 export function requestOtpReactor() {

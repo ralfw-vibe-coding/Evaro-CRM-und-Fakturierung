@@ -16,5 +16,5 @@ export function App() {
     setUser(null);
   }
 
-  return <AppShell user={user} onLogout={logout} />;
+  return <AppShell user={user} onUserChange={setUser} onLogout={logout} />;
 }

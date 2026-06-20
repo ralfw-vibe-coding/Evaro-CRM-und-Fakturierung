@@ -50,6 +50,14 @@ export const httpBackendApiProvider: BackendApiProvider = {
     });
   },
 
+  async updateProfile(token, input) {
+    return request<{ user: SessionUser }>("/profile", {
+      method: "PATCH",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(input),
+    });
+  },
+
   async loadSelection(token) {
     return request<Selection>("/selection", {
       method: "GET",
