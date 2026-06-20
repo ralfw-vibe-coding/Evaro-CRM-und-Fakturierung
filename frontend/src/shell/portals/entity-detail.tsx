@@ -1132,10 +1132,11 @@ function BusinessPartnerEditor({
           </Field>
         </div>
         <Field label="Land">
-          <Input
+          <SingleTagField
             value={data.address?.country ?? ""}
-            {...NO_PASSWORD_MANAGER_PROPS}
-            onChange={(e) => setData({ ...data, address: { ...data.address, country: e.target.value } })}
+            placeholder="Land"
+            options={tagOptions.businessPartner.countries}
+            onChange={(value) => setData({ ...data, address: { ...data.address, country: value } })}
           />
         </Field>
         <Field label="USt-ID">

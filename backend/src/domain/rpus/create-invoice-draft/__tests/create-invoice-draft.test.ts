@@ -71,4 +71,38 @@ describe("createInvoiceDraft RPU", () => {
     const result = await env.process({ user_id: USER, business_partner_id: "missing" });
     expect(result).toEqual({ ok: false, error: "Geschäftspartner nicht gefunden." });
   });
+
+  it("sets 20% VAT for Bulgarian recipients", async () => {
+    const bp = await env.businessPartners.insert({
+      types: [],
+      data: {
+        name: "Sofia Client",
+        address: { country: "Bulgaria" },
+        channels: [],
+      },
+    });
+
+    const result = await env.process({ user_id: USER, business_partner_id: bp.id });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.invoice.vat_rate).toBe(20);
+  });
+
+  it("sets domestic VAT for German recipients without VAT ID", async () => {
+    const bp = await env.businessPartners.insert({
+      types: [],
+      data: {
+        name: "Berlin Client",
+        address: { country: "Deutschland" },
+        channels: [],
+      },
+    });
+
+    const result = await env.process({ user_id: USER, business_partner_id: bp.id });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.invoice.vat_rate).toBe(19);
+  });
 });

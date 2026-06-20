@@ -136,10 +136,10 @@ export class PostgresInvoicesProvider implements InvoicesProvider {
   async insertDraft(input: NewInvoiceDraft): Promise<Invoice> {
     const { rows } = await this.pool.query<InvoiceRow>(
       `INSERT INTO invoices (business_partner_id, gp_snapshot, data, vat_rate)
-       VALUES ($1, $2, $3, 0)
+       VALUES ($1, $2, $3, $4)
        RETURNING id, business_partner_id, status, invoice_number, invoice_date, vat_rate,
                  gp_snapshot, data, created_at, updated_at`,
-      [input.business_partner_id, input.gp_snapshot, { lines: [] }],
+      [input.business_partner_id, input.gp_snapshot, { lines: [] }, input.vat_rate],
     );
     return toInvoice(rows[0]);
   }

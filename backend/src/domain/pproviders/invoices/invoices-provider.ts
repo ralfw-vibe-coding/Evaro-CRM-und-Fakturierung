@@ -3,6 +3,7 @@ import type { Invoice, InvoiceData, InvoiceGpSnapshot, PaymentTerm } from "../..
 export interface NewInvoiceDraft {
   business_partner_id: string;
   gp_snapshot: InvoiceGpSnapshot;
+  vat_rate: number;
 }
 
 export interface InvoiceDraftUpdate {

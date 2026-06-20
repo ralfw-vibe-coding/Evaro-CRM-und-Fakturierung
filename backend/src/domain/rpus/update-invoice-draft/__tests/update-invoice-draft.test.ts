@@ -19,6 +19,7 @@ describe("updateInvoiceDraft RPU", () => {
     const invoice = await env.invoices.insertDraft({
       business_partner_id: "11111111-1111-1111-1111-111111111111",
       gp_snapshot: { name: "Acme GmbH" },
+      vat_rate: 0,
     });
 
     const result = await env.process({
@@ -47,6 +48,7 @@ describe("updateInvoiceDraft RPU", () => {
     const invoice = await env.invoices.insertDraft({
       business_partner_id: "11111111-1111-1111-1111-111111111111",
       gp_snapshot: { name: "Acme GmbH" },
+      vat_rate: 0,
     });
 
     const result = await env.process({
@@ -66,6 +68,7 @@ describe("updateInvoiceDraft RPU", () => {
     const invoice = await env.invoices.insertDraft({
       business_partner_id: "11111111-1111-1111-1111-111111111111",
       gp_snapshot: { name: "Acme GmbH" },
+      vat_rate: 0,
     });
 
     const result = await env.process({

@@ -1,6 +1,7 @@
 import type { SelectionStoreProvider } from "@/domain/pproviders/selection-store/selection-store-provider";
 
 const FIXED_CHANNEL_TYPES = ["phone", "email", "website"];
+const FIXED_COUNTRIES = ["Deutschland", "Österreich", "Bulgarien"];
 
 export interface TagOptions {
   channelTypes: string[];
@@ -14,6 +15,7 @@ export interface TagOptions {
   };
   businessPartner: {
     types: string[];
+    countries: string[];
     business_relationship: string[];
     tags: string[];
   };
@@ -26,6 +28,14 @@ function sorted(values: Iterable<string | undefined>): string[] {
 
 function flatten(values: (string[] | undefined)[]): string[] {
   return values.flatMap((value) => value ?? []);
+}
+
+function fixedFirst(fixed: string[], values: Iterable<string | undefined>): string[] {
+  const normalized = sorted(values);
+  return [
+    ...fixed,
+    ...normalized.filter((value) => !fixed.some((fixedValue) => fixedValue.localeCompare(value, "de", { sensitivity: "base" }) === 0)),
+  ];
 }
 
 export function getTagOptions(deps: { selectionStore: SelectionStoreProvider }) {
@@ -50,6 +60,7 @@ export function getTagOptions(deps: { selectionStore: SelectionStoreProvider }) 
       },
       businessPartner: {
         types: sorted(bps.flatMap((bp) => bp.types)),
+        countries: fixedFirst(FIXED_COUNTRIES, bps.map((bp) => bp.data.address?.country)),
         business_relationship: sorted(flatten(bps.map((bp) => bp.data.business_relationship))),
         tags: sorted(flatten(bps.map((bp) => bp.data.tags))),
       },

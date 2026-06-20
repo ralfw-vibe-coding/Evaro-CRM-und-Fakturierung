@@ -41,7 +41,7 @@ export class InMemoryInvoicesProvider implements InvoicesProvider {
       status: "draft",
       invoice_number: null,
       invoice_date: null,
-      vat_rate: 0,
+      vat_rate: input.vat_rate,
       gp_snapshot: structuredClone(input.gp_snapshot),
       data: { lines: [] },
       created_at: now,

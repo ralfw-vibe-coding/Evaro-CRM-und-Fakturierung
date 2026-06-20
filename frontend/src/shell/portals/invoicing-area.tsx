@@ -337,6 +337,8 @@ function InvoiceDetail({
   const totals = invoiceTotal({ ...invoice, data: draft, vat_rate: vatRate });
   const tagOptions = getInvoiceTagOptions(allInvoices);
   const paymentTermSuggestions = getPaymentTermSuggestions(allInvoices, draft.payment_terms);
+  const vatRule = determineInvoiceVatRule(invoice);
+  const showReverseChargeNote = vatRule.reverseCharge && vatRate === 0;
 
   function patch(next: Partial<InvoiceData>) {
     setDraft((current) => ({ ...current, ...next }));
@@ -625,6 +627,11 @@ function InvoiceDetail({
           <div className="mt-2 border-t border-[var(--border)] pt-3">
             <SummaryRow label="Betrag" value={formatMoney(totals.gross)} strong />
           </div>
+          {showReverseChargeNote && (
+            <div className="mt-2 border-t border-[var(--border)] pt-3 text-xs leading-5 text-[var(--muted-foreground)]">
+              Steuerschuldnerschaft des Leistungsempfängers (reverse charge)
+            </div>
+          )}
         </div>
       </section>
     </div>
@@ -923,6 +930,31 @@ function invoiceTotal(invoice: Invoice) {
   const net = invoice.data.lines.reduce((sum, line) => sum + lineTotal(line), 0);
   const vat = net * (Math.max(0, Number(invoice.vat_rate) || 0) / 100);
   return { net, vat, gross: net + vat };
+}
+
+function normalizeCountry(value: string | undefined): string {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-z]/g, "");
+}
+
+function determineInvoiceVatRule(invoice: Invoice): { vatRate: number; reverseCharge: boolean } {
+  const country = normalizeCountry(invoice.gp_snapshot.address?.country);
+  const hasVatId = Boolean(invoice.gp_snapshot.vat_id?.trim());
+
+  if (["bulgarien", "bulgaria", "bg", "bgr"].includes(country)) {
+    return { vatRate: 20, reverseCharge: false };
+  }
+  if (["deutschland", "germany", "de", "deu"].includes(country)) {
+    return hasVatId ? { vatRate: 0, reverseCharge: true } : { vatRate: 19, reverseCharge: false };
+  }
+  if (["osterreich", "austria", "at", "aut"].includes(country)) {
+    return hasVatId ? { vatRate: 0, reverseCharge: true } : { vatRate: 20, reverseCharge: false };
+  }
+  return { vatRate: 0, reverseCharge: false };
 }
 
 function formatMoney(value: number): string {
