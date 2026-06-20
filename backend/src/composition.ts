@@ -23,6 +23,10 @@ import { PostgresContactGpsProvider } from "./domain/pproviders/contact-gps/post
 
 import { JwtTokensProvider } from "./shell/xproviders/tokens/jwt-tokens-provider.js";
 import type { TokensProvider } from "./shell/xproviders/tokens/tokens-provider.js";
+import { ResendEmailProvider } from "./shell/xproviders/email/resend-email-provider.js";
+import { InMemoryOtpProvider } from "./shell/xproviders/otp/in-memory-otp-provider.js";
+import { PostgresOtpProvider } from "./shell/xproviders/otp/postgres-otp-provider.js";
+import type { OtpProvider } from "./shell/xproviders/otp/otp-provider.js";
 
 import { createContact } from "./domain/rpus/create-contact/create-contact.js";
 import { updateContact } from "./domain/rpus/update-contact/update-contact.js";
@@ -36,6 +40,7 @@ import { authenticateUser } from "./domain/rpus/authenticate-user/authenticate-u
 import { listActiveContacts } from "./domain/rpus/list-active-contacts/list-active-contacts.js";
 import { listBusinessPartners } from "./domain/rpus/list-business-partners/list-business-partners.js";
 import { verifyOtp } from "./reactors/verify-otp/verify-otp.js";
+import { requestOtp } from "./reactors/request-otp/request-otp.js";
 import { select } from "./reactors/select/select.js";
 import { DEV_CONTACTS, DEV_BUSINESS_PARTNERS } from "./dev-seed.js";
 
@@ -59,6 +64,7 @@ interface MemoryProviders {
   users?: InMemoryUsersProvider;
   businessPartners?: InMemoryBusinessPartnersProvider;
   contactGps?: InMemoryContactGpsProvider;
+  otps?: InMemoryOtpProvider;
 }
 
 const memory = ((globalThis as typeof globalThis & { __evaroMemory?: MemoryProviders })
@@ -100,6 +106,11 @@ function buildActivityLog(): ActivityLogProvider {
 function buildUsers(): UsersProvider {
   if (usePostgres()) return new PostgresUsersProvider();
   return (memory.users ??= new InMemoryUsersProvider());
+}
+
+function buildOtps(): OtpProvider {
+  if (usePostgres()) return new PostgresOtpProvider();
+  return (memory.otps ??= new InMemoryOtpProvider());
 }
 
 let tokensSingleton: TokensProvider | undefined;
@@ -169,7 +180,8 @@ export function selectReactor() {
 
 export function verifyOtpReactor() {
   return verifyOtp({
-    acceptedOtp: process.env.AUTH_SECRET_OTP ?? "",
+    otps: buildOtps(),
+    fallbackOtp: process.env.AUTH_SECRET_OTP,
     authenticateUser: authenticateUser({ users: buildUsers() }),
     tokens: tokens(),
   });
@@ -177,4 +189,11 @@ export function verifyOtpReactor() {
 
 export function authenticateUserRpu() {
   return authenticateUser({ users: buildUsers() });
+}
+
+export function requestOtpReactor() {
+  return requestOtp({
+    otps: buildOtps(),
+    email: new ResendEmailProvider(),
+  });
 }

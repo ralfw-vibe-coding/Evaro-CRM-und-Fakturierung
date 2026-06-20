@@ -2,6 +2,8 @@ import type {
   AuthenticateUserCommand,
   AuthenticateUserResult,
 } from "../../domain/rpus/authenticate-user/authenticate-user.js";
+import { hashOtp } from "../request-otp/request-otp.js";
+import type { OtpProvider } from "../../shell/xproviders/otp/otp-provider.js";
 import type { TokensProvider } from "../../shell/xproviders/tokens/tokens-provider.js";
 
 export interface VerifyOtpCommand {
@@ -14,12 +16,8 @@ export type VerifyOtpResult =
   | { ok: false; error: string };
 
 export interface VerifyOtpDeps {
-  /**
-   * The OTP value currently accepted. For now this is the shared secret from
-   * AUTH_SECRET_OTP (no per-user, emailed codes yet); a real OTP store will
-   * replace this later.
-   */
-  acceptedOtp: string;
+  otps: OtpProvider;
+  fallbackOtp?: string;
   authenticateUser: (command: AuthenticateUserCommand) => Promise<AuthenticateUserResult>;
   tokens: TokensProvider;
 }
@@ -32,14 +30,15 @@ export interface VerifyOtpDeps {
  */
 export function verifyOtp(deps: VerifyOtpDeps) {
   return async function process(command: VerifyOtpCommand): Promise<VerifyOtpResult> {
-    if (!deps.acceptedOtp) {
-      return { ok: false, error: "Server-Authentifizierung ist nicht konfiguriert." };
-    }
-    if (command.otp !== deps.acceptedOtp) {
+    const email = command.email.trim().toLowerCase();
+    const otp = command.otp.trim();
+    const consumed = await deps.otps.consume(email, hashOtp(email, otp), new Date());
+    const fallbackAccepted = Boolean(deps.fallbackOtp && otp === deps.fallbackOtp);
+    if (!consumed && !fallbackAccepted) {
       return { ok: false, error: "Falscher oder abgelaufener Code." };
     }
 
-    const auth = await deps.authenticateUser({ email: command.email });
+    const auth = await deps.authenticateUser({ email });
     if (!auth.ok) return { ok: false, error: auth.error };
 
     const token = await deps.tokens.sign({
