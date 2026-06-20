@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { BusinessPartner, Invoice, InvoiceData, InvoiceLine } from "@/domain/model";
 import {
+  billInvoiceRpu,
+  changeInvoiceStatusRpu,
   createInvoiceDraftRpu,
   invoiceStore,
   loadInvoicingDataRpu,
@@ -301,6 +303,8 @@ function InvoiceDetail({
   const [draft, setDraft] = React.useState<InvoiceData>({ lines: [] });
   const [vatRate, setVatRate] = React.useState(0);
   const [saving, setSaving] = React.useState(false);
+  const [billing, setBilling] = React.useState(false);
+  const [draftResetArmed, setDraftResetArmed] = React.useState(false);
   const [savedInfo, setSavedInfo] = React.useState<string | null>(null);
   const [deleteLineId, setDeleteLineId] = React.useState<string | null>(null);
   const [focusLineId, setFocusLineId] = React.useState<string | null>(null);
@@ -312,6 +316,7 @@ function InvoiceDetail({
     setSavedInfo(null);
     setDeleteLineId(null);
     setFocusLineId(null);
+    setDraftResetArmed(false);
   }, [invoice?.id]);
 
   React.useEffect(() => {
@@ -376,9 +381,10 @@ function InvoiceDetail({
     setSavedInfo(null);
   }
 
-  async function save() {
+  async function saveDraft(): Promise<Invoice | null> {
     const currentInvoice = invoice;
-    if (!currentInvoice || !dirty || saving) return;
+    if (!currentInvoice) return null;
+    if (!dirty) return currentInvoice;
     setSaving(true);
     const result = await updateInvoiceDraftRpu({
       id: currentInvoice.id,
@@ -389,18 +395,91 @@ function InvoiceDetail({
     setSaving(false);
     if (!result.ok) {
       onError(result.error);
+      return null;
+    }
+    onError(null);
+    setDraft(structuredClone(result.invoice.data));
+    setVatRate(result.invoice.vat_rate);
+    setSavedInfo(result.conflict ? "Gespeichert, externe Änderung überschrieben" : "Gespeichert");
+    onChanged();
+    return result.invoice;
+  }
+
+  async function save() {
+    if (!dirty || saving) return;
+    await saveDraft();
+  }
+
+  async function bill() {
+    if (!invoice || invoice.status !== "draft" || billing || saving) return;
+    setBilling(true);
+    const savedInvoice = await saveDraft();
+    if (!savedInvoice) {
+      setBilling(false);
+      return;
+    }
+    const result = await billInvoiceRpu(savedInvoice.id);
+    setBilling(false);
+    if (!result.ok) {
+      onError(result.error);
       return;
     }
     onError(null);
-    setSavedInfo(result.conflict ? "Gespeichert, externe Änderung überschrieben" : "Gespeichert");
+    setDraft(structuredClone(result.invoice.data));
+    setVatRate(result.invoice.vat_rate);
+    setSavedInfo(null);
     onChanged();
+  }
+
+  async function changeStatus(status: Invoice["status"]) {
+    if (!invoice || billing || saving) return;
+    setBilling(true);
+    const result = await changeInvoiceStatusRpu(invoice.id, status);
+    setBilling(false);
+    if (!result.ok) {
+      onError(result.error);
+      return;
+    }
+    onError(null);
+    setDraft(structuredClone(result.invoice.data));
+    setVatRate(result.invoice.vat_rate);
+    setDraftResetArmed(false);
+    setSavedInfo(null);
+    onChanged();
+  }
+
+  function requestDraftReset() {
+    if (!invoice || invoice.status !== "billed") return;
+    if (!draftResetArmed) {
+      setDraftResetArmed(true);
+      return;
+    }
+    void changeStatus("draft");
   }
 
   return (
     <div className="grid gap-6 p-6">
       <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
         <div className="flex items-center font-semibold">
-          <StatusFlow status={invoice.status} />
+          <StatusFlow
+            status={invoice.status}
+            busy={billing || saving}
+            draftResetArmed={draftResetArmed}
+            onBill={bill}
+            onPay={() => void changeStatus("paid")}
+            onDraft={requestDraftReset}
+          />
+          {invoice.invoice_number && (
+            <div className="ml-4 flex items-baseline gap-2">
+              <span className="text-xs font-semibold uppercase text-[var(--muted-foreground)]">RgNr.</span>
+              <span className="font-mono text-lg font-bold">{invoice.invoice_number}</span>
+              {invoice.invoice_date && (
+                <span className="text-sm font-normal text-[var(--muted-foreground)]">
+                  ({formatDate(invoice.invoice_date)})
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {savedInfo && <span className="text-xs text-[var(--muted-foreground)]">{savedInfo}</span>}
@@ -409,15 +488,15 @@ function InvoiceDetail({
             size="icon"
             className={cn(
               dirty && invoice.status === "draft"
-                ? "bg-[var(--brand)] text-white hover:opacity-90"
-                : "border border-[var(--border)] bg-transparent text-[var(--muted-foreground)] opacity-40",
+                ? "bg-[var(--brand)] text-white hover:opacity-90 disabled:bg-transparent disabled:text-[var(--muted-foreground)] disabled:opacity-30"
+                : "border border-transparent bg-transparent text-[var(--muted-foreground)] opacity-30 shadow-none hover:bg-transparent",
             )}
-            disabled={!dirty || saving || invoice.status !== "draft"}
+            disabled={!dirty || saving || billing || invoice.status !== "draft"}
             aria-label="Rechnung speichern"
             title="Rechnung speichern"
             onClick={save}
           >
-            {saving ? <Loader2 className="animate-spin" /> : <Save />}
+            {saving || billing ? <Loader2 className="animate-spin" /> : <Save />}
           </Button>
         </div>
       </div>
@@ -573,7 +652,7 @@ function InvoiceDetail({
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-medium">Zahlungsbedingungen</span>
               <span className="text-xs text-[var(--muted-foreground)]">
-                {"{30}"} = Rechnungsdatum plus Tage
+                Platzhalter {"{##}"} für Zahlungsziel-Datum, z.B. {"{10}"}, {"{30}"}
               </span>
             </div>
             <textarea
@@ -741,7 +820,7 @@ function ChipInput({
         )}
       </div>
       {!disabled && !normalized && draft && (
-        <div className="absolute z-20 mt-1 max-h-44 w-full overflow-auto rounded-md border border-[var(--border)] bg-[var(--popover)] shadow-lg">
+        <div className="absolute z-20 mt-1 max-h-44 w-full overflow-auto rounded-md border border-[var(--border)] bg-white shadow-xl">
           {suggestions.map((option) => (
             <button
               key={option}
@@ -825,10 +904,28 @@ function MoneyInput({
 
 function StatusChip({ status }: { status: Invoice["status"] }) {
   const label = status === "draft" ? "Entwurf" : status === "billed" ? "Abgerechnet" : "Bezahlt";
-  return <span className="inline-flex rounded-full bg-[var(--accent)] px-2 py-1 text-xs font-medium">{label}</span>;
+  return (
+    <span className={cn("inline-flex rounded-full px-2 py-1 text-xs font-medium", statusTone(status, true))}>
+      {label}
+    </span>
+  );
 }
 
-function StatusFlow({ status }: { status: Invoice["status"] }) {
+function StatusFlow({
+  status,
+  busy,
+  draftResetArmed,
+  onBill,
+  onPay,
+  onDraft,
+}: {
+  status: Invoice["status"];
+  busy: boolean;
+  draftResetArmed: boolean;
+  onBill: () => void;
+  onPay: () => void;
+  onDraft: () => void;
+}) {
   const steps: { id: Invoice["status"]; label: string }[] = [
     { id: "draft", label: "Entwurf" },
     { id: "billed", label: "Abgerechnet" },
@@ -839,19 +936,63 @@ function StatusFlow({ status }: { status: Invoice["status"] }) {
     <div className="ml-2 flex items-center text-xs font-semibold">
       {steps.map((step, index) => {
         const active = step.id === status;
+        const canBill = status === "draft" && step.id === "billed";
+        const canPay = status === "billed" && step.id === "paid";
+        const canReturnToDraft = status === "billed" && step.id === "draft";
+        const className = cn(
+          "relative inline-flex h-8 min-w-[6.75rem] items-center justify-center px-4 pl-5",
+          index > 0 && "-ml-2 pl-6",
+          (canBill || canPay || canReturnToDraft) && "z-10 cursor-pointer disabled:cursor-wait",
+          statusTone(step.id, active),
+          canBill && "hover:bg-amber-400 hover:text-amber-950",
+          canPay && "hover:bg-emerald-500 hover:text-white",
+          canReturnToDraft && "hover:bg-zinc-500 hover:text-white",
+        );
+        const style = {
+          clipPath: "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)",
+        };
+        if (canBill) {
+          return (
+            <button
+              key={step.id}
+              type="button"
+              className={className}
+              style={style}
+              disabled={busy}
+              title="Rechnung abrechnen"
+              onClick={onBill}
+            >
+              {step.label}
+            </button>
+          );
+        }
+        if (canPay || canReturnToDraft) {
+          return (
+            <button
+              key={step.id}
+              type="button"
+              className={className}
+              style={style}
+              disabled={busy}
+              title={canPay ? "Rechnung als bezahlt markieren" : "Zurück zu Entwurf"}
+              onClick={canPay ? onPay : onDraft}
+            >
+              {canReturnToDraft && draftResetArmed ? (
+                <>
+                  <span className="invisible">{step.label}</span>
+                  <span className="absolute left-1/2 -translate-x-1/2 text-base font-bold">?</span>
+                </>
+              ) : (
+                step.label
+              )}
+            </button>
+          );
+        }
         return (
           <span
             key={step.id}
-            className={cn(
-              "relative inline-flex h-8 items-center px-4 pl-5",
-              index > 0 && "-ml-2 pl-6",
-              active
-                ? "bg-[var(--brand)] text-white"
-                : "bg-[var(--accent)] text-[var(--muted-foreground)]",
-            )}
-            style={{
-              clipPath: "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)",
-            }}
+            className={className}
+            style={style}
           >
             {step.label}
           </span>
@@ -859,6 +1000,16 @@ function StatusFlow({ status }: { status: Invoice["status"] }) {
       })}
     </div>
   );
+}
+
+function statusTone(status: Invoice["status"], active: boolean): string {
+  if (status === "paid") {
+    return active ? "bg-emerald-500 text-white" : "bg-emerald-50 text-emerald-700";
+  }
+  if (status === "billed") {
+    return active ? "bg-amber-400 text-amber-950" : "bg-amber-50 text-amber-700";
+  }
+  return active ? "bg-zinc-500 text-white" : "bg-zinc-100 text-zinc-600";
 }
 
 function SummaryRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {

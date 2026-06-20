@@ -80,6 +80,42 @@ export class InMemoryInvoicesProvider implements InvoicesProvider {
     return structuredClone(updated);
   }
 
+  async billDraft(id: string, input: { first_invoice_number: number; invoice_date: string }): Promise<Invoice | null> {
+    this.hydrate();
+    const existing = this.invoices.get(id);
+    if (!existing || existing.status !== "draft") return null;
+    const largest = [...this.invoices.values()]
+      .map((invoice) => invoice.invoice_number)
+      .filter((value): value is string => typeof value === "string" && /^\d{10}$/.test(value))
+      .map((value) => Number(value))
+      .reduce((max, value) => Math.max(max, value), 0);
+    const nextNumber = Math.max(input.first_invoice_number, largest + 1);
+    const updated: Invoice = {
+      ...existing,
+      status: "billed",
+      invoice_number: String(nextNumber).padStart(10, "0"),
+      invoice_date: input.invoice_date,
+      updated_at: new Date().toISOString(),
+    };
+    this.invoices.set(id, updated);
+    this.persist();
+    return structuredClone(updated);
+  }
+
+  async updateStatus(id: string, status: Invoice["status"]): Promise<Invoice | null> {
+    this.hydrate();
+    const existing = this.invoices.get(id);
+    if (!existing) return null;
+    const updated: Invoice = {
+      ...existing,
+      status,
+      updated_at: new Date().toISOString(),
+    };
+    this.invoices.set(id, updated);
+    this.persist();
+    return structuredClone(updated);
+  }
+
   async listPaymentTerms(): Promise<PaymentTerm[]> {
     this.hydrate();
     return [...this.paymentTerms.values()]

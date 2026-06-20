@@ -1,5 +1,6 @@
 import type { Config } from "@netlify/functions";
-import { createInvoiceDraftRpu, listInvoicingDataRpu, updateInvoiceDraftRpu } from "../../composition.js";
+import { billInvoiceRpu, changeInvoiceStatusRpu, createInvoiceDraftRpu, listInvoicingDataRpu, updateInvoiceDraftRpu } from "../../composition.js";
+import type { InvoiceStatus } from "../../domain/model.js";
 import { authenticate } from "../http/auth.js";
 import { error, json, methodNotAllowed } from "../http/responses.js";
 
@@ -32,11 +33,39 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   if (req.method === "PATCH") {
-    let body: { id?: string; data?: unknown; vat_rate?: unknown; expected_updated_at?: string };
+    let body: { id?: string; action?: string; status?: InvoiceStatus; data?: unknown; vat_rate?: unknown; expected_updated_at?: string };
     try {
       body = (await req.json()) as typeof body;
     } catch {
       return error("Ungültiger Request-Body.", 400);
+    }
+
+    if (body.action === "bill") {
+      const result = await billInvoiceRpu()({
+        user_id: client.user_id,
+        id: body.id ?? "",
+      });
+      if (!result.ok) {
+        const status = result.error === "Rechnung nicht gefunden." ? 404 : 422;
+        return error(result.error, status);
+      }
+      return json({ invoice: result.invoice });
+    }
+
+    if (body.action === "status" || body.status) {
+      if (body.status !== "draft" && body.status !== "billed" && body.status !== "paid") {
+        return error("Ungültiger Rechnungsstatus.", 400);
+      }
+      const result = await changeInvoiceStatusRpu()({
+        user_id: client.user_id,
+        id: body.id ?? "",
+        status: body.status,
+      });
+      if (!result.ok) {
+        const status = result.error === "Rechnung nicht gefunden." ? 404 : 422;
+        return error(result.error, status);
+      }
+      return json({ invoice: result.invoice });
     }
 
     const result = await updateInvoiceDraftRpu()({

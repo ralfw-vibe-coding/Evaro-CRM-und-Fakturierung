@@ -49,6 +49,8 @@ import { listBusinessPartners } from "./domain/rpus/list-business-partners/list-
 import { listInvoicingData } from "./domain/rpus/list-invoicing-data/list-invoicing-data.js";
 import { createInvoiceDraft } from "./domain/rpus/create-invoice-draft/create-invoice-draft.js";
 import { updateInvoiceDraft } from "./domain/rpus/update-invoice-draft/update-invoice-draft.js";
+import { billInvoice } from "./domain/rpus/bill-invoice/bill-invoice.js";
+import { changeInvoiceStatus } from "./domain/rpus/change-invoice-status/change-invoice-status.js";
 import { createPaymentTerm } from "./domain/rpus/create-payment-term/create-payment-term.js";
 import { verifyOtp } from "./reactors/verify-otp/verify-otp.js";
 import { requestOtp } from "./reactors/request-otp/request-otp.js";
@@ -128,6 +130,11 @@ function buildUsers(): UsersProvider {
 function buildOtps(): OtpProvider {
   if (usePostgres()) return new PostgresOtpProvider();
   return (memory.otps ??= new InMemoryOtpProvider());
+}
+
+function firstInvoiceNumber(): number {
+  const parsed = Number(process.env.FIRST_INVOICE_NUMBER ?? 1);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
 }
 
 let tokensSingleton: TokensProvider | undefined;
@@ -241,6 +248,21 @@ export function createInvoiceDraftRpu() {
 
 export function updateInvoiceDraftRpu() {
   return updateInvoiceDraft({ invoices: buildInvoices() });
+}
+
+export function billInvoiceRpu() {
+  return billInvoice({
+    invoices: buildInvoices(),
+    activityLog: buildActivityLog(),
+    firstInvoiceNumber: firstInvoiceNumber(),
+  });
+}
+
+export function changeInvoiceStatusRpu() {
+  return changeInvoiceStatus({
+    invoices: buildInvoices(),
+    activityLog: buildActivityLog(),
+  });
 }
 
 export function createPaymentTermRpu() {

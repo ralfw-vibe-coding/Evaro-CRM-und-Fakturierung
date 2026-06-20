@@ -4,6 +4,7 @@ import type {
   ContactGp,
   InvoicingData,
   Invoice,
+  InvoiceStatus,
   PaymentTerm,
   Selection,
   SessionUser,
@@ -178,6 +179,22 @@ export const httpBackendApiProvider: BackendApiProvider = {
       method: "PATCH",
       headers: { authorization: `Bearer ${token}` },
       body: JSON.stringify(input),
+    });
+  },
+
+  async billInvoice(token, id) {
+    return request<{ invoice: Invoice }>("/invoices", {
+      method: "PATCH",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id, action: "bill" }),
+    });
+  },
+
+  async changeInvoiceStatus(token, id: string, status: InvoiceStatus) {
+    return request<{ invoice: Invoice }>("/invoices", {
+      method: "PATCH",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id, action: "status", status }),
     });
   },
 

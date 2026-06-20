@@ -1,4 +1,4 @@
-import type { Invoice, InvoiceData, InvoiceGpSnapshot, PaymentTerm } from "../../model.js";
+import type { Invoice, InvoiceData, InvoiceGpSnapshot, InvoiceStatus, PaymentTerm } from "../../model.js";
 
 export interface NewInvoiceDraft {
   business_partner_id: string;
@@ -11,6 +11,11 @@ export interface InvoiceDraftUpdate {
   vat_rate: number;
 }
 
+export interface BillInvoiceInput {
+  first_invoice_number: number;
+  invoice_date: string;
+}
+
 export interface NewPaymentTerm {
   label: string;
   template: string;
@@ -21,6 +26,8 @@ export interface InvoicesProvider {
   listAll(): Promise<Invoice[]>;
   findById(id: string): Promise<Invoice | null>;
   updateDraft(id: string, update: InvoiceDraftUpdate): Promise<Invoice | null>;
+  billDraft(id: string, input: BillInvoiceInput): Promise<Invoice | null>;
+  updateStatus(id: string, status: InvoiceStatus): Promise<Invoice | null>;
   listPaymentTerms(): Promise<PaymentTerm[]>;
   upsertPaymentTerm(input: NewPaymentTerm): Promise<PaymentTerm>;
 }

@@ -7,6 +7,7 @@ import type {
   Invoice,
   InvoicingData,
   InvoiceData,
+  InvoiceStatus,
   PaymentTerm,
   Selection,
   SessionUser,
@@ -95,6 +96,12 @@ export interface BackendApiProvider {
     token: string,
     input: UpdateInvoiceDraftInput,
   ): Promise<ApiResult<{ invoice: Invoice; conflict: boolean }>>;
+  billInvoice(token: string, id: string): Promise<ApiResult<{ invoice: Invoice }>>;
+  changeInvoiceStatus(
+    token: string,
+    id: string,
+    status: InvoiceStatus,
+  ): Promise<ApiResult<{ invoice: Invoice }>>;
   createPaymentTerm(
     token: string,
     input: { label?: string; template: string },

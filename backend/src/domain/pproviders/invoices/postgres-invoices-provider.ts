@@ -177,6 +177,55 @@ export class PostgresInvoicesProvider implements InvoicesProvider {
     return rows[0] ? toInvoice(rows[0]) : null;
   }
 
+  async billDraft(id: string, input: { first_invoice_number: number; invoice_date: string }): Promise<Invoice | null> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('evaro_invoice_numbers'))");
+
+      const { rows: maxRows } = await client.query<{ max_number: string | null }>(
+        `SELECT MAX(invoice_number::bigint)::text AS max_number
+         FROM invoices
+         WHERE invoice_number ~ '^\\d{10}$'`,
+      );
+      const largest = Number(maxRows[0]?.max_number ?? 0);
+      const nextNumber = Math.max(input.first_invoice_number, largest + 1);
+      const invoiceNumber = String(nextNumber).padStart(10, "0");
+
+      const { rows } = await client.query<InvoiceRow>(
+        `UPDATE invoices
+         SET status = 'billed',
+             invoice_number = $1,
+             invoice_date = $2,
+             updated_at = now()
+         WHERE id = $3 AND status = 'draft'
+         RETURNING id, business_partner_id, status, invoice_number, invoice_date, vat_rate,
+                   gp_snapshot, data, created_at, updated_at`,
+        [invoiceNumber, input.invoice_date, id],
+      );
+
+      await client.query("COMMIT");
+      return rows[0] ? toInvoice(rows[0]) : null;
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateStatus(id: string, status: InvoiceStatus): Promise<Invoice | null> {
+    const { rows } = await this.pool.query<InvoiceRow>(
+      `UPDATE invoices
+       SET status = $1, updated_at = now()
+       WHERE id = $2
+       RETURNING id, business_partner_id, status, invoice_number, invoice_date, vat_rate,
+                 gp_snapshot, data, created_at, updated_at`,
+      [status, id],
+    );
+    return rows[0] ? toInvoice(rows[0]) : null;
+  }
+
   async listPaymentTerms(): Promise<PaymentTerm[]> {
     const { rows } = await this.pool.query<PaymentTermRow>(
       `SELECT id, label, template, created_at, updated_at
