@@ -7,8 +7,8 @@ export interface MatchHint {
 }
 
 export type VisibleEntity =
-  | { kind: "contact"; contact: Contact; matchHint?: MatchHint }
-  | { kind: "business_partner"; businessPartner: BusinessPartner; matchHint?: MatchHint };
+  | { kind: "contact"; contact: Contact; connectionCount: number; matchHint?: MatchHint }
+  | { kind: "business_partner"; businessPartner: BusinessPartner; connectionCount: number; matchHint?: MatchHint };
 
 export interface GetVisibleEntitiesResult {
   entities: VisibleEntity[];
@@ -133,12 +133,17 @@ function sortKey(entity: VisibleEntity): string {
     : entity.businessPartner.data.name;
 }
 
-function rankContacts(contacts: Contact[], term: string, searching: boolean): Ranked[] {
+function rankContacts(
+  contacts: Contact[],
+  connectionCounts: Map<string, number>,
+  term: string,
+  searching: boolean,
+): Ranked[] {
   const ranked: Ranked[] = [];
   for (const contact of contacts) {
     const match = searching ? matchContact(contact, term) : null;
     if (searching && !match) continue;
-    const entity: VisibleEntity = { kind: "contact", contact };
+    const entity: VisibleEntity = { kind: "contact", contact, connectionCount: connectionCounts.get(contact.id) ?? 0 };
     if (match && !isMatchVisible(entity, match)) {
       entity.matchHint = { label: match.label, snippet: truncate(match.value) };
     }
@@ -147,12 +152,21 @@ function rankContacts(contacts: Contact[], term: string, searching: boolean): Ra
   return ranked;
 }
 
-function rankBusinessPartners(bps: BusinessPartner[], term: string, searching: boolean): Ranked[] {
+function rankBusinessPartners(
+  bps: BusinessPartner[],
+  connectionCounts: Map<string, number>,
+  term: string,
+  searching: boolean,
+): Ranked[] {
   const ranked: Ranked[] = [];
   for (const bp of bps) {
     const match = searching ? matchBusinessPartner(bp, term) : null;
     if (searching && !match) continue;
-    const entity: VisibleEntity = { kind: "business_partner", businessPartner: bp };
+    const entity: VisibleEntity = {
+      kind: "business_partner",
+      businessPartner: bp,
+      connectionCount: connectionCounts.get(bp.id) ?? 0,
+    };
     if (match && !isMatchVisible(entity, match)) {
       entity.matchHint = { label: match.label, snippet: truncate(match.value) };
     }
@@ -176,9 +190,15 @@ export function getVisibleEntities(deps: GetVisibleEntitiesDeps) {
     const searchTerm = deps.selectionStore.getSearchTerm();
     const term = searchTerm.trim().toLowerCase();
     const searching = term.length > 0;
+    const contactConnectionCounts = new Map<string, number>();
+    const bpConnectionCounts = new Map<string, number>();
+    for (const link of selection?.contact_gps ?? []) {
+      contactConnectionCounts.set(link.contact_id, (contactConnectionCounts.get(link.contact_id) ?? 0) + 1);
+      bpConnectionCounts.set(link.gp_id, (bpConnectionCounts.get(link.gp_id) ?? 0) + 1);
+    }
 
-    const rankedContacts = rankContacts(selection?.contacts ?? [], term, searching);
-    const rankedBps = rankBusinessPartners(selection?.business_partners ?? [], term, searching);
+    const rankedContacts = rankContacts(selection?.contacts ?? [], contactConnectionCounts, term, searching);
+    const rankedBps = rankBusinessPartners(selection?.business_partners ?? [], bpConnectionCounts, term, searching);
 
     const entities = [
       ...(scope !== "gp" ? rankedContacts : []),

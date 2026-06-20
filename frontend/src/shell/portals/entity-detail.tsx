@@ -1223,13 +1223,12 @@ function ContactBusinessPartnerLinks({
 }) {
   const [gpId, setGpId] = React.useState("");
   const [role, setRole] = React.useState("");
-  const [primary, setPrimary] = React.useState(false);
   const [newName, setNewName] = React.useState("");
   const [status, setStatus] = React.useState<string | null>(null);
 
   async function addExisting() {
     if (!gpId) return;
-    const result = await linkContactGpRpu({ contact_id: selected.contact.id, gp_id: gpId, role, primary });
+    const result = await linkContactGpRpu({ contact_id: selected.contact.id, gp_id: gpId, role, primary: false });
     setStatus(result.ok ? "Verknüpft." : result.error);
     if (result.ok) {
       setGpId("");
@@ -1250,7 +1249,7 @@ function ContactBusinessPartnerLinks({
       contact_id: selected.contact.id,
       gp_id: created.businessPartner.id,
       role,
-      primary,
+      primary: false,
     });
     setStatus(linked.ok ? "Neu angelegt und verknüpft." : linked.error);
     if (linked.ok) {
@@ -1274,7 +1273,6 @@ function ContactBusinessPartnerLinks({
               <div className="truncate text-xs text-[var(--muted-foreground)]">{link.role}</div>
               <div className="flex min-w-0 items-center gap-1.5">
                 <span className="truncate text-sm font-medium">{businessPartner.data.name}</span>
-                {link.primary && <Heart className="size-3 shrink-0 fill-current text-[var(--brand)]" />}
               </div>
             </button>
             <PrimaryLinkButton
@@ -1308,7 +1306,7 @@ function ContactBusinessPartnerLinks({
           <p className="text-sm text-[var(--muted-foreground)]">Noch keine Verknüpfungen.</p>
         )}
       </div>
-      <LinkControls role={role} setRole={setRole} roleOptions={roleOptions} primary={primary} setPrimary={setPrimary} />
+      <LinkControls role={role} setRole={setRole} roleOptions={roleOptions} />
       <div className="grid gap-2">
         <SearchableSelect
           value={gpId}
@@ -1351,7 +1349,6 @@ function BusinessPartnerContactLinks({
 }) {
   const [contactId, setContactId] = React.useState("");
   const [role, setRole] = React.useState("");
-  const [primary, setPrimary] = React.useState(false);
   const [newLastName, setNewLastName] = React.useState("");
   const [status, setStatus] = React.useState<string | null>(null);
 
@@ -1361,7 +1358,7 @@ function BusinessPartnerContactLinks({
       contact_id: contactId,
       gp_id: selected.businessPartner.id,
       role,
-      primary,
+      primary: false,
     });
     setStatus(result.ok ? "Verknüpft." : result.error);
     if (result.ok) {
@@ -1387,7 +1384,7 @@ function BusinessPartnerContactLinks({
       contact_id: created.contact.id,
       gp_id: selected.businessPartner.id,
       role,
-      primary,
+      primary: false,
     });
     setStatus(linked.ok ? "Neu angelegt und verknüpft." : linked.error);
     if (linked.ok) {
@@ -1413,7 +1410,6 @@ function BusinessPartnerContactLinks({
                 <span className="truncate text-sm font-medium">
                   {[contact.data.first_name, contact.data.last_name].filter(Boolean).join(" ") || "-"}
                 </span>
-                {link.primary && <Heart className="size-3 shrink-0 fill-current text-[var(--brand)]" />}
               </div>
             </button>
             <PrimaryLinkButton
@@ -1451,8 +1447,6 @@ function BusinessPartnerContactLinks({
         role={role}
         setRole={setRole}
         roleOptions={roleOptions}
-        primary={primary}
-        setPrimary={setPrimary}
       />
       <div className="grid gap-2">
         <select
@@ -1520,29 +1514,19 @@ function LinkControls({
   role,
   setRole,
   roleOptions,
-  primary,
-  setPrimary,
 }: {
   role: string;
   setRole: (role: string) => void;
   roleOptions: string[];
-  primary: boolean;
-  setPrimary: (primary: boolean) => void;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_auto] items-end gap-2">
-      <div>
-        <SingleTagField
-          value={role}
-          options={roleOptions}
-          placeholder="Rolle"
-          onChange={setRole}
-        />
-      </div>
-      <label className="flex h-9 items-center gap-2 text-sm">
-        <input type="checkbox" checked={primary} onChange={(e) => setPrimary(e.target.checked)} />
-        Primär
-      </label>
+    <div>
+      <SingleTagField
+        value={role}
+        options={roleOptions}
+        placeholder="Rolle"
+        onChange={setRole}
+      />
     </div>
   );
 }

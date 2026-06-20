@@ -16,11 +16,13 @@ function firstChannel(contact: Contact, type: string): string | undefined {
  */
 export function ContactCard({
   contact,
+  connectionCount,
   matchHint,
   selected,
   onClick,
 }: {
   contact: Contact;
+  connectionCount: number;
   matchHint?: MatchHint;
   selected?: boolean;
   onClick?: () => void;
@@ -38,9 +40,15 @@ export function ContactCard({
         selected && "ring-2 ring-[var(--brand)]",
       )}
     >
-      <div className="flex items-start gap-1.5">
-        <User className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
-        <span className="font-semibold leading-tight">{name || "—"}</span>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-1.5">
+          <User className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
+          <span className="truncate font-semibold leading-tight">{name || "—"}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1 text-xs text-[var(--muted-foreground)]" title="Verbundene Geschäftspartner">
+          <Building2 className="size-3.5" />
+          <span>{connectionCount}</span>
+        </div>
       </div>
       {company && (
         <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[var(--muted-foreground)]">

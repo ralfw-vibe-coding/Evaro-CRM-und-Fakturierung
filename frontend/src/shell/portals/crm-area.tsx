@@ -325,6 +325,7 @@ function CardList({
           <ContactCard
             key={`c-${entity.contact.id}`}
             contact={entity.contact}
+            connectionCount={entity.connectionCount}
             matchHint={entity.matchHint}
             selected={isSelected(selected, entity)}
             onClick={() => onSelect({ kind: "contact", id: entity.contact.id })}
@@ -333,6 +334,7 @@ function CardList({
           <GpCard
             key={`bp-${entity.businessPartner.id}`}
             bp={entity.businessPartner}
+            connectionCount={entity.connectionCount}
             matchHint={entity.matchHint}
             selected={isSelected(selected, entity)}
             onClick={() => onSelect({ kind: "business_partner", id: entity.businessPartner.id })}

@@ -1,4 +1,4 @@
-import { Building2, MapPin, Link as LinkIcon } from "lucide-react";
+import { Building2, MapPin, Link as LinkIcon, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { MatchHintLine } from "./match-hint";
@@ -21,11 +21,13 @@ function primaryChannel(bp: BusinessPartner): string | undefined {
  */
 export function GpCard({
   bp,
+  connectionCount,
   matchHint,
   selected,
   onClick,
 }: {
   bp: BusinessPartner;
+  connectionCount: number;
   matchHint?: MatchHint;
   selected?: boolean;
   onClick?: () => void;
@@ -41,9 +43,15 @@ export function GpCard({
         selected && "ring-2 ring-[var(--gp)]",
       )}
     >
-      <div className="flex items-start gap-1.5">
-        <Building2 className="mt-0.5 size-4 shrink-0 text-[var(--gp)]" />
-        <span className="font-semibold leading-tight">{bp.data.name}</span>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-1.5">
+          <Building2 className="mt-0.5 size-4 shrink-0 text-[var(--gp)]" />
+          <span className="truncate font-semibold leading-tight">{bp.data.name}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1 text-xs text-[var(--muted-foreground)]" title="Verbundene Kontakte">
+          <User className="size-3.5" />
+          <span>{connectionCount}</span>
+        </div>
       </div>
 
       {bp.types.length > 0 && (
