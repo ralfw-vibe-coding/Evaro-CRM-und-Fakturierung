@@ -46,6 +46,7 @@ export function EntityDetail({
   onFocusBusinessPartner,
   onClose,
   onChanged,
+  closeRequestToken = 0,
   onNavigate,
   onDirtyChange,
 }: {
@@ -57,6 +58,7 @@ export function EntityDetail({
   onFocusBusinessPartner: (id: string) => void;
   onClose: () => void;
   onChanged: () => void;
+  closeRequestToken?: number;
   onNavigate: (ref: EntityRef) => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
@@ -84,6 +86,7 @@ export function EntityDetail({
           onFocusBusinessPartner={onFocusBusinessPartner}
           onChanged={onChanged}
           onClose={onClose}
+          closeRequestToken={closeRequestToken}
           onNavigate={onNavigate}
           onDirtyChange={onDirtyChange}
           tagOptions={tagOptions}
@@ -95,6 +98,7 @@ export function EntityDetail({
           onNameFocused={onBusinessPartnerFocused}
           onChanged={onChanged}
           onClose={onClose}
+          closeRequestToken={closeRequestToken}
           onNavigate={onNavigate}
           onDirtyChange={onDirtyChange}
           tagOptions={tagOptions}
@@ -541,12 +545,14 @@ function ConfirmRemove({
 export function CreateContactDetail({
   availableBusinessPartners,
   onClose,
+  closeRequestToken = 0,
   onCreated,
   onNavigate,
   onChanged,
 }: {
   availableBusinessPartners: BusinessPartner[];
   onClose: () => void;
+  closeRequestToken?: number;
   onCreated: (id: string) => void;
   onNavigate: (ref: EntityRef) => void;
   onChanged: () => void;
@@ -560,8 +566,12 @@ export function CreateContactDetail({
   const [status, setStatus] = React.useState<string | null>(null);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [busy, setBusy] = React.useState(false);
+  const [confirmClose, setConfirmClose] = React.useState(false);
   const companyInputRef = React.useRef<HTMLInputElement | null>(null);
+  const lastCloseRequestRef = React.useRef(closeRequestToken);
   const currentPayload = { active, data: normalizeContactData(data, channels) };
+  const emptyPayload = { active: true, data: normalizeContactData({ channels: [] }, []) };
+  const dirty = stableJson(currentPayload) !== stableJson(emptyPayload) || pendingBps.length > 0;
   const canSave = Boolean(currentPayload.data.last_name?.trim()) && !busy;
 
   React.useEffect(() => {
@@ -642,6 +652,21 @@ export function CreateContactDetail({
     onNavigate({ kind: "business_partner", id: created.businessPartner.id });
   }
 
+  function requestClose() {
+    if (dirty) {
+      setConfirmClose(true);
+      return;
+    }
+    onClose();
+  }
+
+  React.useEffect(() => {
+    if (closeRequestToken === lastCloseRequestRef.current) return;
+    lastCloseRequestRef.current = closeRequestToken;
+    if (closeRequestToken === 0) return;
+    requestClose();
+  }, [closeRequestToken, dirty]);
+
   const pendingIds = new Set(pendingBps.map((bp) => bp.id));
 
   return (
@@ -655,7 +680,7 @@ export function CreateContactDetail({
           <Button type="button" size="icon" onClick={save} disabled={!canSave} aria-label="Speichern">
             {busy ? <Loader2 className="animate-spin" /> : <Save />}
           </Button>
-          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Schließen">
+          <Button type="button" variant="ghost" size="icon" onClick={requestClose} aria-label="Schließen">
             <X />
           </Button>
         </div>
@@ -833,6 +858,23 @@ export function CreateContactDetail({
       </div>
 
       {status && <p className="text-sm text-[var(--muted-foreground)]">{status}</p>}
+      {confirmClose && (
+        <UnsavedCloseDialog
+          onCancel={() => setConfirmClose(false)}
+          onSaveAndClose={async () => {
+            const contactId = await createContactWithPendingLinks();
+            if (!contactId) return;
+            setBusy(false);
+            setConfirmClose(false);
+            onChanged();
+            onClose();
+          }}
+          onCloseWithoutSave={() => {
+            setConfirmClose(false);
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -961,6 +1003,53 @@ function UnsavedNavigationPrompt({
   );
 }
 
+function UnsavedCloseDialog({
+  onCancel,
+  onSaveAndClose,
+  onCloseWithoutSave,
+}: {
+  onCancel: () => void;
+  onSaveAndClose: () => void;
+  onCloseWithoutSave: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/20 p-4">
+      <div className="flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--background)] p-3 text-sm shadow-xl">
+        <div className="font-medium">Ungespeicherte Änderungen!</div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          title="Abbrechen"
+          aria-label="Abbrechen"
+          onClick={onCancel}
+        >
+          <X />
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          title="Speichern und schließen"
+          aria-label="Speichern und schließen"
+          onClick={onSaveAndClose}
+        >
+          <Save />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          title="Ohne Speichern schließen"
+          aria-label="Ohne Speichern schließen"
+          onClick={onCloseWithoutSave}
+        >
+          <SaveOff />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ContactEditor({
   selected,
   autoFocusCompany,
@@ -968,6 +1057,7 @@ function ContactEditor({
   onFocusBusinessPartner,
   onChanged,
   onClose,
+  closeRequestToken,
   onNavigate,
   onDirtyChange,
   tagOptions,
@@ -978,6 +1068,7 @@ function ContactEditor({
   onFocusBusinessPartner: (id: string) => void;
   onChanged: () => void;
   onClose: () => void;
+  closeRequestToken: number;
   onNavigate: (ref: EntityRef) => void;
   onDirtyChange: (dirty: boolean) => void;
   tagOptions: TagOptions;
@@ -991,7 +1082,9 @@ function ContactEditor({
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [busy, setBusy] = React.useState(false);
   const [pendingNavigation, setPendingNavigation] = React.useState<EntityRef | null>(null);
+  const [confirmClose, setConfirmClose] = React.useState(false);
   const companyInputRef = React.useRef<HTMLInputElement | null>(null);
+  const lastCloseRequestRef = React.useRef(closeRequestToken);
   const currentPayload = { active, data: normalizeContactData(data, channels) };
   const originalPayload = { active: contact.active, data: normalizeContactData(contact.data, contact.data.channels) };
   const dirty = stableJson(currentPayload) !== stableJson(originalPayload);
@@ -1061,6 +1154,21 @@ function ContactEditor({
     onNavigate(ref);
   }
 
+  function requestClose() {
+    if (dirty) {
+      setConfirmClose(true);
+      return;
+    }
+    onClose();
+  }
+
+  React.useEffect(() => {
+    if (closeRequestToken === lastCloseRequestRef.current) return;
+    lastCloseRequestRef.current = closeRequestToken;
+    if (closeRequestToken === 0) return;
+    requestClose();
+  }, [closeRequestToken, dirty]);
+
   return (
     <div className="grid gap-5">
       <DetailToolbar
@@ -1069,7 +1177,7 @@ function ContactEditor({
         busy={busy}
         onSave={save}
         onDelete={remove}
-        onClose={onClose}
+        onClose={requestClose}
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,680px)_minmax(320px,380px)] xl:items-start">
@@ -1263,6 +1371,22 @@ function ContactEditor({
         />
       )}
 
+      {confirmClose && (
+        <UnsavedCloseDialog
+          onCancel={() => setConfirmClose(false)}
+          onSaveAndClose={async () => {
+            const saved = await save();
+            if (!saved) return;
+            setConfirmClose(false);
+            onClose();
+          }}
+          onCloseWithoutSave={() => {
+            setConfirmClose(false);
+            onClose();
+          }}
+        />
+      )}
+
     </div>
   );
 }
@@ -1273,6 +1397,7 @@ function BusinessPartnerEditor({
   onNameFocused,
   onChanged,
   onClose,
+  closeRequestToken,
   onNavigate,
   onDirtyChange,
   tagOptions,
@@ -1282,6 +1407,7 @@ function BusinessPartnerEditor({
   onNameFocused: () => void;
   onChanged: () => void;
   onClose: () => void;
+  closeRequestToken: number;
   onNavigate: (ref: EntityRef) => void;
   onDirtyChange: (dirty: boolean) => void;
   tagOptions: TagOptions;
@@ -1295,7 +1421,9 @@ function BusinessPartnerEditor({
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [busy, setBusy] = React.useState(false);
   const [pendingNavigation, setPendingNavigation] = React.useState<EntityRef | null>(null);
+  const [confirmClose, setConfirmClose] = React.useState(false);
   const nameInputRef = React.useRef<HTMLInputElement | null>(null);
+  const lastCloseRequestRef = React.useRef(closeRequestToken);
   const currentPayload = {
     types: normalizeTags(types) ?? [],
     data: normalizeBusinessPartnerData(data, channels),
@@ -1371,6 +1499,21 @@ function BusinessPartnerEditor({
     onNavigate(ref);
   }
 
+  function requestClose() {
+    if (dirty) {
+      setConfirmClose(true);
+      return;
+    }
+    onClose();
+  }
+
+  React.useEffect(() => {
+    if (closeRequestToken === lastCloseRequestRef.current) return;
+    lastCloseRequestRef.current = closeRequestToken;
+    if (closeRequestToken === 0) return;
+    requestClose();
+  }, [closeRequestToken, dirty]);
+
   const mapsHref = googleMapsUrl([
     data.address?.street,
     data.address?.zip,
@@ -1386,7 +1529,7 @@ function BusinessPartnerEditor({
         busy={busy}
         onSave={save}
         onDelete={remove}
-        onClose={onClose}
+        onClose={requestClose}
       />
 
       <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
@@ -1539,6 +1682,22 @@ function BusinessPartnerEditor({
             const next = pendingNavigation;
             setPendingNavigation(null);
             onNavigate(next);
+          }}
+        />
+      )}
+
+      {confirmClose && (
+        <UnsavedCloseDialog
+          onCancel={() => setConfirmClose(false)}
+          onSaveAndClose={async () => {
+            const saved = await save();
+            if (!saved) return;
+            setConfirmClose(false);
+            onClose();
+          }}
+          onCloseWithoutSave={() => {
+            setConfirmClose(false);
+            onClose();
           }}
         />
       )}

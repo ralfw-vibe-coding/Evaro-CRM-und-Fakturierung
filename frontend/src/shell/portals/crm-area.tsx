@@ -36,6 +36,7 @@ export function CrmArea() {
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [, setDetailDirty] = React.useState(false);
   const [creatingContact, setCreatingContact] = React.useState(false);
+  const [closeRequestToken, setCloseRequestToken] = React.useState(0);
   const [focusCompanyContactId, setFocusCompanyContactId] = React.useState<string | null>(null);
   const [focusBusinessPartnerId, setFocusBusinessPartnerId] = React.useState<string | null>(null);
 
@@ -109,7 +110,7 @@ export function CrmArea() {
         <CardList view={view} error={error} selected={selected} onSelect={selectEntity} />
       </Column>
       {detailOpen && selected && (
-        <EntityOverlay>
+        <EntityOverlay onClose={() => setCloseRequestToken((token) => token + 1)}>
           <EntityDetail
             selected={selected}
             focusCompanyContactId={focusCompanyContactId}
@@ -119,16 +120,18 @@ export function CrmArea() {
             onFocusBusinessPartner={(id) => setFocusBusinessPartnerId(id)}
             onClose={closeDetails}
             onChanged={refreshProjection}
+            closeRequestToken={closeRequestToken}
             onNavigate={selectEntity}
             onDirtyChange={setDetailDirty}
           />
         </EntityOverlay>
       )}
       {creatingContact && (
-        <EntityOverlay>
+        <EntityOverlay onClose={() => setCloseRequestToken((token) => token + 1)}>
           <CreateContactDetail
             availableBusinessPartners={getBusinessPartnerOptionsRpu()}
             onClose={() => setCreatingContact(false)}
+            closeRequestToken={closeRequestToken}
             onCreated={(id) => {
             setCreatingContact(false);
             setFocusCompanyContactId(id);
@@ -147,7 +150,16 @@ export function CrmArea() {
   );
 }
 
-function EntityOverlay({ children }: { children: React.ReactNode }) {
+function EntityOverlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  React.useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/25 p-4">
       <div className="max-h-[92vh] w-full max-w-6xl overflow-auto rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-2xl">
