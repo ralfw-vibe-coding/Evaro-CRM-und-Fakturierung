@@ -36,7 +36,6 @@ export function linkContactGp(deps: LinkContactGpDeps) {
     if (!user_id) return { ok: false, error: "Kein angemeldeter Benutzer." };
     if (!contact_id) fields.contact_id = "Kontakt fehlt.";
     if (!gp_id) fields.gp_id = "Geschäftspartner fehlt.";
-    if (!role) fields.role = "Bitte eine Rolle angeben.";
     if (Object.keys(fields).length > 0) {
       return { ok: false, error: "Validierung fehlgeschlagen.", fields };
     }
@@ -44,7 +43,7 @@ export function linkContactGp(deps: LinkContactGpDeps) {
     const link = await deps.contactGps.upsert({
       contact_id: contact_id!,
       gp_id: gp_id!,
-      role: role!,
+      role: role ?? "",
       primary: command.primary ?? false,
     });
 

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Building2, Heart, MapPinned, PanelRightClose, Plus, Save, SaveOff, Trash2, User, X } from "lucide-react";
+import { Building2, Heart, Loader2, MapPinned, Plus, Save, SaveOff, Trash2, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ import {
   updateBusinessPartnerRpu,
   updateContactRpu,
 } from "@/composition";
-import type { BusinessPartnerData, Channel, ContactData } from "@/domain/model";
+import type { BusinessPartner, BusinessPartnerData, Channel, ContactData } from "@/domain/model";
 import type { SelectedEntity } from "@/domain/rpus/get-selected-entity/get-selected-entity";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
 import type { TagOptions } from "@/domain/rpus/get-tag-options/get-tag-options";
@@ -47,7 +47,6 @@ export function EntityDetail({
   onFocusBusinessPartner,
   onClose,
   onChanged,
-  onCollapse,
   onNavigate,
   onDirtyChange,
 }: {
@@ -60,7 +59,6 @@ export function EntityDetail({
   onFocusBusinessPartner: (id: string) => void;
   onClose: () => void;
   onChanged: () => void;
-  onCollapse: () => void;
   onNavigate: (ref: EntityRef) => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
@@ -88,7 +86,6 @@ export function EntityDetail({
           onFocusBusinessPartner={onFocusBusinessPartner}
           onChanged={onChanged}
           onClose={onClose}
-          onCollapse={onCollapse}
           onNavigate={onNavigate}
           onDirtyChange={onDirtyChange}
           tagOptions={tagOptions}
@@ -101,7 +98,6 @@ export function EntityDetail({
           onFocusCompanyContact={onFocusCompanyContact}
           onChanged={onChanged}
           onClose={onClose}
-          onCollapse={onCollapse}
           onNavigate={onNavigate}
           onDirtyChange={onDirtyChange}
           tagOptions={tagOptions}
@@ -212,7 +208,6 @@ function DetailToolbar({
   onSave,
   onDelete,
   onClose,
-  onCollapse,
 }: {
   icon: React.ReactNode;
   dirty: boolean;
@@ -220,22 +215,12 @@ function DetailToolbar({
   onSave: () => void;
   onDelete: () => void;
   onClose: () => void;
-  onCollapse: () => void;
 }) {
   const [deleteArmed, setDeleteArmed] = React.useState(false);
 
   return (
     <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border)] bg-[var(--background)] pb-3">
       <div className="flex items-center gap-2 text-sm font-medium">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Detailspalte einklappen"
-          onClick={onCollapse}
-        >
-          <PanelRightClose />
-        </Button>
         <span>Details</span>
         {icon}
       </div>
@@ -301,8 +286,7 @@ function TagField({
   }
 
   return (
-    <Field label={label}>
-      <div className="relative">
+    <div className="relative">
         <div className="flex min-h-9 flex-wrap items-center gap-1 rounded-md border border-[var(--input)] px-2 py-1">
           {current.map((value) => (
             <span key={value} className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-2 py-0.5 text-xs">
@@ -321,6 +305,7 @@ function TagField({
             type="text"
             value={draft}
             {...NO_PASSWORD_MANAGER_PROPS}
+            placeholder={current.length === 0 ? label : ""}
             onFocus={() => setOpen(true)}
             onChange={(event) => {
               setDraft(event.target.value);
@@ -373,7 +358,6 @@ function TagField({
           </div>
         )}
       </div>
-    </Field>
   );
 }
 
@@ -557,68 +541,379 @@ function ConfirmRemove({
   );
 }
 
-function SearchableSelect({
-  placeholder,
-  value,
-  options,
-  onChange,
+export function CreateContactDetail({
+  availableBusinessPartners,
+  onClose,
+  onCreated,
+  onNavigate,
+  onChanged,
 }: {
-  placeholder: string;
-  value: string;
-  options: { id: string; label: string }[];
-  onChange: (id: string) => void;
+  availableBusinessPartners: BusinessPartner[];
+  onClose: () => void;
+  onCreated: (id: string) => void;
+  onNavigate: (ref: EntityRef) => void;
+  onChanged: () => void;
 }) {
-  const [filter, setFilter] = React.useState("");
-  const [open, setOpen] = React.useState(false);
-  const selected = options.find((option) => option.id === value);
-  const visible = options
-    .filter((option) => option.label.toLowerCase().includes(filter.trim().toLowerCase()))
-    .slice(0, 5);
+  const tagOptions = getTagOptionsRpu();
+  const [active, setActive] = React.useState(true);
+  const [data, setData] = React.useState<ContactData>({ channels: [] });
+  const [channels, setChannels] = React.useState<Channel[]>([]);
+  const [focusNewChannelType, setFocusNewChannelType] = React.useState(false);
+  const [pendingBps, setPendingBps] = React.useState<BusinessPartner[]>([]);
+  const [status, setStatus] = React.useState<string | null>(null);
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [busy, setBusy] = React.useState(false);
+  const companyInputRef = React.useRef<HTMLInputElement | null>(null);
+  const currentPayload = { active, data: normalizeContactData(data, channels) };
+  const canSave = Boolean(currentPayload.data.last_name?.trim()) && !busy;
+
+  React.useEffect(() => {
+    window.setTimeout(() => {
+      companyInputRef.current?.focus();
+    }, 0);
+  }, []);
+
+  async function createContactWithPendingLinks(): Promise<string | null> {
+    if (!canSave) return null;
+    setBusy(true);
+    setStatus("Lege Kontakt an...");
+    setErrors({});
+    const created = await createContactRpu({
+      active: currentPayload.active,
+      data: currentPayload.data,
+    });
+    if (!created.ok) {
+      setBusy(false);
+      setStatus(created.error);
+      setErrors(created.fields ?? {});
+      return null;
+    }
+
+    for (const bp of pendingBps) {
+      setStatus(`Verknüpfe ${bp.data.name}...`);
+      const linked = await linkContactGpRpu({
+        contact_id: created.contact.id,
+        gp_id: bp.id,
+        primary: false,
+      });
+      if (!linked.ok) {
+        setBusy(false);
+        setStatus(linked.error);
+        return null;
+      }
+    }
+
+    return created.contact.id;
+  }
+
+  async function save() {
+    const contactId = await createContactWithPendingLinks();
+    if (!contactId) return;
+    setBusy(false);
+    setStatus("Gespeichert.");
+    onChanged();
+    onCreated(contactId);
+  }
+
+  async function createBusinessPartnerAndNavigate(name: string) {
+    const contactId = await createContactWithPendingLinks();
+    if (!contactId) return;
+
+    setStatus("Lege Geschäftspartner an...");
+    const created = await createBusinessPartnerRpu({
+      types: [],
+      data: { name, channels: [] },
+    });
+    if (!created.ok) {
+      setBusy(false);
+      setStatus(created.error);
+      return;
+    }
+
+    setStatus("Verknüpfe Geschäftspartner...");
+    const linked = await linkContactGpRpu({
+      contact_id: contactId,
+      gp_id: created.businessPartner.id,
+      primary: false,
+    });
+    setBusy(false);
+    if (!linked.ok) {
+      setStatus(linked.error);
+      return;
+    }
+    onChanged();
+    onNavigate({ kind: "business_partner", id: created.businessPartner.id });
+  }
+
+  const pendingIds = new Set(pendingBps.map((bp) => bp.id));
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        className="flex h-9 w-full items-center justify-between rounded-md border border-[var(--input)] bg-transparent px-3 text-left text-sm"
-        onClick={() => setOpen((next) => !next)}
-      >
-        <span className={selected ? "" : "text-[var(--muted-foreground)]"}>
-          {selected?.label ?? placeholder}
-        </span>
-        <span className="text-[var(--muted-foreground)]">⌄</span>
-      </button>
-      {open && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-md border border-[var(--border)] bg-[var(--background)] p-2 shadow-lg">
-          <Input
-            value={filter}
-            {...NO_PASSWORD_MANAGER_PROPS}
-            placeholder="Filtern"
-            onChange={(event) => setFilter(event.target.value)}
-          />
-          <div className="mt-2 grid max-h-48 gap-1 overflow-auto">
-            {visible.map((option) => (
-              <button
-                key={option.id}
+    <div className="grid gap-5 p-4">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border)] bg-[var(--background)] pb-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <span>Details</span>
+          <User className="size-4 text-[var(--brand)]" />
+        </div>
+        <div className="flex items-center gap-1">
+          <Button type="button" size="icon" onClick={save} disabled={!canSave} aria-label="Speichern">
+            {busy ? <Loader2 className="animate-spin" /> : <Save />}
+          </Button>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Schließen">
+            <X />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,680px)_minmax(320px,380px)] xl:items-start">
+        <div className="grid content-start gap-5">
+          <Section title="Kontakt">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
+              Aktiv
+            </label>
+            <div className="grid grid-cols-12 gap-3">
+              <Input
+                ref={companyInputRef}
+                value={data.company_text ?? ""}
+                placeholder="Firma"
+                aria-label="Firma"
+                className="col-span-12"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, company_text: e.target.value })}
+              />
+              <Input
+                value={data.first_name ?? ""}
+                placeholder="Vorname"
+                aria-label="Vorname"
+                className="col-span-5"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, first_name: e.target.value })}
+              />
+              <div className="col-span-7 grid gap-1">
+                <Input
+                  value={data.last_name ?? ""}
+                  placeholder="Nachname"
+                  aria-label="Nachname"
+                  {...NO_PASSWORD_MANAGER_PROPS}
+                  onChange={(e) => setData({ ...data, last_name: e.target.value })}
+                />
+                {errors.last_name && <p className="text-xs text-[var(--destructive)]">{errors.last_name}</p>}
+              </div>
+              <select
+                value={data.gender ?? ""}
+                aria-label="Geschlecht"
+                onChange={(e) => setData({ ...data, gender: (e.target.value || undefined) as ContactData["gender"] })}
+                className={`col-span-4 h-9 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
+              >
+                <option value="">Geschlecht</option>
+                {GENDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={data.salutation ?? ""}
+                aria-label="Anrede"
+                onChange={(e) =>
+                  setData({ ...data, salutation: (e.target.value || undefined) as ContactData["salutation"] })
+                }
+                className={`col-span-4 h-9 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
+              >
+                <option value="">Anrede</option>
+                {SALUTATION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <Input
+                value={data.title ?? ""}
+                placeholder="Titel"
+                aria-label="Titel"
+                className="col-span-4"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, title: e.target.value })}
+              />
+              <Input
+                value={data.origin ?? ""}
+                placeholder="Kontaktquelle"
+                aria-label="Kontaktquelle"
+                className="col-span-12"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, origin: e.target.value })}
+              />
+            </div>
+          </Section>
+
+          <Section
+            title="Kanäle"
+            action={
+              <Button
                 type="button"
-                className="rounded-sm px-2 py-1.5 text-left text-sm hover:bg-[var(--accent)]"
+                variant="ghost"
+                size="icon"
+                aria-label="Kanal hinzufügen"
+                title="Kanal hinzufügen"
                 onClick={() => {
-                  onChange(option.id);
-                  setOpen(false);
-                  setFilter("");
+                  setChannels([...channels, { type: "", address: "" }]);
+                  setFocusNewChannelType(true);
                 }}
               >
-                {option.label}
-              </button>
-            ))}
-            {visible.length === 0 && (
-              <div className="px-2 py-1.5 text-sm text-[var(--muted-foreground)]">
-                Keine passenden Einträge
+                <Plus />
+              </Button>
+            }
+          >
+            <ChannelsEditor
+              channels={channels}
+              channelTypeOptions={tagOptions.channelTypes}
+              focusLastType={focusNewChannelType}
+              onFocusedLastType={() => setFocusNewChannelType(false)}
+              onChange={setChannels}
+            />
+          </Section>
+
+          <Section title="Klassifizierungen">
+            <div className="grid grid-cols-2 gap-3">
+              <TagField
+                label="Rollen"
+                values={data.role}
+                options={tagOptions.contact.role}
+                onChange={(role) => setData({ ...data, role })}
+              />
+              <TagField
+                label="Bereiche"
+                values={data.work_area}
+                options={tagOptions.contact.work_area}
+                onChange={(work_area) => setData({ ...data, work_area })}
+              />
+              <TagField
+                label="Interessen"
+                values={data.interests}
+                options={tagOptions.contact.interests}
+                onChange={(interests) => setData({ ...data, interests })}
+              />
+              <TagField
+                label="Beziehungen"
+                values={data.relationship}
+                options={tagOptions.contact.relationship}
+                onChange={(relationship) => setData({ ...data, relationship })}
+              />
+              <div className="col-span-2">
+                <TagField
+                  label="Tags"
+                  values={data.tags}
+                  options={tagOptions.contact.tags}
+                  onChange={(tags) => setData({ ...data, tags })}
+                />
               </div>
-            )}
-          </div>
+            </div>
+          </Section>
         </div>
-      )}
+
+        <div className="grid content-start gap-5">
+          <DraftContactBusinessPartnerLinks
+            pendingBusinessPartners={pendingBps}
+            availableBusinessPartners={availableBusinessPartners.filter((bp) => !pendingIds.has(bp.id))}
+            defaultCompanyName={data.company_text ?? ""}
+            busy={busy}
+            onAddExisting={(bp) => setPendingBps([...pendingBps, bp])}
+            onRemoveExisting={(id) => setPendingBps(pendingBps.filter((bp) => bp.id !== id))}
+            onCreateBusinessPartner={createBusinessPartnerAndNavigate}
+          />
+
+          <Section title="Notizen">
+            <Textarea
+              value={data.notes ?? ""}
+              placeholder="Notizen"
+              aria-label="Notizen"
+              rows={8}
+              {...NO_PASSWORD_MANAGER_PROPS}
+              onChange={(e) => setData({ ...data, notes: e.target.value })}
+            />
+          </Section>
+        </div>
+      </div>
+
+      {status && <p className="text-sm text-[var(--muted-foreground)]">{status}</p>}
     </div>
+  );
+}
+
+function DraftContactBusinessPartnerLinks({
+  pendingBusinessPartners,
+  availableBusinessPartners,
+  defaultCompanyName,
+  busy,
+  onAddExisting,
+  onRemoveExisting,
+  onCreateBusinessPartner,
+}: {
+  pendingBusinessPartners: BusinessPartner[];
+  availableBusinessPartners: BusinessPartner[];
+  defaultCompanyName: string;
+  busy: boolean;
+  onAddExisting: (bp: BusinessPartner) => void;
+  onRemoveExisting: (id: string) => void;
+  onCreateBusinessPartner: (name: string) => void;
+}) {
+  const [newName, setNewName] = React.useState("");
+  const nameInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  function fillDefaultCompanyName() {
+    if (newName.trim()) return;
+    const companyName = defaultCompanyName.trim();
+    if (!companyName) return;
+    setNewName(companyName);
+    window.setTimeout(() => {
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
+    }, 0);
+  }
+
+  return (
+    <Section title="Geschäftspartner">
+      <div className="grid gap-2">
+        {pendingBusinessPartners.map((businessPartner) => (
+          <div key={businessPartner.id} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-md border p-2">
+            <span className="truncate text-sm font-medium">{businessPartner.data.name}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={busy}
+              aria-label="Verknüpfung entfernen"
+              title="Verknüpfung entfernen"
+              onClick={() => onRemoveExisting(businessPartner.id)}
+            >
+              <X />
+            </Button>
+          </div>
+        ))}
+        {pendingBusinessPartners.length === 0 && (
+          <p className="text-sm text-[var(--muted-foreground)]">Noch keine Verknüpfungen.</p>
+        )}
+      </div>
+      <BusinessPartnerNameAttachInput
+        ref={nameInputRef}
+        value={newName}
+        options={availableBusinessPartners.map((bp) => ({ id: bp.id, label: bp.data.name }))}
+        onFocus={fillDefaultCompanyName}
+        onChange={setNewName}
+        onPick={(id) => {
+          const bp = availableBusinessPartners.find((candidate) => candidate.id === id);
+          if (!bp) return;
+          onAddExisting(bp);
+          setNewName("");
+        }}
+        onCreate={() => {
+          const name = newName.trim();
+          if (!name) return;
+          onCreateBusinessPartner(name);
+        }}
+        busy={busy}
+      />
+    </Section>
   );
 }
 
@@ -676,7 +971,6 @@ function ContactEditor({
   onFocusBusinessPartner,
   onChanged,
   onClose,
-  onCollapse,
   onNavigate,
   onDirtyChange,
   tagOptions,
@@ -687,7 +981,6 @@ function ContactEditor({
   onFocusBusinessPartner: (id: string) => void;
   onChanged: () => void;
   onClose: () => void;
-  onCollapse: () => void;
   onNavigate: (ref: EntityRef) => void;
   onDirtyChange: (dirty: boolean) => void;
   tagOptions: TagOptions;
@@ -780,155 +1073,178 @@ function ContactEditor({
         onSave={save}
         onDelete={remove}
         onClose={onClose}
-        onCollapse={onCollapse}
       />
 
-      <Section title="Kontakt">
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
-          Aktiv
-        </label>
-        <Field label="Firma">
-          <Input
-            ref={companyInputRef}
-            value={data.company_text ?? ""}
-            {...NO_PASSWORD_MANAGER_PROPS}
-            onChange={(e) => setData({ ...data, company_text: e.target.value })}
-          />
-        </Field>
-        <Field label="Titel">
-          <Input
-            value={data.title ?? ""}
-            {...NO_PASSWORD_MANAGER_PROPS}
-            onChange={(e) => setData({ ...data, title: e.target.value })}
-          />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Vorname">
-            <Input
-              value={data.first_name ?? ""}
-              {...NO_PASSWORD_MANAGER_PROPS}
-              onChange={(e) => setData({ ...data, first_name: e.target.value })}
-            />
-          </Field>
-          <Field label="Nachname">
-            <Input
-              value={data.last_name ?? ""}
-              {...NO_PASSWORD_MANAGER_PROPS}
-              onChange={(e) => setData({ ...data, last_name: e.target.value })}
-            />
-            {errors.last_name && <p className="text-xs text-[var(--destructive)]">{errors.last_name}</p>}
-          </Field>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Geschlecht">
-            <select
-              value={data.gender ?? ""}
-              onChange={(e) => setData({ ...data, gender: (e.target.value || undefined) as ContactData["gender"] })}
-              className="h-9 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm"
-            >
-              <option value="">-</option>
-              {GENDER_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Anrede">
-            <select
-              value={data.salutation ?? ""}
-              onChange={(e) =>
-                setData({ ...data, salutation: (e.target.value || undefined) as ContactData["salutation"] })
-              }
-              className="h-9 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm"
-            >
-              <option value="">-</option>
-              {SALUTATION_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-        <Field label="Kontaktquelle">
-          <Input
-            value={data.origin ?? ""}
-            {...NO_PASSWORD_MANAGER_PROPS}
-            onChange={(e) => setData({ ...data, origin: e.target.value })}
-          />
-        </Field>
-      </Section>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,680px)_minmax(320px,380px)] xl:items-start">
+        <div className="grid content-start gap-5">
+          <Section title="Kontakt">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
+              Aktiv
+            </label>
+            <div className="grid grid-cols-12 gap-3">
+              <Input
+                ref={companyInputRef}
+                value={data.company_text ?? ""}
+                placeholder="Firma"
+                aria-label="Firma"
+                className="col-span-12"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, company_text: e.target.value })}
+              />
+              <Input
+                value={data.first_name ?? ""}
+                placeholder="Vorname"
+                aria-label="Vorname"
+                className="col-span-5"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, first_name: e.target.value })}
+              />
+              <div className="col-span-7 grid gap-1">
+                <Input
+                  value={data.last_name ?? ""}
+                  placeholder="Nachname"
+                  aria-label="Nachname"
+                  {...NO_PASSWORD_MANAGER_PROPS}
+                  onChange={(e) => setData({ ...data, last_name: e.target.value })}
+                />
+                {errors.last_name && <p className="text-xs text-[var(--destructive)]">{errors.last_name}</p>}
+              </div>
+              <select
+                value={data.gender ?? ""}
+                aria-label="Geschlecht"
+                onChange={(e) => setData({ ...data, gender: (e.target.value || undefined) as ContactData["gender"] })}
+                className={`col-span-4 h-9 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
+              >
+                <option value="">Geschlecht</option>
+                {GENDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={data.salutation ?? ""}
+                aria-label="Anrede"
+                onChange={(e) =>
+                  setData({ ...data, salutation: (e.target.value || undefined) as ContactData["salutation"] })
+                }
+                className={`col-span-4 h-9 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
+              >
+                <option value="">Anrede</option>
+                {SALUTATION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <Input
+                value={data.title ?? ""}
+                placeholder="Titel"
+                aria-label="Titel"
+                className="col-span-4"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, title: e.target.value })}
+              />
+              <Input
+                value={data.origin ?? ""}
+                placeholder="Kontaktquelle"
+                aria-label="Kontaktquelle"
+                className="col-span-12"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, origin: e.target.value })}
+              />
+            </div>
+          </Section>
 
-      <Section
-        title="Kanäle"
-        action={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Kanal hinzufügen"
-            title="Kanal hinzufügen"
-            onClick={() => {
-              setChannels([...channels, { type: "", address: "" }]);
-              setFocusNewChannelType(true);
-            }}
+          <Section
+            title="Kanäle"
+            action={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Kanal hinzufügen"
+                title="Kanal hinzufügen"
+                onClick={() => {
+                  setChannels([...channels, { type: "", address: "" }]);
+                  setFocusNewChannelType(true);
+                }}
+              >
+                <Plus />
+              </Button>
+            }
           >
-            <Plus />
-          </Button>
-        }
-      >
-        <ChannelsEditor
-          channels={channels}
-          channelTypeOptions={tagOptions.channelTypes}
-          focusLastType={focusNewChannelType}
-          onFocusedLastType={() => setFocusNewChannelType(false)}
-          onChange={setChannels}
-        />
-        {errors.channels && <p className="text-xs text-[var(--destructive)]">{errors.channels}</p>}
-      </Section>
+            <ChannelsEditor
+              channels={channels}
+              channelTypeOptions={tagOptions.channelTypes}
+              focusLastType={focusNewChannelType}
+              onFocusedLastType={() => setFocusNewChannelType(false)}
+              onChange={setChannels}
+            />
+            {errors.channels && <p className="text-xs text-[var(--destructive)]">{errors.channels}</p>}
+          </Section>
 
-      <Section title="Klassifizierungen">
-        <TagField
-          label="Beziehungen"
-          values={data.relationship}
-          options={tagOptions.contact.relationship}
-          onChange={(relationship) => setData({ ...data, relationship })}
-        />
-        <TagField
-          label="Rollen"
-          values={data.role}
-          options={tagOptions.contact.role}
-          onChange={(role) => setData({ ...data, role })}
-        />
-        <TagField
-          label="Bereiche"
-          values={data.work_area}
-          options={tagOptions.contact.work_area}
-          onChange={(work_area) => setData({ ...data, work_area })}
-        />
-        <TagField
-          label="Interessen"
-          values={data.interests}
-          options={tagOptions.contact.interests}
-          onChange={(interests) => setData({ ...data, interests })}
-        />
-        <TagField
-          label="Tags"
-          values={data.tags}
-          options={tagOptions.contact.tags}
-          onChange={(tags) => setData({ ...data, tags })}
-        />
-      </Section>
+          <Section title="Klassifizierungen">
+            <div className="grid grid-cols-2 gap-3">
+              <TagField
+                label="Rollen"
+                values={data.role}
+                options={tagOptions.contact.role}
+                onChange={(role) => setData({ ...data, role })}
+              />
+              <TagField
+                label="Bereiche"
+                values={data.work_area}
+                options={tagOptions.contact.work_area}
+                onChange={(work_area) => setData({ ...data, work_area })}
+              />
+              <TagField
+                label="Interessen"
+                values={data.interests}
+                options={tagOptions.contact.interests}
+                onChange={(interests) => setData({ ...data, interests })}
+              />
+              <TagField
+                label="Beziehungen"
+                values={data.relationship}
+                options={tagOptions.contact.relationship}
+                onChange={(relationship) => setData({ ...data, relationship })}
+              />
+              <div className="col-span-2">
+                <TagField
+                  label="Tags"
+                  values={data.tags}
+                  options={tagOptions.contact.tags}
+                  onChange={(tags) => setData({ ...data, tags })}
+                />
+              </div>
+            </div>
+          </Section>
+        </div>
 
-      <Section title="Notizen">
-        <Textarea
-          value={data.notes ?? ""}
-          {...NO_PASSWORD_MANAGER_PROPS}
-          onChange={(e) => setData({ ...data, notes: e.target.value })}
-        />
-      </Section>
+        <div className="grid content-start gap-5">
+          <ContactBusinessPartnerLinks
+            selected={selected}
+            defaultCompanyName={data.company_text ?? ""}
+            onChanged={onChanged}
+            onSaveContact={save}
+            onNavigate={navigateFromDetails}
+            onFocusBusinessPartner={onFocusBusinessPartner}
+          />
+
+          <Section title="Notizen">
+            <Textarea
+              value={data.notes ?? ""}
+              placeholder="Notizen"
+              aria-label="Notizen"
+              rows={8}
+              {...NO_PASSWORD_MANAGER_PROPS}
+              onChange={(e) => setData({ ...data, notes: e.target.value })}
+            />
+          </Section>
+        </div>
+      </div>
 
       {status && <p className="text-sm text-[var(--muted-foreground)]">{status}</p>}
 
@@ -950,13 +1266,6 @@ function ContactEditor({
         />
       )}
 
-      <ContactBusinessPartnerLinks
-        selected={selected}
-        onChanged={onChanged}
-        onNavigate={navigateFromDetails}
-        onFocusBusinessPartner={onFocusBusinessPartner}
-        roleOptions={tagOptions.linkRoles}
-      />
     </div>
   );
 }
@@ -968,7 +1277,6 @@ function BusinessPartnerEditor({
   onFocusCompanyContact,
   onChanged,
   onClose,
-  onCollapse,
   onNavigate,
   onDirtyChange,
   tagOptions,
@@ -979,7 +1287,6 @@ function BusinessPartnerEditor({
   onFocusCompanyContact: (id: string) => void;
   onChanged: () => void;
   onClose: () => void;
-  onCollapse: () => void;
   onNavigate: (ref: EntityRef) => void;
   onDirtyChange: (dirty: boolean) => void;
   tagOptions: TagOptions;
@@ -1085,120 +1392,143 @@ function BusinessPartnerEditor({
         onSave={save}
         onDelete={remove}
         onClose={onClose}
-        onCollapse={onCollapse}
       />
 
-      <Section title="Geschäftspartner">
-        <Field label="Name">
-          <Input
-            ref={nameInputRef}
-            value={data.name}
-            {...NO_PASSWORD_MANAGER_PROPS}
-            onChange={(e) => setData({ ...data, name: e.target.value })}
-          />
-          {errors.name && <p className="text-xs text-[var(--destructive)]">{errors.name}</p>}
-        </Field>
-        <Field label="Straße">
-          <Textarea
-            rows={2}
-            value={data.address?.street ?? ""}
-            {...NO_PASSWORD_MANAGER_PROPS}
-            onChange={(e) => setData({ ...data, address: { ...data.address, street: e.target.value } })}
-          />
-        </Field>
-        <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
-          <Field label="PLZ">
-            <Input
-              value={data.address?.zip ?? ""}
-              {...NO_PASSWORD_MANAGER_PROPS}
-              onChange={(e) => setData({ ...data, address: { ...data.address, zip: e.target.value } })}
-            />
-          </Field>
-          <Field label="Ort">
-            <div className="flex gap-2">
+      <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
+        <div className="grid content-start gap-5">
+          <Section title="Geschäftspartner">
+            <Field label="Name">
               <Input
-                value={data.address?.city ?? ""}
+                ref={nameInputRef}
+                value={data.name}
                 {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, address: { ...data.address, city: e.target.value } })}
+                onChange={(e) => setData({ ...data, name: e.target.value })}
               />
-              {mapsHref && (
-                <Button type="button" variant="ghost" size="icon" asChild aria-label="Ort in Google Maps öffnen">
-                  <a href={mapsHref} target="_blank" rel="noreferrer" title="Ort in Google Maps öffnen">
-                    <MapPinned />
-                  </a>
-                </Button>
-              )}
+              {errors.name && <p className="text-xs text-[var(--destructive)]">{errors.name}</p>}
+            </Field>
+            <Field label="Straße">
+              <Textarea
+                rows={2}
+                value={data.address?.street ?? ""}
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, address: { ...data.address, street: e.target.value } })}
+              />
+            </Field>
+            <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
+              <Field label="PLZ">
+                <Input
+                  value={data.address?.zip ?? ""}
+                  {...NO_PASSWORD_MANAGER_PROPS}
+                  onChange={(e) => setData({ ...data, address: { ...data.address, zip: e.target.value } })}
+                />
+              </Field>
+              <Field label="Ort">
+                <div className="flex gap-2">
+                  <Input
+                    value={data.address?.city ?? ""}
+                    {...NO_PASSWORD_MANAGER_PROPS}
+                    onChange={(e) => setData({ ...data, address: { ...data.address, city: e.target.value } })}
+                  />
+                  {mapsHref && (
+                    <Button type="button" variant="ghost" size="icon" asChild aria-label="Ort in Google Maps öffnen">
+                      <a href={mapsHref} target="_blank" rel="noreferrer" title="Ort in Google Maps öffnen">
+                        <MapPinned />
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </Field>
             </div>
-          </Field>
-        </div>
-        <Field label="Land">
-          <SingleTagField
-            value={data.address?.country ?? ""}
-            placeholder="Land"
-            options={tagOptions.businessPartner.countries}
-            onChange={(value) => setData({ ...data, address: { ...data.address, country: value } })}
-          />
-        </Field>
-        <Field label="USt-ID">
-          <Input
-            value={data.vat_id ?? ""}
-            {...NO_PASSWORD_MANAGER_PROPS}
-            onChange={(e) => setData({ ...data, vat_id: e.target.value })}
-          />
-        </Field>
-        <TagField label="Typen" values={types} options={tagOptions.businessPartner.types} onChange={(next) => setTypes(next ?? [])} />
-      </Section>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Land">
+                <SingleTagField
+                  value={data.address?.country ?? ""}
+                  placeholder="Land"
+                  options={tagOptions.businessPartner.countries}
+                  onChange={(value) => setData({ ...data, address: { ...data.address, country: value } })}
+                />
+              </Field>
+              <Field label="USt-ID">
+                <Input
+                  value={data.vat_id ?? ""}
+                  {...NO_PASSWORD_MANAGER_PROPS}
+                  onChange={(e) => setData({ ...data, vat_id: e.target.value })}
+                />
+              </Field>
+            </div>
+          </Section>
 
-      <Section
-        title="Kanäle"
-        action={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Kanal hinzufügen"
-            title="Kanal hinzufügen"
-            onClick={() => {
-              setChannels([...channels, { type: "", address: "" }]);
-              setFocusNewChannelType(true);
-            }}
+          <Section
+            title="Kanäle"
+            action={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Kanal hinzufügen"
+                title="Kanal hinzufügen"
+                onClick={() => {
+                  setChannels([...channels, { type: "", address: "" }]);
+                  setFocusNewChannelType(true);
+                }}
+              >
+                <Plus />
+              </Button>
+            }
           >
-            <Plus />
-          </Button>
-        }
-      >
-        <ChannelsEditor
-          channels={channels}
-          channelTypeOptions={tagOptions.channelTypes}
-          focusLastType={focusNewChannelType}
-          onFocusedLastType={() => setFocusNewChannelType(false)}
-          onChange={setChannels}
-        />
-      </Section>
+            <ChannelsEditor
+              channels={channels}
+              channelTypeOptions={tagOptions.channelTypes}
+              focusLastType={focusNewChannelType}
+              onFocusedLastType={() => setFocusNewChannelType(false)}
+              onChange={setChannels}
+            />
+          </Section>
 
-      <Section title="Klassifizierungen">
-        <TagField
-          label="Tags"
-          values={data.tags}
-          options={tagOptions.businessPartner.tags}
-          onChange={(tags) => setData({ ...data, tags })}
-        />
-      </Section>
+          <Section title="Klassifizierungen">
+            <div className="grid gap-3">
+              <TagField
+                label="Typen"
+                values={types}
+                options={tagOptions.businessPartner.types}
+                onChange={(next) => setTypes(next ?? [])}
+              />
+              <TagField
+                label="Tags"
+                values={data.tags}
+                options={tagOptions.businessPartner.tags}
+                onChange={(tags) => setData({ ...data, tags })}
+              />
+            </div>
+          </Section>
+        </div>
 
-      <Section title="Memo">
-        <Textarea
-          value={data.memo ?? ""}
-          {...NO_PASSWORD_MANAGER_PROPS}
-          onChange={(e) => setData({ ...data, memo: e.target.value })}
-        />
-      </Section>
-      <Section title="Notizen">
-        <Textarea
-          value={data.notes ?? ""}
-          {...NO_PASSWORD_MANAGER_PROPS}
-          onChange={(e) => setData({ ...data, notes: e.target.value })}
-        />
-      </Section>
+        <div className="grid content-start gap-5">
+          <BusinessPartnerContactLinks
+            selected={selected}
+            onChanged={onChanged}
+            onNavigate={navigateFromDetails}
+            onFocusCompanyContact={onFocusCompanyContact}
+            roleOptions={tagOptions.linkRoles}
+          />
+
+          <Section title="Memo">
+            <Textarea
+              value={data.memo ?? ""}
+              rows={5}
+              {...NO_PASSWORD_MANAGER_PROPS}
+              onChange={(e) => setData({ ...data, memo: e.target.value })}
+            />
+            <h3 className="pt-2 text-xs font-semibold uppercase text-[var(--muted-foreground)]">Notizen</h3>
+            <Textarea
+              value={data.notes ?? ""}
+              rows={8}
+              {...NO_PASSWORD_MANAGER_PROPS}
+              onChange={(e) => setData({ ...data, notes: e.target.value })}
+            />
+          </Section>
+        </div>
+      </div>
 
       {status && <p className="text-sm text-[var(--muted-foreground)]">{status}</p>}
 
@@ -1220,60 +1550,82 @@ function BusinessPartnerEditor({
         />
       )}
 
-      <BusinessPartnerContactLinks
-        selected={selected}
-        onChanged={onChanged}
-        onNavigate={navigateFromDetails}
-        onFocusCompanyContact={onFocusCompanyContact}
-        roleOptions={tagOptions.linkRoles}
-      />
     </div>
   );
 }
 
 function ContactBusinessPartnerLinks({
   selected,
+  defaultCompanyName,
   onChanged,
+  onSaveContact,
   onNavigate,
   onFocusBusinessPartner,
-  roleOptions,
 }: {
   selected: NonNullable<SelectedEntity> & { kind: "contact" };
+  defaultCompanyName: string;
   onChanged: () => void;
+  onSaveContact: () => Promise<boolean>;
   onNavigate: (ref: EntityRef) => void;
   onFocusBusinessPartner: (id: string) => void;
-  roleOptions: string[];
 }) {
-  const [gpId, setGpId] = React.useState("");
-  const [role, setRole] = React.useState("");
   const [newName, setNewName] = React.useState("");
   const [status, setStatus] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState(false);
+  const nameInputRef = React.useRef<HTMLInputElement | null>(null);
 
-  async function addExisting() {
-    if (!gpId) return;
-    const result = await linkContactGpRpu({ contact_id: selected.contact.id, gp_id: gpId, role, primary: false });
+  React.useEffect(() => {
+    setNewName("");
+    setStatus(null);
+  }, [selected.contact.id]);
+
+  async function addExisting(gpId: string) {
+    if (busy) return;
+    setBusy(true);
+    setStatus("Speichere Kontakt...");
+    const saved = await onSaveContact();
+    if (!saved) {
+      setBusy(false);
+      return;
+    }
+    setStatus("Verknüpfe Geschäftspartner...");
+    const result = await linkContactGpRpu({ contact_id: selected.contact.id, gp_id: gpId, primary: false });
+    setBusy(false);
     setStatus(result.ok ? "Verknüpft." : result.error);
     if (result.ok) {
-      setGpId("");
+      setNewName("");
       onChanged();
     }
   }
 
   async function createAndAdd() {
+    if (busy) return;
+    const name = newName.trim();
+    if (!name) return;
+    setBusy(true);
+    setStatus("Speichere Kontakt...");
+    const saved = await onSaveContact();
+    if (!saved) {
+      setBusy(false);
+      return;
+    }
+    setStatus("Lege Geschäftspartner an...");
     const created = await createBusinessPartnerRpu({
       types: [],
-      data: { name: newName, channels: [] },
+      data: { name, channels: [] },
     });
     if (!created.ok) {
+      setBusy(false);
       setStatus(created.error);
       return;
     }
+    setStatus("Verknüpfe Geschäftspartner...");
     const linked = await linkContactGpRpu({
       contact_id: selected.contact.id,
       gp_id: created.businessPartner.id,
-      role,
       primary: false,
     });
+    setBusy(false);
     setStatus(linked.ok ? "Neu angelegt und verknüpft." : linked.error);
     if (linked.ok) {
       setNewName("");
@@ -1283,35 +1635,31 @@ function ContactBusinessPartnerLinks({
     }
   }
 
+  function fillDefaultCompanyName() {
+    if (newName.trim()) return;
+    const companyName = defaultCompanyName.trim();
+    if (!companyName) return;
+    setNewName(companyName);
+    window.setTimeout(() => {
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
+    }, 0);
+  }
+
   return (
     <Section title="Geschäftspartner">
       <div className="grid gap-2">
-        {selected.relatedBusinessPartners.map(({ link, businessPartner }) => (
-          <div key={businessPartner.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 rounded-md border p-2">
+        {selected.relatedBusinessPartners.map(({ businessPartner }) => (
+          <div key={businessPartner.id} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-md border p-2">
             <button
               type="button"
               className="min-w-0 text-left"
               onClick={() => onNavigate({ kind: "business_partner", id: businessPartner.id })}
             >
-              <div className="truncate text-xs text-[var(--muted-foreground)]">{link.role}</div>
               <div className="flex min-w-0 items-center gap-1.5">
                 <span className="truncate text-sm font-medium">{businessPartner.data.name}</span>
               </div>
             </button>
-            <PrimaryLinkButton
-              primary={link.primary}
-              onMakePrimary={async () => {
-                if (link.primary) return;
-                const result = await linkContactGpRpu({
-                  contact_id: selected.contact.id,
-                  gp_id: businessPartner.id,
-                  role: link.role,
-                  primary: true,
-                });
-                setStatus(result.ok ? "Als primär markiert." : result.error);
-                if (result.ok) onChanged();
-              }}
-            />
             <ConfirmRemove
               label="Verknüpfung entfernen"
               onConfirm={async () => {
@@ -1329,33 +1677,101 @@ function ContactBusinessPartnerLinks({
           <p className="text-sm text-[var(--muted-foreground)]">Noch keine Verknüpfungen.</p>
         )}
       </div>
-      <LinkControls role={role} setRole={setRole} roleOptions={roleOptions} />
-      <div className="grid gap-2">
-        <SearchableSelect
-          value={gpId}
-          placeholder="Bestehenden Geschäftspartner wählen"
-          options={selected.availableBusinessPartners.map((bp) => ({ id: bp.id, label: bp.data.name }))}
-          onChange={setGpId}
-        />
-        <Button type="button" variant="outline" size="sm" onClick={addExisting} disabled={!gpId || !role.trim()}>
-          <Plus /> Hinzufügen
-        </Button>
-      </div>
-      <div className="grid gap-2">
-        <Input
-          value={newName}
-          {...NO_PASSWORD_MANAGER_PROPS}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="Neuer Geschäftspartner"
-        />
-        <Button type="button" variant="outline" size="sm" onClick={createAndAdd} disabled={!newName.trim() || !role.trim()}>
-          <Plus /> Neu anlegen
-        </Button>
-      </div>
+      <BusinessPartnerNameAttachInput
+        ref={nameInputRef}
+        value={newName}
+        options={selected.availableBusinessPartners.map((bp) => ({ id: bp.id, label: bp.data.name }))}
+        onFocus={fillDefaultCompanyName}
+        onChange={setNewName}
+        onPick={addExisting}
+        onCreate={createAndAdd}
+        busy={busy}
+      />
       {status && <p className="text-sm text-[var(--muted-foreground)]">{status}</p>}
     </Section>
   );
 }
+
+const BusinessPartnerNameAttachInput = React.forwardRef<
+  HTMLInputElement,
+  {
+    value: string;
+    options: { id: string; label: string }[];
+    onFocus: () => void;
+    onChange: (value: string) => void;
+    onPick: (id: string) => void;
+    onCreate: () => void;
+    busy: boolean;
+  }
+>(function BusinessPartnerNameAttachInput(
+  { value, options, onFocus, onChange, onPick, onCreate, busy },
+  ref,
+) {
+  const [focused, setFocused] = React.useState(false);
+  const query = value.trim().toLowerCase();
+  const visible = options
+    .filter((option) => !query || option.label.toLowerCase().includes(query))
+    .slice(0, 5);
+
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-2">
+        <Input
+          ref={ref}
+          value={value}
+          {...NO_PASSWORD_MANAGER_PROPS}
+          placeholder="Geschäftspartner"
+          onFocus={() => {
+            setFocused(true);
+            onFocus();
+          }}
+          onBlur={() => setFocused(false)}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            if (busy) return;
+            onCreate();
+          }}
+          disabled={busy}
+        />
+        <Button
+          type="button"
+          size="icon"
+          className="bg-[var(--brand)] text-white hover:opacity-90"
+          disabled={!value.trim() || busy}
+          aria-label="Geschäftspartner neu anlegen"
+          title="Geschäftspartner neu anlegen"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={onCreate}
+        >
+          {busy ? <Loader2 className="animate-spin" /> : <Plus />}
+        </Button>
+      </div>
+      {focused && (visible.length > 0 || query) && (
+        <div className="absolute left-0 right-11 top-full z-20 mt-1 max-h-56 overflow-auto rounded-md border border-[var(--border)] bg-[var(--background)] shadow-lg">
+          {visible.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--accent)]"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                if (busy) return;
+                onPick(option.id);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+          {visible.length === 0 && (
+            <div className="px-3 py-2 text-sm text-[var(--muted-foreground)]">Kein bestehender GP gefunden</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+});
 
 function BusinessPartnerContactLinks({
   selected,

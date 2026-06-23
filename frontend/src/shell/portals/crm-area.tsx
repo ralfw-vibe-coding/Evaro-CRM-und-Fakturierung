@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, Filter, IdCard, Loader2, Search, PanelRightOpen, Plus, X } from "lucide-react";
+import { Filter, IdCard, Loader2, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,9 @@ import {
   setScopeRpu,
   setSearchTermRpu,
   getVisibleEntitiesRpu,
+  getBusinessPartnerOptionsRpu,
   selectEntityRpu,
   getSelectedEntityRpu,
-  createContactRpu,
 } from "@/composition";
 import type { Scope } from "@/domain/rpus/set-scope/set-scope";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
@@ -18,21 +18,12 @@ import type { GetVisibleEntitiesResult } from "@/domain/rpus/get-visible-entitie
 import type { SelectedEntity } from "@/domain/rpus/get-selected-entity/get-selected-entity";
 import { ContactCard } from "./contact-card";
 import { GpCard } from "./gp-card";
-import { EntityDetail } from "./entity-detail";
-
-const NO_PASSWORD_MANAGER_PROPS = {
-  autoComplete: "new-password",
-  "data-1p-ignore": "true",
-  "data-lpignore": "true",
-  "data-bwignore": "true",
-  "data-form-type": "other",
-} as const;
+import { CreateContactDetail, EntityDetail } from "./entity-detail";
 
 /**
- * CRM area: three-column layout.
+ * CRM area: two-column layout.
  *  - left:   filters — for now the entity-type scope (the "first filter")
  *  - middle: contact + business-partner cards, mixed and sorted by name
- *  - right:  details of the selected entity — coming in a later step
  *
  * All filtering/mixing/sorting/selection is domain logic that lives in RPUs
  * (get-visible-entities, set-scope, select-entity, get-selected-entity); this
@@ -45,10 +36,8 @@ export function CrmArea() {
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [, setDetailDirty] = React.useState(false);
   const [creatingContact, setCreatingContact] = React.useState(false);
-  const [newContactLastName, setNewContactLastName] = React.useState("");
   const [focusCompanyContactId, setFocusCompanyContactId] = React.useState<string | null>(null);
   const [focusBusinessPartnerId, setFocusBusinessPartnerId] = React.useState<string | null>(null);
-  const detailScrollRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -77,7 +66,6 @@ export function CrmArea() {
     setSelected(getSelectedEntityRpu());
     setDetailDirty(false);
     if (ref) setDetailOpen(true);
-    window.setTimeout(() => detailScrollRef.current?.scrollTo({ top: 0 }), 0);
   }
 
   function refreshProjection() {
@@ -90,35 +78,10 @@ export function CrmArea() {
     setDetailOpen(false);
   }
 
-  async function createContactFromOverview(event?: React.FormEvent) {
-    event?.preventDefault();
-    const trimmedLastName = newContactLastName.trim();
-    if (!trimmedLastName) return;
-
-    const result = await createContactRpu({
-      active: true,
-      data: { last_name: trimmedLastName, channels: [] },
-    });
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    setError(null);
-    setCreatingContact(false);
-    setNewContactLastName("");
-    setFocusCompanyContactId(result.contact.id);
-    setView(getVisibleEntitiesRpu());
-    selectEntity({ kind: "contact", id: result.contact.id });
-  }
-
   return (
     <div
       className="grid h-full divide-x divide-[var(--border)]"
-      style={{
-        gridTemplateColumns: detailOpen
-          ? "260px minmax(0,1fr) clamp(380px,25vw,560px)"
-          : "260px minmax(0,1fr) 44px",
-      }}
+      style={{ gridTemplateColumns: "260px minmax(0,1fr)" }}
     >
       <Column icon={<Filter className="size-4" />} title="Filter">
         <div className="grid gap-4">
@@ -130,107 +93,68 @@ export function CrmArea() {
         icon={<IdCard className="size-4" />}
         title="Übersicht"
         action={
-          creatingContact ? (
-            <form className="flex items-center gap-1" onSubmit={createContactFromOverview}>
-              <Input
-                value={newContactLastName}
-                {...NO_PASSWORD_MANAGER_PROPS}
-                autoFocus
-                placeholder="Nachname"
-                className="h-8 w-36"
-                onChange={(event) => setNewContactLastName(event.target.value)}
-              />
-              <Button
-                type="submit"
-                size="icon"
-                className="size-8 bg-[var(--brand)] text-white hover:opacity-90"
-                disabled={!newContactLastName.trim()}
-                aria-label="Kontakt anlegen"
-                title="Kontakt anlegen"
-              >
-                <Check />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                aria-label="Abbrechen"
-                title="Abbrechen"
-                onClick={() => {
-                  setCreatingContact(false);
-                  setNewContactLastName("");
-                }}
-              >
-                <X />
-              </Button>
-            </form>
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="bg-[var(--brand)] text-white hover:opacity-90"
-              aria-label="Neuen Kontakt anlegen"
-              title="Neuen Kontakt anlegen"
-              onClick={() => setCreatingContact(true)}
-            >
-              <Plus />
-            </Button>
-          )
-        }
-      >
-        <CardList view={view} error={error} selected={selected} onSelect={selectEntity} />
-      </Column>
-      <DetailColumn open={detailOpen} onToggle={() => setDetailOpen((open) => !open)} scrollRef={detailScrollRef}>
-        <EntityDetail
-          selected={selected}
-          focusCompanyContactId={focusCompanyContactId}
-          focusBusinessPartnerId={focusBusinessPartnerId}
-          onCompanyFocused={() => setFocusCompanyContactId(null)}
-          onBusinessPartnerFocused={() => setFocusBusinessPartnerId(null)}
-          onFocusCompanyContact={(id) => setFocusCompanyContactId(id)}
-          onFocusBusinessPartner={(id) => setFocusBusinessPartnerId(id)}
-          onClose={closeDetails}
-          onChanged={refreshProjection}
-          onCollapse={() => setDetailOpen(false)}
-          onNavigate={selectEntity}
-          onDirtyChange={setDetailDirty}
-        />
-      </DetailColumn>
-    </div>
-  );
-}
-
-function DetailColumn({
-  open,
-  onToggle,
-  scrollRef,
-  children,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  scrollRef: React.RefObject<HTMLDivElement>;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="h-full min-h-0">
-      {!open ? (
-        <div className="flex justify-center border-b border-[var(--border)] px-1 py-2.5">
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            aria-label="Detailspalte ausklappen"
-            onClick={onToggle}
+            className="bg-[var(--brand)] text-white hover:opacity-90"
+            aria-label="Neuen Kontakt anlegen"
+            title="Neuen Kontakt anlegen"
+            onClick={() => setCreatingContact(true)}
           >
-            <PanelRightOpen />
+            <Plus />
           </Button>
-        </div>
-      ) : (
-        <div ref={scrollRef} className="h-full min-h-0 overflow-auto">{children}</div>
+        }
+      >
+        <CardList view={view} error={error} selected={selected} onSelect={selectEntity} />
+      </Column>
+      {detailOpen && selected && (
+        <EntityOverlay>
+          <EntityDetail
+            selected={selected}
+            focusCompanyContactId={focusCompanyContactId}
+            focusBusinessPartnerId={focusBusinessPartnerId}
+            onCompanyFocused={() => setFocusCompanyContactId(null)}
+            onBusinessPartnerFocused={() => setFocusBusinessPartnerId(null)}
+            onFocusCompanyContact={(id) => setFocusCompanyContactId(id)}
+            onFocusBusinessPartner={(id) => setFocusBusinessPartnerId(id)}
+            onClose={closeDetails}
+            onChanged={refreshProjection}
+            onNavigate={selectEntity}
+            onDirtyChange={setDetailDirty}
+          />
+        </EntityOverlay>
       )}
-    </section>
+      {creatingContact && (
+        <EntityOverlay>
+          <CreateContactDetail
+            availableBusinessPartners={getBusinessPartnerOptionsRpu()}
+            onClose={() => setCreatingContact(false)}
+            onCreated={(id) => {
+            setCreatingContact(false);
+            setFocusCompanyContactId(id);
+            setView(getVisibleEntitiesRpu());
+            selectEntity({ kind: "contact", id });
+          }}
+            onNavigate={(ref) => {
+              setCreatingContact(false);
+              selectEntity(ref);
+            }}
+            onChanged={refreshProjection}
+          />
+        </EntityOverlay>
+      )}
+    </div>
+  );
+}
+
+function EntityOverlay({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/25 p-4">
+      <div className="max-h-[92vh] w-full max-w-6xl overflow-auto rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-2xl">
+        {children}
+      </div>
+    </div>
   );
 }
 

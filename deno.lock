@@ -12,6 +12,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@netlify/functions@^2.8.2",
+        "npm:@radix-ui/react-dropdown-menu@^2.1.18",
         "npm:@radix-ui/react-label@^2.1.1",
         "npm:@radix-ui/react-slot@^1.1.1",
         "npm:@tailwindcss/vite@4",

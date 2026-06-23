@@ -55,6 +55,7 @@ export const loadSelectionRpu = loadSelection({ backendApi, session, selectionSt
 export const setScopeRpu = setScope({ selectionStore });
 export const setSearchTermRpu = setSearchTerm({ selectionStore });
 export const getVisibleEntitiesRpu = getVisibleEntities({ selectionStore });
+export const getBusinessPartnerOptionsRpu = () => selectionStore.get()?.business_partners ?? [];
 export const selectEntityRpu = selectEntity({ selectionStore });
 export const getSelectedEntityRpu = getSelectedEntity({ selectionStore });
 export const createContactRpu = createContact({ backendApi, session, selectionStore });
