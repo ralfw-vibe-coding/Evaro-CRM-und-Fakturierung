@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Building2, Heart, Loader2, MapPinned, Plus, Save, SaveOff, Trash2, User, X } from "lucide-react";
+import { Building2, Loader2, MapPinned, Plus, Save, SaveOff, Trash2, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ import {
   updateBusinessPartnerRpu,
   updateContactRpu,
 } from "@/composition";
-import type { BusinessPartner, BusinessPartnerData, Channel, ContactData } from "@/domain/model";
+import type { BusinessPartner, BusinessPartnerData, Channel, Contact, ContactData } from "@/domain/model";
 import type { SelectedEntity } from "@/domain/rpus/get-selected-entity/get-selected-entity";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
 import type { TagOptions } from "@/domain/rpus/get-tag-options/get-tag-options";
@@ -43,7 +43,6 @@ export function EntityDetail({
   focusBusinessPartnerId,
   onCompanyFocused,
   onBusinessPartnerFocused,
-  onFocusCompanyContact,
   onFocusBusinessPartner,
   onClose,
   onChanged,
@@ -55,7 +54,6 @@ export function EntityDetail({
   focusBusinessPartnerId: string | null;
   onCompanyFocused: () => void;
   onBusinessPartnerFocused: () => void;
-  onFocusCompanyContact: (id: string) => void;
   onFocusBusinessPartner: (id: string) => void;
   onClose: () => void;
   onChanged: () => void;
@@ -95,7 +93,6 @@ export function EntityDetail({
           selected={selected}
           autoFocusName={focusBusinessPartnerId === selected.businessPartner.id}
           onNameFocused={onBusinessPartnerFocused}
-          onFocusCompanyContact={onFocusCompanyContact}
           onChanged={onChanged}
           onClose={onClose}
           onNavigate={onNavigate}
@@ -1274,7 +1271,6 @@ function BusinessPartnerEditor({
   selected,
   autoFocusName,
   onNameFocused,
-  onFocusCompanyContact,
   onChanged,
   onClose,
   onNavigate,
@@ -1284,7 +1280,6 @@ function BusinessPartnerEditor({
   selected: NonNullable<SelectedEntity> & { kind: "business_partner" };
   autoFocusName: boolean;
   onNameFocused: () => void;
-  onFocusCompanyContact: (id: string) => void;
   onChanged: () => void;
   onClose: () => void;
   onNavigate: (ref: EntityRef) => void;
@@ -1508,8 +1503,6 @@ function BusinessPartnerEditor({
             selected={selected}
             onChanged={onChanged}
             onNavigate={navigateFromDetails}
-            onFocusCompanyContact={onFocusCompanyContact}
-            roleOptions={tagOptions.linkRoles}
           />
 
           <Section title="Memo">
@@ -1777,60 +1770,30 @@ function BusinessPartnerContactLinks({
   selected,
   onChanged,
   onNavigate,
-  onFocusCompanyContact,
-  roleOptions,
 }: {
   selected: NonNullable<SelectedEntity> & { kind: "business_partner" };
   onChanged: () => void;
   onNavigate: (ref: EntityRef) => void;
-  onFocusCompanyContact: (id: string) => void;
-  roleOptions: string[];
 }) {
-  const [contactId, setContactId] = React.useState("");
-  const [role, setRole] = React.useState("");
-  const [newLastName, setNewLastName] = React.useState("");
+  const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState<string | null>(null);
 
-  async function addExisting() {
+  React.useEffect(() => {
+    setQuery("");
+    setStatus(null);
+  }, [selected.businessPartner.id]);
+
+  async function addExisting(contactId: string) {
     if (!contactId) return;
     const result = await linkContactGpRpu({
       contact_id: contactId,
       gp_id: selected.businessPartner.id,
-      role,
       primary: false,
     });
     setStatus(result.ok ? "Verknüpft." : result.error);
     if (result.ok) {
-      setContactId("");
+      setQuery("");
       onChanged();
-    }
-  }
-
-  async function createAndAdd() {
-    const created = await createContactRpu({
-      active: true,
-      data: {
-        last_name: newLastName.trim(),
-        company_text: selected.businessPartner.data.name,
-        channels: [],
-      },
-    });
-    if (!created.ok) {
-      setStatus(created.error);
-      return;
-    }
-    const linked = await linkContactGpRpu({
-      contact_id: created.contact.id,
-      gp_id: selected.businessPartner.id,
-      role,
-      primary: false,
-    });
-    setStatus(linked.ok ? "Neu angelegt und verknüpft." : linked.error);
-    if (linked.ok) {
-      setNewLastName("");
-      onChanged();
-      onFocusCompanyContact(created.contact.id);
-      onNavigate({ kind: "contact", id: created.contact.id });
     }
   }
 
@@ -1838,33 +1801,19 @@ function BusinessPartnerContactLinks({
     <Section title="Kontakte">
       <div className="grid gap-2">
         {selected.relatedContacts.map(({ link, contact }) => (
-          <div key={contact.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 rounded-md border p-2">
+          <div key={contact.id} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-md border p-2">
             <button
               type="button"
               className="min-w-0 text-left"
               onClick={() => onNavigate({ kind: "contact", id: contact.id })}
             >
-              <div className="truncate text-xs text-[var(--muted-foreground)]">{link.role}</div>
+              {link.role && <div className="truncate text-xs text-[var(--muted-foreground)]">{link.role}</div>}
               <div className="flex min-w-0 items-center gap-1.5">
                 <span className="truncate text-sm font-medium">
                   {[contact.data.first_name, contact.data.last_name].filter(Boolean).join(" ") || "-"}
                 </span>
               </div>
             </button>
-            <PrimaryLinkButton
-              primary={link.primary}
-              onMakePrimary={async () => {
-                if (link.primary) return;
-                const result = await linkContactGpRpu({
-                  contact_id: contact.id,
-                  gp_id: selected.businessPartner.id,
-                  role: link.role,
-                  primary: true,
-                });
-                setStatus(result.ok ? "Als primär markiert." : result.error);
-                if (result.ok) onChanged();
-              }}
-            />
             <ConfirmRemove
               label="Verknüpfung entfernen"
               onConfirm={async () => {
@@ -1882,90 +1831,87 @@ function BusinessPartnerContactLinks({
           <p className="text-sm text-[var(--muted-foreground)]">Noch keine Verknüpfungen.</p>
         )}
       </div>
-      <LinkControls
-        role={role}
-        setRole={setRole}
-        roleOptions={roleOptions}
+      <ContactAttachInput
+        value={query}
+        contacts={selected.availableContacts}
+        onChange={setQuery}
+        onPick={addExisting}
       />
-      <div className="grid gap-2">
-        <select
-          value={contactId}
-          onChange={(e) => setContactId(e.target.value)}
-          className="h-9 rounded-md border px-3 text-sm"
-        >
-          <option value="">Bestehenden Kontakt wählen</option>
-          {selected.availableContacts.map((contact) => (
-            <option key={contact.id} value={contact.id}>
-              {[contact.data.first_name, contact.data.last_name].filter(Boolean).join(" ") || contact.id}
-            </option>
-          ))}
-        </select>
-        <Button type="button" variant="outline" size="sm" onClick={addExisting} disabled={!contactId || !role.trim()}>
-          <Plus /> Hinzufügen
-        </Button>
-      </div>
-      <div className="grid gap-2">
-        <Input
-          value={newLastName}
-          {...NO_PASSWORD_MANAGER_PROPS}
-          onChange={(e) => setNewLastName(e.target.value)}
-          placeholder="Nachname"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={createAndAdd}
-          disabled={!newLastName.trim() || !role.trim()}
-        >
-          <Plus /> Neu anlegen
-        </Button>
-      </div>
       {status && <p className="text-sm text-[var(--muted-foreground)]">{status}</p>}
     </Section>
   );
 }
 
-function PrimaryLinkButton({
-  primary,
-  onMakePrimary,
-}: {
-  primary: boolean;
-  onMakePrimary: () => void;
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      disabled={primary}
-      title={primary ? "Primäre Beziehung" : "Als primäre Beziehung markieren"}
-      aria-label={primary ? "Primäre Beziehung" : "Als primäre Beziehung markieren"}
-      onClick={onMakePrimary}
-      className={primary ? "text-[var(--brand)] opacity-100 disabled:opacity-100" : ""}
-    >
-      <Heart className={primary ? "fill-current" : ""} />
-    </Button>
-  );
+function contactDisplayName(contact: Contact): string {
+  return [contact.data.first_name, contact.data.last_name].filter(Boolean).join(" ") || contact.data.company_text || contact.id;
 }
 
-function LinkControls({
-  role,
-  setRole,
-  roleOptions,
+function ContactAttachInput({
+  value,
+  contacts,
+  onChange,
+  onPick,
 }: {
-  role: string;
-  setRole: (role: string) => void;
-  roleOptions: string[];
+  value: string;
+  contacts: Contact[];
+  onChange: (value: string) => void;
+  onPick: (id: string) => void;
 }) {
+  const [focused, setFocused] = React.useState(false);
+  const query = value.trim().toLowerCase();
+  const visible = contacts
+    .filter((contact) => {
+      if (!query) return true;
+      return [
+        contact.data.first_name,
+        contact.data.last_name,
+        contact.data.company_text,
+        contact.data.origin,
+      ]
+        .filter(Boolean)
+        .some((part) => part!.toLowerCase().includes(query));
+    })
+    .slice(0, 5);
+
   return (
-    <div>
-      <SingleTagField
-        value={role}
-        options={roleOptions}
-        placeholder="Rolle"
-        onChange={setRole}
+    <div className="relative">
+      <Input
+        value={value}
+        {...NO_PASSWORD_MANAGER_PROPS}
+        placeholder="Kontakt suchen"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          const first = visible[0];
+          if (first) onPick(first.id);
+        }}
       />
+      {focused && (visible.length > 0 || query) && (
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto rounded-md border border-[var(--border)] bg-[var(--background)] shadow-lg">
+          {visible.map((contact) => (
+            <button
+              key={contact.id}
+              type="button"
+              className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--accent)]"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                onPick(contact.id);
+              }}
+            >
+              <span className="block truncate">{contactDisplayName(contact)}</span>
+              {contact.data.company_text && (
+                <span className="block truncate text-xs text-[var(--muted-foreground)]">{contact.data.company_text}</span>
+              )}
+            </button>
+          ))}
+          {visible.length === 0 && (
+            <div className="px-3 py-2 text-sm text-[var(--muted-foreground)]">Kein bestehender Kontakt gefunden</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

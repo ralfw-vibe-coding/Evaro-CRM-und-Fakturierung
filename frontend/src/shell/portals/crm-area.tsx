@@ -116,7 +116,6 @@ export function CrmArea() {
             focusBusinessPartnerId={focusBusinessPartnerId}
             onCompanyFocused={() => setFocusCompanyContactId(null)}
             onBusinessPartnerFocused={() => setFocusBusinessPartnerId(null)}
-            onFocusCompanyContact={(id) => setFocusCompanyContactId(id)}
             onFocusBusinessPartner={(id) => setFocusBusinessPartnerId(id)}
             onClose={closeDetails}
             onChanged={refreshProjection}
