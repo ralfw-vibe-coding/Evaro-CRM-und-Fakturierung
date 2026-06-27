@@ -124,6 +124,16 @@ function normalizeOptional(value: string | undefined): string | undefined {
   return normalized ? normalized : undefined;
 }
 
+function splitCategorizedValue(value: string | undefined): string[] | undefined {
+  const values = value?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
+  return values.length > 0 ? values : undefined;
+}
+
+function serializeCategorizedValue(values: string[] | undefined): string | undefined {
+  const normalized = values ? normalizeTags(values) : undefined;
+  return normalized?.join(", ");
+}
+
 function normalizeContactData(data: ContactData, channels: Channel[]): ContactData {
   return {
     title: normalizeOptional(data.title),
@@ -695,19 +705,10 @@ export function CreateContactDetail({
             </label>
             <div className="grid grid-cols-12 gap-3">
               <Input
-                ref={companyInputRef}
-                value={data.company_text ?? ""}
-                placeholder="Firma"
-                aria-label="Firma"
-                className="col-span-12"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, company_text: e.target.value })}
-              />
-              <Input
                 value={data.first_name ?? ""}
                 placeholder="Vorname"
                 aria-label="Vorname"
-                className="col-span-5"
+                className="col-span-5 h-11 text-lg font-semibold"
                 {...NO_PASSWORD_MANAGER_PROPS}
                 onChange={(e) => setData({ ...data, first_name: e.target.value })}
               />
@@ -716,11 +717,21 @@ export function CreateContactDetail({
                   value={data.last_name ?? ""}
                   placeholder="Nachname"
                   aria-label="Nachname"
+                  className="h-11 text-lg font-semibold"
                   {...NO_PASSWORD_MANAGER_PROPS}
                   onChange={(e) => setData({ ...data, last_name: e.target.value })}
                 />
                 {errors.last_name && <p className="text-xs text-[var(--destructive)]">{errors.last_name}</p>}
               </div>
+              <Input
+                ref={companyInputRef}
+                value={data.company_text ?? ""}
+                placeholder="Firma"
+                aria-label="Firma"
+                className="col-span-12"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, company_text: e.target.value })}
+              />
               <select
                 value={data.gender ?? ""}
                 aria-label="Geschlecht"
@@ -757,14 +768,14 @@ export function CreateContactDetail({
                 {...NO_PASSWORD_MANAGER_PROPS}
                 onChange={(e) => setData({ ...data, title: e.target.value })}
               />
-              <Input
-                value={data.origin ?? ""}
-                placeholder="Kontaktquelle"
-                aria-label="Kontaktquelle"
-                className="col-span-12"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, origin: e.target.value })}
-              />
+              <div className="col-span-12">
+                <TagField
+                  label="Kontaktquelle"
+                  values={splitCategorizedValue(data.origin)}
+                  options={tagOptions.contact.origin}
+                  onChange={(origin) => setData({ ...data, origin: serializeCategorizedValue(origin) })}
+                />
+              </div>
             </div>
           </Section>
 
@@ -1189,19 +1200,10 @@ function ContactEditor({
             </label>
             <div className="grid grid-cols-12 gap-3">
               <Input
-                ref={companyInputRef}
-                value={data.company_text ?? ""}
-                placeholder="Firma"
-                aria-label="Firma"
-                className="col-span-12"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, company_text: e.target.value })}
-              />
-              <Input
                 value={data.first_name ?? ""}
                 placeholder="Vorname"
                 aria-label="Vorname"
-                className="col-span-5"
+                className="col-span-5 h-11 text-lg font-semibold"
                 {...NO_PASSWORD_MANAGER_PROPS}
                 onChange={(e) => setData({ ...data, first_name: e.target.value })}
               />
@@ -1210,11 +1212,21 @@ function ContactEditor({
                   value={data.last_name ?? ""}
                   placeholder="Nachname"
                   aria-label="Nachname"
+                  className="h-11 text-lg font-semibold"
                   {...NO_PASSWORD_MANAGER_PROPS}
                   onChange={(e) => setData({ ...data, last_name: e.target.value })}
                 />
                 {errors.last_name && <p className="text-xs text-[var(--destructive)]">{errors.last_name}</p>}
               </div>
+              <Input
+                ref={companyInputRef}
+                value={data.company_text ?? ""}
+                placeholder="Firma"
+                aria-label="Firma"
+                className="col-span-12"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, company_text: e.target.value })}
+              />
               <select
                 value={data.gender ?? ""}
                 aria-label="Geschlecht"
@@ -1251,14 +1263,14 @@ function ContactEditor({
                 {...NO_PASSWORD_MANAGER_PROPS}
                 onChange={(e) => setData({ ...data, title: e.target.value })}
               />
-              <Input
-                value={data.origin ?? ""}
-                placeholder="Kontaktquelle"
-                aria-label="Kontaktquelle"
-                className="col-span-12"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, origin: e.target.value })}
-              />
+              <div className="col-span-12">
+                <TagField
+                  label="Kontaktquelle"
+                  values={splitCategorizedValue(data.origin)}
+                  options={tagOptions.contact.origin}
+                  onChange={(origin) => setData({ ...data, origin: serializeCategorizedValue(origin) })}
+                />
+              </div>
             </div>
           </Section>
 
@@ -1648,7 +1660,7 @@ function BusinessPartnerEditor({
             onNavigate={navigateFromDetails}
           />
 
-          <Section title="Memo">
+          <Section title="Absprachen">
             <Textarea
               value={data.memo ?? ""}
               rows={5}

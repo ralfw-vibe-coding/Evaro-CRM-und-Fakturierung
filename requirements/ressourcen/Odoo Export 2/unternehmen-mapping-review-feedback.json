@@ -1,0 +1,228 @@
+{
+  "source": "requirements/ressourcen/odoo export 2/unternehmen.xlsx",
+  "target": "business_partners",
+  "rows": [
+    {
+      "column": "Aktivitäten",
+      "data": "nein, 0/116",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Bundesland",
+      "data": "ja, 20/116",
+      "mapping": "`data.import.raw.Bundesland`, da aktuelles Adressmodell kein Bundesland hat.",
+      "feedback": "ok"
+    },
+    {
+      "column": "E-Mail",
+      "data": "ja, 36/116",
+      "mapping": "`data.channels[]` mit `type: \"email\"`, aber nur wenn `Normalisierte E-Mail` leer ist.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Interessen",
+      "data": "ja, 16/116",
+      "mapping": "`data.tags[]`.",
+      "feedback": "nein, mit \"#\" in die notizen aufnehmen; leerzeichen in einem interesse dabei durch \"_\" ersetzen. kommasepariert auf einer zeile, die mit \"Interessen: \" beginnt."
+    },
+    {
+      "column": "Land",
+      "data": "ja, 85/116",
+      "mapping": "`data.address.country`, falls `Ländercode` leer ist.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Mobil",
+      "data": "ja, 5/116",
+      "mapping": "`data.channels[]` mit `type: \"mobile\"`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Produkte",
+      "data": "ja, 11/116",
+      "mapping": "`data.tags[]`, mit Präfix `Produkt: ...`.",
+      "feedback": "ebenfalls in notizen mit \"#\" davor und \"_\" statt leerzeichen. kommasepariert auf einer zeile, die mit \"Produkte: \" beginnt."
+    },
+    {
+      "column": "Stadt",
+      "data": "ja, 89/116",
+      "mapping": "`data.address.city`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Stichwörter",
+      "data": "ja, 62/116",
+      "mapping": "`data.tags[]`.",
+      "feedback": "kommasepariert auf einer zeile, die mit \"Stichwörter: \" beginnt."
+    },
+    {
+      "column": "Straße",
+      "data": "ja, 88/116",
+      "mapping": "`data.address.street`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Telefon",
+      "data": "ja, 47/116",
+      "mapping": "`data.channels[]` mit `type: \"phone\"`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "USt-IdNr.",
+      "data": "ja, 68/116",
+      "mapping": "`data.vat_id`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Vollständiger Name",
+      "data": "ja, 99/116",
+      "mapping": "Fallback für `data.name`; zusätzlich in `data.import.raw`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Übergeordneter Name",
+      "data": "ja, 1/116",
+      "mapping": "Review-Feld; nicht direkt operativ mappen. In `data.import.raw` behalten.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Zusätzliche Infos",
+      "data": "nein, 0/116",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Website-Link",
+      "data": "ja, 66/116",
+      "mapping": "`data.channels[]` mit `type: \"website\"`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Vorname",
+      "data": "ja, 2/116",
+      "mapping": "Review-Feld; gehört fachlich nicht zu `business_partners`. In `data.import.raw` behalten.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Vollständige Adresse",
+      "data": "ja, 99/116",
+      "mapping": "Operative Adresse aus Einzelspalten; Original in `data.import.raw.Vollständige Adresse` behalten.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Unternehmensname",
+      "data": "nein, 0/116",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Telefon/Mobil",
+      "data": "nein, 0/116",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Rolle",
+      "data": "nein, 0/116",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Quelle",
+      "data": "ja, 52/116",
+      "mapping": "`data.tags[]`, mit Präfix `Quelle: ...`.",
+      "feedback": "kommasepariert auf einer zeile, die mit \"Quelle: \" beginnt."
+    },
+    {
+      "column": "PLZ",
+      "data": "ja, 88/116",
+      "mapping": "`data.address.zip`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Notizen",
+      "data": "ja, 28/116",
+      "mapping": "`data.memo`, weil hier eher Vereinbarungen/Preise/Rechnungshinweise stehen. HTML bereinigen.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Notizen.1",
+      "data": "nein, 0/116",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Notizen.2",
+      "data": "ja, 49/116",
+      "mapping": "`data.notes`, weil hier eher Verlauf/Gesprächsnotizen stehen. HTML bereinigen.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Normalisierte E-Mail",
+      "data": "ja, 36/116",
+      "mapping": "Bevorzugt für `data.channels[]` mit `type: \"email\"`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Newsletter",
+      "data": "ja, 99/116",
+      "mapping": "Wenn `True`: `data.tags[]` enthält `newsletter`. Bei `False` nichts importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Name des Unternehmens",
+      "data": "ja, 99/116",
+      "mapping": "Bevorzugt für `data.name`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Name",
+      "data": "ja, 99/116",
+      "mapping": "Fallback für `data.name`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Nachname",
+      "data": "ja, 2/116",
+      "mapping": "Review-Feld; gehört fachlich nicht zu `business_partners`. In `data.import.raw` behalten.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Ländercode",
+      "data": "ja, 85/116",
+      "mapping": "Bevorzugt für `data.address.country`.",
+      "feedback": "in data.address.country ist bevorzugt der landesname zu speichern, zb \"Deutschland\". ein ländercode sollte übersetzt werden in einen landesnamen, wenn es klar ist, um welches land es geht. nur im notfall den ländercode speichern."
+    },
+    {
+      "column": "Ist ein Unternehmen",
+      "data": "ja, 99/116",
+      "mapping": "Steuert Importentscheidung; nicht als Fachfeld nötig. In `data.import.raw` behalten.",
+      "feedback": "das ist implizit durch die zieltabelle in der datenbank. kann in data.import.raw behalten werden."
+    },
+    {
+      "column": "Empfehlung von",
+      "data": "ja, 27/116",
+      "mapping": "`data.tags[]`, mit Präfix `Empfehlung von: ...`.",
+      "feedback": "eine zeile in den notizen beginnend mit \"Empfehlung von: \""
+    },
+    {
+      "column": "Du/Sie",
+      "data": "nein, 0/116",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Anzeigename",
+      "data": "ja, 99/116",
+      "mapping": "Fallback für `data.name`; zusätzlich in `data.import.raw`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Ansprache",
+      "data": "ja, 2/116",
+      "mapping": "Review-Feld; gehört fachlich nicht zu `business_partners`. In `data.import.raw` behalten.",
+      "feedback": "ok"
+    }
+  ]
+}

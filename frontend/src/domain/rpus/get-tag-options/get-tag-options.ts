@@ -7,6 +7,7 @@ export interface TagOptions {
   channelTypes: string[];
   linkRoles: string[];
   contact: {
+    origin: string[];
     relationship: string[];
     role: string[];
     work_area: string[];
@@ -28,6 +29,10 @@ function sorted(values: Iterable<string | undefined>): string[] {
 
 function flatten(values: (string[] | undefined)[]): string[] {
   return values.flatMap((value) => value ?? []);
+}
+
+function splitTags(value: string | undefined): string[] {
+  return value?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
 }
 
 function fixedFirst(fixed: string[], values: Iterable<string | undefined>): string[] {
@@ -52,6 +57,7 @@ export function getTagOptions(deps: { selectionStore: SelectionStoreProvider }) 
       ]),
       linkRoles: sorted(selection?.contact_gps.map((link) => link.role) ?? []),
       contact: {
+        origin: sorted(contacts.flatMap((contact) => splitTags(contact.data.origin))),
         relationship: sorted(flatten(contacts.map((contact) => contact.data.relationship))),
         role: sorted(flatten(contacts.map((contact) => contact.data.role))),
         work_area: sorted(flatten(contacts.map((contact) => contact.data.work_area))),

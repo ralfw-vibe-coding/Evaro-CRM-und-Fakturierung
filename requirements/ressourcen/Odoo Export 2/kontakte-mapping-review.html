@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mapping Review: kontakte.xlsx</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f7f4;
+        --panel: #ffffff;
+        --text: #222222;
+        --muted: #666666;
+        --border: #d7d7cf;
+        --accent: #006f6a;
+        --accent-soft: #e5f3f1;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.45;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        border-bottom: 1px solid var(--border);
+        background: rgba(247, 247, 244, 0.95);
+        backdrop-filter: blur(10px);
+      }
+      .bar {
+        display: flex;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 16px 20px;
+        gap: 16px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .subtitle {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      button {
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        background: var(--accent);
+        color: #ffffff;
+        font: inherit;
+        font-size: 13px;
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: var(--panel);
+        color: var(--accent);
+      }
+      main {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .note {
+        margin-bottom: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent);
+        background: var(--panel);
+        border-radius: 6px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+        border: 1px solid var(--border);
+      }
+      th,
+      td {
+        border-bottom: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+        padding: 10px;
+        vertical-align: top;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        position: sticky;
+        top: 75px;
+        z-index: 1;
+        background: var(--accent-soft);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      th:last-child,
+      td:last-child {
+        border-right: 0;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+        background: #f1f1ed;
+        padding: 1px 4px;
+        border-radius: 4px;
+      }
+      textarea {
+        width: 100%;
+        min-height: 74px;
+        resize: vertical;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px;
+        font: inherit;
+        font-size: 13px;
+      }
+      .col-name {
+        width: 18%;
+        font-weight: 650;
+      }
+      .col-data {
+        width: 10%;
+        white-space: nowrap;
+      }
+      .col-map {
+        width: 42%;
+      }
+      .col-feedback {
+        width: 30%;
+      }
+      .footer {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      @media (max-width: 900px) {
+        .bar {
+          display: block;
+        }
+        .actions {
+          justify-content: flex-start;
+          margin-top: 12px;
+        }
+        th {
+          top: 124px;
+        }
+        table,
+        thead,
+        tbody,
+        th,
+        td,
+        tr {
+          display: block;
+        }
+        thead {
+          display: none;
+        }
+        tr {
+          border-bottom: 2px solid var(--border);
+        }
+        td {
+          border-right: 0;
+          width: 100% !important;
+        }
+        td::before {
+          display: block;
+          content: attr(data-label);
+          margin-bottom: 4px;
+          color: var(--muted);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="bar">
+        <div>
+          <h1>Mapping Review: kontakte.xlsx</h1>
+          <div class="subtitle">Ziel: contacts · Feedback wird lokal im Browser zwischengespeichert</div>
+        </div>
+        <div class="actions">
+          <button type="button" class="secondary" id="clear">Feedback leeren</button>
+          <button type="button" id="download-md">Markdown exportieren</button>
+          <button type="button" id="download-json">JSON exportieren</button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <div class="note">
+        Direkte Dateischreibung ist in einer lokalen HTML-Datei normalerweise blockiert. Trage Kommentare ein und exportiere
+        danach Markdown oder JSON. Die Eingaben bleiben zusaetzlich im Browser-LocalStorage erhalten.
+      </div>
+      <table id="mapping-table">
+        <thead>
+          <tr>
+            <th class="col-name">Excel-Spalte</th>
+            <th class="col-data">Daten</th>
+            <th class="col-map">Mapping-Vorschlag</th>
+            <th class="col-feedback">Feedback / Entscheidung</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="footer">
+        Datei-Paar: <code>kontakte-mapping-review.md</code> und <code>kontakte-mapping-review.html</code>
+      </div>
+    </main>
+    <script>
+      const rows = [
+        ["Aktivitäten", "nein, 0/129", "Nicht importieren."],
+        ["Bundesland", "ja, 19/129", "`data.import.raw.Bundesland`, da aktuelles Kontaktmodell kein Bundesland hat."],
+        ["E-Mail", "ja, 112/129", "`data.channels[]` mit `type: \"email\"`, aber nur wenn `Normalisierte E-Mail` leer ist."],
+        ["Interessen", "ja, 2/129", "In `data.notes` als Zeile `Interessen: #...`; Leerzeichen innerhalb eines Interesses durch `_` ersetzen."],
+        ["Land", "ja, 108/129", "Kein operatives Kontaktfeld; in `data.import.raw.Land` behalten. Falls später Einzelperson ohne GP-Adresse wichtig ist, Review."],
+        ["Mobil", "ja, 27/129", "`data.channels[]` mit `type: \"mobile\"`."],
+        ["Produkte", "nein, 0/129", "Nicht importieren."],
+        ["Stadt", "ja, 115/129", "Kein operatives Kontaktfeld; in `data.import.raw.Stadt` behalten. Beziehung läuft über Geschäftspartneradresse."],
+        ["Stichwörter", "ja, 16/129", "In `data.notes` als Zeile `Stichwörter: ...`."],
+        ["Straße", "ja, 113/129", "Kein operatives Kontaktfeld; in `data.import.raw.Straße` behalten. Beziehung läuft über Geschäftspartneradresse."],
+        ["Telefon", "ja, 63/129", "`data.channels[]` mit `type: \"phone\"`."],
+        ["Vollständiger Name", "ja, 127/129", "Fallback zur Namensableitung; zusätzlich in `data.import.raw`."],
+        ["Übergeordneter Name", "ja, 114/129", "Matching-Key zum Geschäftspartner; außerdem `data.company_text`, bis Relation erzeugt ist."],
+        ["Zusätzliche Infos", "nein, 0/129", "Nicht importieren."],
+        ["Website-Link", "ja, 10/129", "Review-Feld: Wenn persönliche Website, `data.channels[]` mit `type: \"website\"`; sonst eher beim Geschäftspartner. In `data.import.raw` behalten."],
+        ["Vorname", "ja, 68/129", "`data.first_name`."],
+        ["Vollständige Adresse", "ja, 121/129", "Nicht operativ mappen; Original in `data.import.raw.Vollständige Adresse` behalten."],
+        ["Unternehmensname", "ja, 1/129", "Fallback für Matching-Key und `data.company_text`."],
+        ["Telefon/Mobil", "nein, 0/129", "Nicht importieren."],
+        ["Rolle", "ja, 40/129", "`data.role[]`."],
+        ["Quelle", "ja, 18/129", "In `data.notes` als Zeile `Quelle: ...`."],
+        ["PLZ", "ja, 114/129", "Kein operatives Kontaktfeld; in `data.import.raw.PLZ` behalten. Beziehung läuft über Geschäftspartneradresse."],
+        ["Notizen", "ja, 5/129", "Review-Feld: Wenn personbezogen, an `data.notes` anhängen; wenn Vereinbarung/Rechnung, eher beim Geschäftspartner. HTML bereinigen."],
+        ["Notizen.1", "nein, 0/129", "Nicht importieren."],
+        ["Notizen.2", "ja, 42/129", "`data.notes`, HTML bereinigen."],
+        ["Normalisierte E-Mail", "ja, 112/129", "Bevorzugt für `data.channels[]` mit `type: \"email\"`."],
+        ["Newsletter", "ja, 127/129", "Wenn `True`: in `data.notes` als Zeile `Newsletter: ja`; bei `False` nichts importieren."],
+        ["Name des Unternehmens", "ja, 115/129", "Bevorzugter Matching-Key zum Geschäftspartner; außerdem `data.company_text`, bis Relation erzeugt ist."],
+        ["Name", "ja, 124/129", "Fallback zur Namensableitung, wenn Vorname/Nachname fehlen."],
+        ["Nachname", "ja, 68/129", "`data.last_name`."],
+        ["Ländercode", "ja, 108/129", "Kein operatives Kontaktfeld; in `data.import.raw.Ländercode` behalten."],
+        ["Ist ein Unternehmen", "ja, 127/129", "Steuert Importentscheidung; sollte bei Kontakten `False` sein. In `data.import.raw` behalten."],
+        ["Empfehlung von", "ja, 10/129", "In `data.notes` als Zeile `Empfehlung von: ...`."],
+        ["Du/Sie", "nein, 0/129", "Nicht importieren."],
+        ["Anzeigename", "ja, 127/129", "Fallback zur Namensableitung; zusätzlich in `data.import.raw`."],
+        ["Ansprache", "ja, 64/129", "Ableitung für `data.gender` und `data.salutation`, soweit eindeutig; Original in `data.import.raw`."]
+      ];
+
+      const storageKey = "evaro-odoo-export-2-kontakte-mapping-feedback";
+      const tbody = document.querySelector("#mapping-table tbody");
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+
+      function renderInlineMarkdown(text) {
+        return text.replace(/`([^`]+)`/g, "<code>$1</code>");
+      }
+
+      rows.forEach(([column, data, mapping]) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="col-name" data-label="Excel-Spalte">${column}</td>
+          <td class="col-data" data-label="Daten">${data}</td>
+          <td class="col-map" data-label="Mapping-Vorschlag">${renderInlineMarkdown(mapping)}</td>
+          <td class="col-feedback" data-label="Feedback / Entscheidung">
+            <textarea data-column="${column}" placeholder="Kommentar oder Entscheidung">${saved[column] || ""}</textarea>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      function collect() {
+        const feedback = {};
+        document.querySelectorAll("textarea[data-column]").forEach((input) => {
+          feedback[input.dataset.column] = input.value.trim();
+        });
+        return feedback;
+      }
+
+      function save() {
+        localStorage.setItem(storageKey, JSON.stringify(collect(), null, 2));
+      }
+
+      document.addEventListener("input", (event) => {
+        if (event.target.matches("textarea[data-column]")) save();
+      });
+
+      function download(filename, content, type) {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function toMarkdown() {
+        const feedback = collect();
+        const lines = [
+          "# Mapping Review: kontakte.xlsx -> contacts",
+          "",
+          "| Excel-Spalte | Daten enthalten | Mapping-Vorschlag | Feedback / Entscheidung |",
+          "|---|---:|---|---|"
+        ];
+        rows.forEach(([column, data, mapping]) => {
+          const cleanFeedback = (feedback[column] || "").replaceAll("\n", "<br>");
+          lines.push(`| ${column} | ${data} | ${mapping} | ${cleanFeedback} |`);
+        });
+        lines.push("");
+        return lines.join("\n");
+      }
+
+      document.querySelector("#download-md").addEventListener("click", () => {
+        save();
+        download("kontakte-mapping-review-feedback.md", toMarkdown(), "text/markdown;charset=utf-8");
+      });
+
+      document.querySelector("#download-json").addEventListener("click", () => {
+        save();
+        const feedback = collect();
+        const payload = {
+          source: "requirements/ressourcen/odoo export 2/kontakte.xlsx",
+          target: "contacts",
+          rows: rows.map(([column, data, mapping]) => ({
+            column,
+            data,
+            mapping,
+            feedback: feedback[column] || ""
+          }))
+        };
+        download("kontakte-mapping-review-feedback.json", JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
+      });
+
+      document.querySelector("#clear").addEventListener("click", () => {
+        if (!confirm("Feedback wirklich leeren?")) return;
+        localStorage.removeItem(storageKey);
+        document.querySelectorAll("textarea[data-column]").forEach((input) => {
+          input.value = "";
+        });
+      });
+    </script>
+  </body>
+</html>

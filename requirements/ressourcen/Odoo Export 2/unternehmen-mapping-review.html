@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mapping Review: unternehmen.xlsx</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f7f4;
+        --panel: #ffffff;
+        --text: #222222;
+        --muted: #666666;
+        --border: #d7d7cf;
+        --accent: #006f6a;
+        --accent-soft: #e5f3f1;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.45;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        border-bottom: 1px solid var(--border);
+        background: rgba(247, 247, 244, 0.95);
+        backdrop-filter: blur(10px);
+      }
+      .bar {
+        display: flex;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 16px 20px;
+        gap: 16px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .subtitle {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      button {
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        background: var(--accent);
+        color: #ffffff;
+        font: inherit;
+        font-size: 13px;
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: var(--panel);
+        color: var(--accent);
+      }
+      main {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .note {
+        margin-bottom: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent);
+        background: var(--panel);
+        border-radius: 6px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+        border: 1px solid var(--border);
+      }
+      th,
+      td {
+        border-bottom: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+        padding: 10px;
+        vertical-align: top;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        position: sticky;
+        top: 75px;
+        z-index: 1;
+        background: var(--accent-soft);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      th:last-child,
+      td:last-child {
+        border-right: 0;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+        background: #f1f1ed;
+        padding: 1px 4px;
+        border-radius: 4px;
+      }
+      textarea {
+        width: 100%;
+        min-height: 74px;
+        resize: vertical;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px;
+        font: inherit;
+        font-size: 13px;
+      }
+      .col-name {
+        width: 18%;
+        font-weight: 650;
+      }
+      .col-data {
+        width: 10%;
+        white-space: nowrap;
+      }
+      .col-map {
+        width: 42%;
+      }
+      .col-feedback {
+        width: 30%;
+      }
+      .footer {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      @media (max-width: 900px) {
+        .bar {
+          display: block;
+        }
+        .actions {
+          justify-content: flex-start;
+          margin-top: 12px;
+        }
+        th {
+          top: 124px;
+        }
+        table,
+        thead,
+        tbody,
+        th,
+        td,
+        tr {
+          display: block;
+        }
+        thead {
+          display: none;
+        }
+        tr {
+          border-bottom: 2px solid var(--border);
+        }
+        td {
+          border-right: 0;
+          width: 100% !important;
+        }
+        td::before {
+          display: block;
+          content: attr(data-label);
+          margin-bottom: 4px;
+          color: var(--muted);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="bar">
+        <div>
+          <h1>Mapping Review: unternehmen.xlsx</h1>
+          <div class="subtitle">Ziel: business_partners · Feedback wird lokal im Browser zwischengespeichert</div>
+        </div>
+        <div class="actions">
+          <button type="button" class="secondary" id="clear">Feedback leeren</button>
+          <button type="button" id="download-md">Markdown exportieren</button>
+          <button type="button" id="download-json">JSON exportieren</button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <div class="note">
+        Direkte Dateischreibung ist in einer lokalen HTML-Datei normalerweise blockiert. Trage Kommentare ein und exportiere
+        danach Markdown oder JSON. Die Eingaben bleiben zusaetzlich im Browser-LocalStorage erhalten.
+      </div>
+      <table id="mapping-table">
+        <thead>
+          <tr>
+            <th class="col-name">Excel-Spalte</th>
+            <th class="col-data">Daten</th>
+            <th class="col-map">Mapping-Vorschlag</th>
+            <th class="col-feedback">Feedback / Entscheidung</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="footer">
+        Datei-Paar: <code>unternehmen-mapping-review.md</code> und <code>unternehmen-mapping-review.html</code>
+      </div>
+    </main>
+    <script>
+      const rows = [
+        ["Aktivitäten", "nein, 0/116", "Nicht importieren."],
+        ["Bundesland", "ja, 20/116", "`data.import.raw.Bundesland`, da aktuelles Adressmodell kein Bundesland hat."],
+        ["E-Mail", "ja, 36/116", "`data.channels[]` mit `type: \"email\"`, aber nur wenn `Normalisierte E-Mail` leer ist."],
+        ["Interessen", "ja, 16/116", "`data.tags[]`."],
+        ["Land", "ja, 85/116", "`data.address.country`, falls `Ländercode` leer ist."],
+        ["Mobil", "ja, 5/116", "`data.channels[]` mit `type: \"mobile\"`."],
+        ["Produkte", "ja, 11/116", "`data.tags[]`, mit Präfix `Produkt: ...`."],
+        ["Stadt", "ja, 89/116", "`data.address.city`."],
+        ["Stichwörter", "ja, 62/116", "`data.tags[]`."],
+        ["Straße", "ja, 88/116", "`data.address.street`."],
+        ["Telefon", "ja, 47/116", "`data.channels[]` mit `type: \"phone\"`."],
+        ["USt-IdNr.", "ja, 68/116", "`data.vat_id`."],
+        ["Vollständiger Name", "ja, 99/116", "Fallback für `data.name`; zusätzlich in `data.import.raw`."],
+        ["Übergeordneter Name", "ja, 1/116", "Review-Feld; nicht direkt operativ mappen. In `data.import.raw` behalten."],
+        ["Zusätzliche Infos", "nein, 0/116", "Nicht importieren."],
+        ["Website-Link", "ja, 66/116", "`data.channels[]` mit `type: \"website\"`."],
+        ["Vorname", "ja, 2/116", "Review-Feld; gehört fachlich nicht zu `business_partners`. In `data.import.raw` behalten."],
+        ["Vollständige Adresse", "ja, 99/116", "Operative Adresse aus Einzelspalten; Original in `data.import.raw.Vollständige Adresse` behalten."],
+        ["Unternehmensname", "nein, 0/116", "Nicht importieren."],
+        ["Telefon/Mobil", "nein, 0/116", "Nicht importieren."],
+        ["Rolle", "nein, 0/116", "Nicht importieren."],
+        ["Quelle", "ja, 52/116", "`data.tags[]`, mit Präfix `Quelle: ...`."],
+        ["PLZ", "ja, 88/116", "`data.address.zip`."],
+        ["Notizen", "ja, 28/116", "`data.memo`, weil hier eher Vereinbarungen/Preise/Rechnungshinweise stehen. HTML bereinigen."],
+        ["Notizen.1", "nein, 0/116", "Nicht importieren."],
+        ["Notizen.2", "ja, 49/116", "`data.notes`, weil hier eher Verlauf/Gesprächsnotizen stehen. HTML bereinigen."],
+        ["Normalisierte E-Mail", "ja, 36/116", "Bevorzugt für `data.channels[]` mit `type: \"email\"`."],
+        ["Newsletter", "ja, 99/116", "Wenn `True`: `data.tags[]` enthält `newsletter`. Bei `False` nichts importieren."],
+        ["Name des Unternehmens", "ja, 99/116", "Bevorzugt für `data.name`."],
+        ["Name", "ja, 99/116", "Fallback für `data.name`."],
+        ["Nachname", "ja, 2/116", "Review-Feld; gehört fachlich nicht zu `business_partners`. In `data.import.raw` behalten."],
+        ["Ländercode", "ja, 85/116", "Bevorzugt für `data.address.country`."],
+        ["Ist ein Unternehmen", "ja, 99/116", "Steuert Importentscheidung; nicht als Fachfeld nötig. In `data.import.raw` behalten."],
+        ["Empfehlung von", "ja, 27/116", "`data.tags[]`, mit Präfix `Empfehlung von: ...`."],
+        ["Du/Sie", "nein, 0/116", "Nicht importieren."],
+        ["Anzeigename", "ja, 99/116", "Fallback für `data.name`; zusätzlich in `data.import.raw`."],
+        ["Ansprache", "ja, 2/116", "Review-Feld; gehört fachlich nicht zu `business_partners`. In `data.import.raw` behalten."]
+      ];
+
+      const storageKey = "evaro-odoo-export-2-unternehmen-mapping-feedback";
+      const tbody = document.querySelector("#mapping-table tbody");
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+
+      function renderInlineMarkdown(text) {
+        return text.replace(/`([^`]+)`/g, "<code>$1</code>");
+      }
+
+      rows.forEach(([column, data, mapping]) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="col-name" data-label="Excel-Spalte">${column}</td>
+          <td class="col-data" data-label="Daten">${data}</td>
+          <td class="col-map" data-label="Mapping-Vorschlag">${renderInlineMarkdown(mapping)}</td>
+          <td class="col-feedback" data-label="Feedback / Entscheidung">
+            <textarea data-column="${column}" placeholder="Kommentar oder Entscheidung">${saved[column] || ""}</textarea>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      function collect() {
+        const feedback = {};
+        document.querySelectorAll("textarea[data-column]").forEach((input) => {
+          feedback[input.dataset.column] = input.value.trim();
+        });
+        return feedback;
+      }
+
+      function save() {
+        localStorage.setItem(storageKey, JSON.stringify(collect(), null, 2));
+      }
+
+      document.addEventListener("input", (event) => {
+        if (event.target.matches("textarea[data-column]")) save();
+      });
+
+      function download(filename, content, type) {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function toMarkdown() {
+        const feedback = collect();
+        const lines = [
+          "# Mapping Review: unternehmen.xlsx -> business_partners",
+          "",
+          "| Excel-Spalte | Daten enthalten | Mapping-Vorschlag | Feedback / Entscheidung |",
+          "|---|---:|---|---|"
+        ];
+        rows.forEach(([column, data, mapping]) => {
+          const cleanFeedback = (feedback[column] || "").replaceAll("\\n", "<br>");
+          lines.push(`| ${column} | ${data} | ${mapping} | ${cleanFeedback} |`);
+        });
+        lines.push("");
+        return lines.join("\\n");
+      }
+
+      document.querySelector("#download-md").addEventListener("click", () => {
+        save();
+        download("unternehmen-mapping-review-feedback.md", toMarkdown(), "text/markdown;charset=utf-8");
+      });
+
+      document.querySelector("#download-json").addEventListener("click", () => {
+        save();
+        const payload = {
+          source: "requirements/ressourcen/odoo export 2/unternehmen.xlsx",
+          target: "business_partners",
+          rows: rows.map(([column, data, mapping]) => ({
+            column,
+            data,
+            mapping,
+            feedback: collect()[column] || ""
+          }))
+        };
+        download("unternehmen-mapping-review-feedback.json", JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
+      });
+
+      document.querySelector("#clear").addEventListener("click", () => {
+        if (!confirm("Feedback wirklich leeren?")) return;
+        localStorage.removeItem(storageKey);
+        document.querySelectorAll("textarea[data-column]").forEach((input) => {
+          input.value = "";
+        });
+      });
+    </script>
+  </body>
+</html>

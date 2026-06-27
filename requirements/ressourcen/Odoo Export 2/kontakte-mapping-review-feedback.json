@@ -1,0 +1,222 @@
+{
+  "source": "requirements/ressourcen/odoo export 2/kontakte.xlsx",
+  "target": "contacts",
+  "rows": [
+    {
+      "column": "Aktivitäten",
+      "data": "nein, 0/129",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Bundesland",
+      "data": "ja, 19/129",
+      "mapping": "`data.import.raw.Bundesland`, da aktuelles Kontaktmodell kein Bundesland hat.",
+      "feedback": "ok"
+    },
+    {
+      "column": "E-Mail",
+      "data": "ja, 112/129",
+      "mapping": "`data.channels[]` mit `type: \"email\"`, aber nur wenn `Normalisierte E-Mail` leer ist.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Interessen",
+      "data": "ja, 2/129",
+      "mapping": "In `data.notes` als Zeile `Interessen: #...`; Leerzeichen innerhalb eines Interesses durch `_` ersetzen.",
+      "feedback": "nein. als tag in contacts.data.interest speichern"
+    },
+    {
+      "column": "Land",
+      "data": "ja, 108/129",
+      "mapping": "Kein operatives Kontaktfeld; in `data.import.raw.Land` behalten. Falls später Einzelperson ohne GP-Adresse wichtig ist, Review.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Mobil",
+      "data": "ja, 27/129",
+      "mapping": "`data.channels[]` mit `type: \"mobile\"`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Produkte",
+      "data": "nein, 0/129",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Stadt",
+      "data": "ja, 115/129",
+      "mapping": "Kein operatives Kontaktfeld; in `data.import.raw.Stadt` behalten. Beziehung läuft über Geschäftspartneradresse.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Stichwörter",
+      "data": "ja, 16/129",
+      "mapping": "In `data.notes` als Zeile `Stichwörter: ...`.",
+      "feedback": ""
+    },
+    {
+      "column": "Straße",
+      "data": "ja, 113/129",
+      "mapping": "Kein operatives Kontaktfeld; in `data.import.raw.Straße` behalten. Beziehung läuft über Geschäftspartneradresse.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Telefon",
+      "data": "ja, 63/129",
+      "mapping": "`data.channels[]` mit `type: \"phone\"`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Vollständiger Name",
+      "data": "ja, 127/129",
+      "mapping": "Fallback zur Namensableitung; zusätzlich in `data.import.raw`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Übergeordneter Name",
+      "data": "ja, 114/129",
+      "mapping": "Matching-Key zum Geschäftspartner; außerdem `data.company_text`, bis Relation erzeugt ist.",
+      "feedback": "ok. wir haben in contacts eine spalte, in der ein firmenname stehen soll. ist das company_text? dort soll ein firmenname eingetragen werden, auch wenn es eine richtige relation zu einem geschäftspartner gibt."
+    },
+    {
+      "column": "Zusätzliche Infos",
+      "data": "nein, 0/129",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Website-Link",
+      "data": "ja, 10/129",
+      "mapping": "Review-Feld: Wenn persönliche Website, `data.channels[]` mit `type: \"website\"`; sonst eher beim Geschäftspartner. In `data.import.raw` behalten.",
+      "feedback": "kann immer nach data.channels als \"website\""
+    },
+    {
+      "column": "Vorname",
+      "data": "ja, 68/129",
+      "mapping": "`data.first_name`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Vollständige Adresse",
+      "data": "ja, 121/129",
+      "mapping": "Nicht operativ mappen; Original in `data.import.raw.Vollständige Adresse` behalten.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Unternehmensname",
+      "data": "ja, 1/129",
+      "mapping": "Fallback für Matching-Key und `data.company_text`.",
+      "feedback": "ok. siehe oben."
+    },
+    {
+      "column": "Telefon/Mobil",
+      "data": "nein, 0/129",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Rolle",
+      "data": "ja, 40/129",
+      "mapping": "`data.role[]`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Quelle",
+      "data": "ja, 18/129",
+      "mapping": "In `data.notes` als Zeile `Quelle: ...`.",
+      "feedback": "nein, nach data.origin"
+    },
+    {
+      "column": "PLZ",
+      "data": "ja, 114/129",
+      "mapping": "Kein operatives Kontaktfeld; in `data.import.raw.PLZ` behalten. Beziehung läuft über Geschäftspartneradresse.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Notizen",
+      "data": "ja, 5/129",
+      "mapping": "Review-Feld: Wenn personbezogen, an `data.notes` anhängen; wenn Vereinbarung/Rechnung, eher beim Geschäftspartner. HTML bereinigen.",
+      "feedback": "immer bereinigt an data.notes anhängen"
+    },
+    {
+      "column": "Notizen.1",
+      "data": "nein, 0/129",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Notizen.2",
+      "data": "ja, 42/129",
+      "mapping": "`data.notes`, HTML bereinigen.",
+      "feedback": "ok. an data.notes anhängen"
+    },
+    {
+      "column": "Normalisierte E-Mail",
+      "data": "ja, 112/129",
+      "mapping": "Bevorzugt für `data.channels[]` mit `type: \"email\"`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Newsletter",
+      "data": "ja, 127/129",
+      "mapping": "Wenn `True`: in `data.notes` als Zeile `Newsletter: ja`; bei `False` nichts importieren.",
+      "feedback": "wenn true, dann in data.tags als \"newsletter\""
+    },
+    {
+      "column": "Name des Unternehmens",
+      "data": "ja, 115/129",
+      "mapping": "Bevorzugter Matching-Key zum Geschäftspartner; außerdem `data.company_text`, bis Relation erzeugt ist.",
+      "feedback": "ok. siehe auch oben."
+    },
+    {
+      "column": "Name",
+      "data": "ja, 124/129",
+      "mapping": "Fallback zur Namensableitung, wenn Vorname/Nachname fehlen.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Nachname",
+      "data": "ja, 68/129",
+      "mapping": "`data.last_name`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Ländercode",
+      "data": "ja, 108/129",
+      "mapping": "Kein operatives Kontaktfeld; in `data.import.raw.Ländercode` behalten.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Ist ein Unternehmen",
+      "data": "ja, 127/129",
+      "mapping": "Steuert Importentscheidung; sollte bei Kontakten `False` sein. In `data.import.raw` behalten.",
+      "feedback": "ist implizit durch import nach contacts"
+    },
+    {
+      "column": "Empfehlung von",
+      "data": "ja, 10/129",
+      "mapping": "In `data.notes` als Zeile `Empfehlung von: ...`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Du/Sie",
+      "data": "nein, 0/129",
+      "mapping": "Nicht importieren.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Anzeigename",
+      "data": "ja, 127/129",
+      "mapping": "Fallback zur Namensableitung; zusätzlich in `data.import.raw`.",
+      "feedback": "ok"
+    },
+    {
+      "column": "Ansprache",
+      "data": "ja, 64/129",
+      "mapping": "Ableitung für `data.gender` und `data.salutation`, soweit eindeutig; Original in `data.import.raw`.",
+      "feedback": "ok"
+    }
+  ]
+}
