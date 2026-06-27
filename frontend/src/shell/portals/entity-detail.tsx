@@ -192,12 +192,12 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="grid gap-3 border-t border-[var(--border)] pt-4 first-of-type:border-t-0 first-of-type:pt-0">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold uppercase text-[var(--muted-foreground)]">{title}</h3>
+    <section className="overflow-visible rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-sm">
+      <div className="flex min-h-6 items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--accent)] px-3 py-0.5 [&_button]:size-6 [&_svg]:size-3.5">
+        <h3 className="text-[11px] font-semibold uppercase text-[var(--muted-foreground)]">{title}</h3>
         {action}
       </div>
-      {children}
+      <div className="grid gap-3 p-3">{children}</div>
     </section>
   );
 }
@@ -288,7 +288,7 @@ function TagField({
 
   return (
     <div className="relative">
-        <div className="flex min-h-9 flex-wrap items-center gap-1 rounded-md border border-[var(--input)] px-2 py-1">
+        <div className="flex min-h-8 flex-wrap items-center gap-1 rounded-md border border-[var(--input)] px-1.5 py-0.5 shadow-sm">
           {current.map((value) => (
             <span key={value} className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-2 py-0.5 text-xs">
               {value}
@@ -381,7 +381,7 @@ function SingleTagField({
 
   if (value.trim()) {
     return (
-      <div className="flex h-9 items-center">
+      <div className="flex h-8 items-center rounded-md border border-[var(--input)] px-2 shadow-sm">
         <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-2 py-0.5 text-xs">
           {value}
           <button
@@ -688,17 +688,21 @@ export function CreateContactDetail({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,680px)_minmax(320px,380px)] xl:items-start">
         <div className="grid content-start gap-5">
-          <Section title="Kontakt">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
+          <Section
+            title="Kontakt"
+            action={
+              <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted-foreground)]">
+                <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
               Aktiv
-            </label>
+              </label>
+            }
+          >
             <div className="grid grid-cols-12 gap-3">
               <Input
                 value={data.first_name ?? ""}
                 placeholder="Vorname"
                 aria-label="Vorname"
-                className="col-span-5 h-11 text-lg font-semibold"
+                className="col-span-5 h-10 text-lg font-semibold"
                 {...NO_PASSWORD_MANAGER_PROPS}
                 onChange={(e) => setData({ ...data, first_name: e.target.value })}
               />
@@ -707,7 +711,7 @@ export function CreateContactDetail({
                   value={data.last_name ?? ""}
                   placeholder="Nachname"
                   aria-label="Nachname"
-                  className="h-11 text-lg font-semibold"
+                  className="h-10 text-lg font-semibold"
                   {...NO_PASSWORD_MANAGER_PROPS}
                   onChange={(e) => setData({ ...data, last_name: e.target.value })}
                 />
@@ -726,7 +730,7 @@ export function CreateContactDetail({
                 value={data.gender ?? ""}
                 aria-label="Geschlecht"
                 onChange={(e) => setData({ ...data, gender: (e.target.value || undefined) as ContactData["gender"] })}
-                className={`col-span-4 h-9 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
+                className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
               >
                 <option value="">Geschlecht</option>
                 {GENDER_OPTIONS.map((option) => (
@@ -741,7 +745,7 @@ export function CreateContactDetail({
                 onChange={(e) =>
                   setData({ ...data, salutation: (e.target.value || undefined) as ContactData["salutation"] })
                 }
-                className={`col-span-4 h-9 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
+                className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
               >
                 <option value="">Anrede</option>
                 {SALUTATION_OPTIONS.map((option) => (
@@ -1183,17 +1187,21 @@ function ContactEditor({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,680px)_minmax(320px,380px)] xl:items-start">
         <div className="grid content-start gap-5">
-          <Section title="Kontakt">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
+          <Section
+            title="Kontakt"
+            action={
+              <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted-foreground)]">
+                <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
               Aktiv
-            </label>
+              </label>
+            }
+          >
             <div className="grid grid-cols-12 gap-3">
               <Input
                 value={data.first_name ?? ""}
                 placeholder="Vorname"
                 aria-label="Vorname"
-                className="col-span-5 h-11 text-lg font-semibold"
+                className="col-span-5 h-10 text-lg font-semibold"
                 {...NO_PASSWORD_MANAGER_PROPS}
                 onChange={(e) => setData({ ...data, first_name: e.target.value })}
               />
@@ -1202,7 +1210,7 @@ function ContactEditor({
                   value={data.last_name ?? ""}
                   placeholder="Nachname"
                   aria-label="Nachname"
-                  className="h-11 text-lg font-semibold"
+                  className="h-10 text-lg font-semibold"
                   {...NO_PASSWORD_MANAGER_PROPS}
                   onChange={(e) => setData({ ...data, last_name: e.target.value })}
                 />
@@ -1221,7 +1229,7 @@ function ContactEditor({
                 value={data.gender ?? ""}
                 aria-label="Geschlecht"
                 onChange={(e) => setData({ ...data, gender: (e.target.value || undefined) as ContactData["gender"] })}
-                className={`col-span-4 h-9 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
+                className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
               >
                 <option value="">Geschlecht</option>
                 {GENDER_OPTIONS.map((option) => (
@@ -1236,7 +1244,7 @@ function ContactEditor({
                 onChange={(e) =>
                   setData({ ...data, salutation: (e.target.value || undefined) as ContactData["salutation"] })
                 }
-                className={`col-span-4 h-9 rounded-md border border-[var(--input)] bg-transparent px-3 text-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
+                className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
               >
                 <option value="">Anrede</option>
                 {SALUTATION_OPTIONS.map((option) => (
@@ -1543,7 +1551,7 @@ function BusinessPartnerEditor({
                 value={data.name}
                 placeholder="Name"
                 aria-label="Name"
-                className="h-11 text-lg font-semibold"
+                className="h-10 text-lg font-semibold"
                 {...NO_PASSWORD_MANAGER_PROPS}
                 onChange={(e) => setData({ ...data, name: e.target.value })}
               />
