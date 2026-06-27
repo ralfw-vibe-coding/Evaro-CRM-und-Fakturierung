@@ -2,7 +2,6 @@ import * as React from "react";
 import { Building2, Loader2, MapPinned, Plus, Save, SaveOff, Trash2, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   createBusinessPartnerRpu,
@@ -181,15 +180,6 @@ function googleMapsUrl(parts: Array<string | undefined>): string | null {
   const query = parts.map((part) => part?.trim()).filter(Boolean).join(" ");
   if (!query) return null;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="grid gap-1.5">
-      <Label>{label}</Label>
-      {children}
-    </div>
-  );
 }
 
 function Section({
@@ -1547,64 +1537,65 @@ function BusinessPartnerEditor({
       <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
         <div className="grid content-start gap-5">
           <Section title="Geschäftspartner">
-            <Field label="Name">
+            <div className="grid gap-1">
               <Input
                 ref={nameInputRef}
                 value={data.name}
+                placeholder="Name"
+                aria-label="Name"
+                className="h-11 text-lg font-semibold"
                 {...NO_PASSWORD_MANAGER_PROPS}
                 onChange={(e) => setData({ ...data, name: e.target.value })}
               />
               {errors.name && <p className="text-xs text-[var(--destructive)]">{errors.name}</p>}
-            </Field>
-            <Field label="Straße">
-              <Textarea
-                rows={2}
-                value={data.address?.street ?? ""}
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, address: { ...data.address, street: e.target.value } })}
-              />
-            </Field>
+            </div>
+            <Textarea
+              rows={2}
+              value={data.address?.street ?? ""}
+              placeholder="Straße"
+              aria-label="Straße"
+              {...NO_PASSWORD_MANAGER_PROPS}
+              onChange={(e) => setData({ ...data, address: { ...data.address, street: e.target.value } })}
+            />
             <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
-              <Field label="PLZ">
+              <Input
+                value={data.address?.zip ?? ""}
+                placeholder="PLZ"
+                aria-label="PLZ"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, address: { ...data.address, zip: e.target.value } })}
+              />
+              <div className="flex gap-2">
                 <Input
-                  value={data.address?.zip ?? ""}
+                  value={data.address?.city ?? ""}
+                  placeholder="Ort"
+                  aria-label="Ort"
                   {...NO_PASSWORD_MANAGER_PROPS}
-                  onChange={(e) => setData({ ...data, address: { ...data.address, zip: e.target.value } })}
+                  onChange={(e) => setData({ ...data, address: { ...data.address, city: e.target.value } })}
                 />
-              </Field>
-              <Field label="Ort">
-                <div className="flex gap-2">
-                  <Input
-                    value={data.address?.city ?? ""}
-                    {...NO_PASSWORD_MANAGER_PROPS}
-                    onChange={(e) => setData({ ...data, address: { ...data.address, city: e.target.value } })}
-                  />
-                  {mapsHref && (
-                    <Button type="button" variant="ghost" size="icon" asChild aria-label="Ort in Google Maps öffnen">
-                      <a href={mapsHref} target="_blank" rel="noreferrer" title="Ort in Google Maps öffnen">
-                        <MapPinned />
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </Field>
+                {mapsHref && (
+                  <Button type="button" variant="ghost" size="icon" asChild aria-label="Ort in Google Maps öffnen">
+                    <a href={mapsHref} target="_blank" rel="noreferrer" title="Ort in Google Maps öffnen">
+                      <MapPinned />
+                    </a>
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Land">
-                <SingleTagField
-                  value={data.address?.country ?? ""}
-                  placeholder="Land"
-                  options={tagOptions.businessPartner.countries}
-                  onChange={(value) => setData({ ...data, address: { ...data.address, country: value } })}
-                />
-              </Field>
-              <Field label="USt-ID">
-                <Input
-                  value={data.vat_id ?? ""}
-                  {...NO_PASSWORD_MANAGER_PROPS}
-                  onChange={(e) => setData({ ...data, vat_id: e.target.value })}
-                />
-              </Field>
+              <SingleTagField
+                value={data.address?.country ?? ""}
+                placeholder="Land"
+                options={tagOptions.businessPartner.countries}
+                onChange={(value) => setData({ ...data, address: { ...data.address, country: value } })}
+              />
+              <Input
+                value={data.vat_id ?? ""}
+                placeholder="USt-ID"
+                aria-label="USt-ID"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, vat_id: e.target.value })}
+              />
             </div>
           </Section>
 
