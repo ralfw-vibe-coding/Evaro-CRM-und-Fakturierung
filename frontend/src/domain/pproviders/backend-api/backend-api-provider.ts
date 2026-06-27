@@ -50,6 +50,23 @@ export interface ContactGpInput {
   primary?: boolean;
 }
 
+export interface EmailImportMatch<T> {
+  entity: T;
+  score: number;
+  reason: string;
+}
+
+export interface EmailImportAnalysis {
+  proposal: {
+    contact: ContactData;
+    business_partner: BusinessPartnerData;
+  };
+  matches: {
+    contacts: Array<EmailImportMatch<Contact>>;
+    business_partners: Array<EmailImportMatch<BusinessPartner>>;
+  };
+}
+
 export interface UpdateInvoiceDraftInput {
   id: string;
   data: InvoiceData;
@@ -89,6 +106,7 @@ export interface BackendApiProvider {
   deleteBusinessPartner(token: string, id: string): Promise<ApiResult<void>>;
   linkContactGp(token: string, input: ContactGpInput): Promise<ApiResult<{ link: ContactGp }>>;
   unlinkContactGp(token: string, input: ContactGpInput): Promise<ApiResult<void>>;
+  analyzeEmailImport(token: string, emailText: string): Promise<ApiResult<EmailImportAnalysis>>;
   loadInvoicingData(token: string): Promise<ApiResult<InvoicingData>>;
   createInvoiceDraft(
     token: string,

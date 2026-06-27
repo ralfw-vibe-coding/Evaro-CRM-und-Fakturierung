@@ -33,6 +33,7 @@ import { ResendEmailProvider } from "./shell/xproviders/email/resend-email-provi
 import { InMemoryOtpProvider } from "./shell/xproviders/otp/in-memory-otp-provider.js";
 import { PostgresOtpProvider } from "./shell/xproviders/otp/postgres-otp-provider.js";
 import type { OtpProvider } from "./shell/xproviders/otp/otp-provider.js";
+import { extractEmailImportWithOpenAi } from "./shell/xproviders/openai/email-import-extractor.js";
 
 import { createContact } from "./domain/rpus/create-contact/create-contact.js";
 import { updateContact } from "./domain/rpus/update-contact/update-contact.js";
@@ -58,6 +59,7 @@ import { changeInvoiceStatus } from "./domain/rpus/change-invoice-status/change-
 import { createPaymentTerm } from "./domain/rpus/create-payment-term/create-payment-term.js";
 import { getAppSettings } from "./domain/rpus/get-app-settings/get-app-settings.js";
 import { updateAppSettings } from "./domain/rpus/update-app-settings/update-app-settings.js";
+import { analyzeEmailImport } from "./domain/rpus/analyze-email-import/analyze-email-import.js";
 import { verifyOtp } from "./reactors/verify-otp/verify-otp.js";
 import { requestOtp } from "./reactors/request-otp/request-otp.js";
 import { select } from "./reactors/select/select.js";
@@ -213,6 +215,13 @@ export function selectReactor() {
     listAllContacts: async () => ({ contacts: await contacts.listAll() }),
     listBusinessPartners: listBusinessPartners({ businessPartners: buildBusinessPartners() }),
     contactGps: buildContactGps(),
+  });
+}
+
+export function analyzeEmailImportRpu() {
+  return analyzeEmailImport({
+    loadSelection: async () => selectReactor()({ includeInactive: true }),
+    extract: extractEmailImportWithOpenAi,
   });
 }
 

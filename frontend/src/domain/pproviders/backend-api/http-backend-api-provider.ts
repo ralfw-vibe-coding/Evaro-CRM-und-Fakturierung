@@ -17,6 +17,7 @@ import type {
   ContactGpInput,
   CreateBusinessPartnerInput,
   CreateContactInput,
+  EmailImportAnalysis,
   UpdateBusinessPartnerInput,
   UpdateContactInput,
   UpdateInvoiceDraftInput,
@@ -160,6 +161,14 @@ export const httpBackendApiProvider: BackendApiProvider = {
       body: JSON.stringify(input),
     });
     return result.ok ? { ok: true, value: undefined } : result;
+  },
+
+  async analyzeEmailImport(token, emailText) {
+    return request<EmailImportAnalysis>("/email-import/analyze", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ email_text: emailText }),
+    });
   },
 
   async loadInvoicingData(token) {

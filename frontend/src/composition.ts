@@ -40,6 +40,7 @@ import { changeInvoiceStatus } from "./domain/rpus/change-invoice-status/change-
 import { createPaymentTerm } from "./domain/rpus/create-payment-term/create-payment-term.js";
 import { loadAppSettings } from "./domain/rpus/load-app-settings/load-app-settings.js";
 import { updateAppSettings } from "./domain/rpus/update-app-settings/update-app-settings.js";
+import { analyzeEmailImport } from "./domain/rpus/analyze-email-import/analyze-email-import.js";
 
 const backendApi = httpBackendApiProvider;
 const session = browserSessionProvider;
@@ -102,3 +103,4 @@ export const changeInvoiceStatusRpu = changeInvoiceStatus({ backendApi, session,
 export const createPaymentTermRpu = createPaymentTerm({ backendApi, session, invoiceStore });
 export const loadAppSettingsRpu = loadAppSettings({ backendApi, session });
 export const updateAppSettingsRpu = updateAppSettings({ backendApi, session });
+export const analyzeEmailImportRpu = analyzeEmailImport({ backendApi, session });

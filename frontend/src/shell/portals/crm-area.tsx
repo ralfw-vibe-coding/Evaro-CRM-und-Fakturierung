@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Filter, IdCard, Loader2, Plus, Search, X } from "lucide-react";
+import { ClipboardPaste, Filter, IdCard, Loader2, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tagColorStyle } from "@/lib/tag-colors";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ import type { SelectedEntity } from "@/domain/rpus/get-selected-entity/get-selec
 import { ContactCard } from "./contact-card";
 import { GpCard } from "./gp-card";
 import { CreateContactDetail, EntityDetail } from "./entity-detail";
+import { EmailImportOverlay } from "./email-import-overlay";
 
 /**
  * CRM area: two-column layout.
@@ -40,6 +41,7 @@ export function CrmArea() {
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [, setDetailDirty] = React.useState(false);
   const [creatingContact, setCreatingContact] = React.useState(false);
+  const [importingEmail, setImportingEmail] = React.useState(false);
   const [closeRequestToken, setCloseRequestToken] = React.useState(0);
   const [focusCompanyContactId, setFocusCompanyContactId] = React.useState<string | null>(null);
   const [focusBusinessPartnerId, setFocusBusinessPartnerId] = React.useState<string | null>(null);
@@ -120,17 +122,30 @@ export function CrmArea() {
         icon={<IdCard className="size-4" />}
         title={`Übersicht (${view?.entities.length ?? 0})`}
         action={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="bg-[var(--brand)] text-white hover:opacity-90"
-            aria-label="Neuen Kontakt anlegen"
-            title="Neuen Kontakt anlegen"
-            onClick={() => setCreatingContact(true)}
-          >
-            <Plus />
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="bg-[var(--brand)] text-white hover:opacity-90"
+              aria-label="Neuen Kontakt anlegen"
+              title="Neuen Kontakt anlegen"
+              onClick={() => setCreatingContact(true)}
+            >
+              <Plus />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="bg-[var(--brand)] text-white hover:opacity-90"
+              aria-label="E-Mail übernehmen"
+              title="E-Mail übernehmen"
+              onClick={() => setImportingEmail(true)}
+            >
+              <ClipboardPaste />
+            </Button>
+          </div>
         }
       >
         <CardList view={view} error={error} selected={selected} onSelect={selectEntity} />
@@ -171,6 +186,13 @@ export function CrmArea() {
             onChanged={refreshProjection}
           />
         </EntityOverlay>
+      )}
+      {importingEmail && (
+        <EmailImportOverlay
+          onClose={() => setImportingEmail(false)}
+          onChanged={refreshProjection}
+          onNavigate={selectEntity}
+        />
       )}
     </div>
   );

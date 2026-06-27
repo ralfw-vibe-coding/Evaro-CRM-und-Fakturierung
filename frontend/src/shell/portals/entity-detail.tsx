@@ -1824,7 +1824,7 @@ function ContactBusinessPartnerLinks({
           <div key={businessPartner.id} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-md border p-2">
             <button
               type="button"
-              className="min-w-0 text-left"
+              className="min-w-0 cursor-pointer rounded px-1 py-0.5 text-left transition-colors hover:bg-[var(--accent)]"
               onClick={() => onNavigate({ kind: "business_partner", id: businessPartner.id })}
             >
               <div className="flex min-w-0 items-center gap-1.5">
@@ -1982,7 +1982,7 @@ function BusinessPartnerContactLinks({
           <div key={contact.id} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-md border p-2">
             <button
               type="button"
-              className="min-w-0 text-left"
+              className="min-w-0 cursor-pointer rounded px-1 py-0.5 text-left transition-colors hover:bg-[var(--accent)]"
               onClick={() => onNavigate({ kind: "contact", id: contact.id })}
             >
               {link.role && <div className="truncate text-xs text-[var(--muted-foreground)]">{link.role}</div>}
