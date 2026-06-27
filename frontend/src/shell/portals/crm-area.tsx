@@ -118,7 +118,7 @@ export function CrmArea() {
       </Column>
       <Column
         icon={<IdCard className="size-4" />}
-        title="Übersicht"
+        title={`Übersicht (${view?.entities.length ?? 0})`}
         action={
           <Button
             type="button"
