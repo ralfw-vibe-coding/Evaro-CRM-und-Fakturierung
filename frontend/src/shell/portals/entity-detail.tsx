@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Building2, Loader2, MapPinned, Plus, Save, SaveOff, Trash2, User, X } from "lucide-react";
+import { tagColorStyle } from "@/lib/tag-colors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -290,7 +291,11 @@ function TagField({
     <div className="relative">
         <div className="flex min-h-8 flex-wrap items-center gap-1 rounded-md border border-[var(--input)] px-1.5 py-0.5 shadow-sm">
           {current.map((value) => (
-            <span key={value} className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-2 py-0.5 text-xs">
+            <span
+              key={value}
+              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+              style={tagColorStyle(value)}
+            >
               {value}
               <button
                 type="button"
@@ -382,7 +387,10 @@ function SingleTagField({
   if (value.trim()) {
     return (
       <div className="flex h-8 items-center rounded-md border border-[var(--input)] px-2 shadow-sm">
-        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-2 py-0.5 text-xs">
+        <span
+          className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+          style={tagColorStyle(value)}
+        >
           {value}
           <button
             type="button"

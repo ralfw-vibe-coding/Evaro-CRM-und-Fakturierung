@@ -14,6 +14,8 @@ export interface GetVisibleEntitiesResult {
   entities: VisibleEntity[];
   scope: Scope;
   searchTerm: string;
+  includeInactive: boolean;
+  selectedTags: string[];
   counts: { contacts: number; businessPartners: number };
 }
 
@@ -106,6 +108,36 @@ function matchBusinessPartner(bp: BusinessPartner, term: string): FieldMatch | n
   );
 }
 
+function splitTags(value: string | undefined): string[] {
+  return value?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
+}
+
+function entityTags(entity: VisibleEntity): string[] {
+  if (entity.kind === "contact") {
+    const data = entity.contact.data;
+    return [
+      ...splitTags(data.origin),
+      ...(data.relationship ?? []),
+      ...(data.role ?? []),
+      ...(data.work_area ?? []),
+      ...(data.interests ?? []),
+      ...(data.tags ?? []),
+    ];
+  }
+
+  return [
+    ...entity.businessPartner.types,
+    ...(entity.businessPartner.data.business_relationship ?? []),
+    ...(entity.businessPartner.data.tags ?? []),
+  ];
+}
+
+function matchesTags(entity: VisibleEntity, selectedTags: string[]): boolean {
+  if (selectedTags.length === 0) return true;
+  const normalizedEntityTags = new Set(entityTags(entity).map((tag) => tag.toLowerCase()));
+  return selectedTags.some((tag) => normalizedEntityTags.has(tag.toLowerCase()));
+}
+
 /** Whether a match already shows up elsewhere on the overview card. */
 function isMatchVisible(entity: VisibleEntity, match: FieldMatch): boolean {
   if (match.tier === 1) return true;
@@ -188,6 +220,8 @@ export function getVisibleEntities(deps: GetVisibleEntitiesDeps) {
     const selection = deps.selectionStore.get();
     const scope = deps.selectionStore.getScope();
     const searchTerm = deps.selectionStore.getSearchTerm();
+    const includeInactive = deps.selectionStore.getIncludeInactive();
+    const selectedTags = deps.selectionStore.getSelectedTags();
     const term = searchTerm.trim().toLowerCase();
     const searching = term.length > 0;
     const contactConnectionCounts = new Map<string, number>();
@@ -197,13 +231,17 @@ export function getVisibleEntities(deps: GetVisibleEntitiesDeps) {
       bpConnectionCounts.set(link.gp_id, (bpConnectionCounts.get(link.gp_id) ?? 0) + 1);
     }
 
-    const rankedContacts = rankContacts(selection?.contacts ?? [], contactConnectionCounts, term, searching);
+    const visibleContacts = (selection?.contacts ?? []).filter((contact) => includeInactive || contact.active);
+    const rankedContacts = rankContacts(visibleContacts, contactConnectionCounts, term, searching);
     const rankedBps = rankBusinessPartners(selection?.business_partners ?? [], bpConnectionCounts, term, searching);
 
-    const entities = [
+    const taggedRanked = [
       ...(scope !== "gp" ? rankedContacts : []),
       ...(scope !== "contacts" ? rankedBps : []),
     ]
+      .filter((ranked) => matchesTags(ranked.entity, selectedTags));
+
+    const entities = taggedRanked
       .sort((a, b) => {
         if (searching && a.tier !== b.tier) return a.tier - b.tier;
         return sortKey(a.entity).localeCompare(sortKey(b.entity), "de");
@@ -214,7 +252,12 @@ export function getVisibleEntities(deps: GetVisibleEntitiesDeps) {
       entities,
       scope,
       searchTerm,
-      counts: { contacts: rankedContacts.length, businessPartners: rankedBps.length },
+      includeInactive,
+      selectedTags,
+      counts: {
+        contacts: taggedRanked.filter((ranked) => ranked.entity.kind === "contact").length,
+        businessPartners: taggedRanked.filter((ranked) => ranked.entity.kind === "business_partner").length,
+      },
     };
   };
 }

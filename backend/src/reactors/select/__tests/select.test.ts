@@ -18,6 +18,7 @@ describe("select reactor", () => {
 
     const process = select({
       listActiveContacts: listActiveContacts({ contacts }),
+      listAllContacts: async () => ({ contacts: await contacts.listAll() }),
       listBusinessPartners: listBusinessPartners({ businessPartners }),
       contactGps: new InMemoryContactGpsProvider(),
     });
@@ -29,5 +30,8 @@ describe("select reactor", () => {
     expect(result.business_partners).toHaveLength(1);
     expect(result.business_partners[0].data.name).toBe("AOK Rheinland");
     expect(result.contact_gps).toEqual([]);
+
+    const withInactive = await process({ includeInactive: true });
+    expect(withInactive.contacts).toHaveLength(2);
   });
 });

@@ -87,8 +87,9 @@ export const httpBackendApiProvider: BackendApiProvider = {
     });
   },
 
-  async loadSelection(token) {
-    return request<Selection>("/selection", {
+  async loadSelection(token, options) {
+    const query = options?.includeInactive ? "?include_inactive=true" : "";
+    return request<Selection>(`/selection${query}`, {
       method: "GET",
       headers: { authorization: `Bearer ${token}` },
     });

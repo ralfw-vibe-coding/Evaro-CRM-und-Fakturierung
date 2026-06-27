@@ -17,6 +17,8 @@ import { deleteApiKey } from "./domain/rpus/delete-api-key/delete-api-key.js";
 import { loadSelection } from "./domain/rpus/load-selection/load-selection.js";
 import { setScope } from "./domain/rpus/set-scope/set-scope.js";
 import { setSearchTerm } from "./domain/rpus/set-search-term/set-search-term.js";
+import { setIncludeInactive } from "./domain/rpus/set-include-inactive/set-include-inactive.js";
+import { setSelectedTags } from "./domain/rpus/set-selected-tags/set-selected-tags.js";
 import { getVisibleEntities } from "./domain/rpus/get-visible-entities/get-visible-entities.js";
 import { selectEntity } from "./domain/rpus/select-entity/select-entity.js";
 import { getSelectedEntity } from "./domain/rpus/get-selected-entity/get-selected-entity.js";
@@ -54,8 +56,24 @@ export const deleteApiKeyRpu = deleteApiKey({ backendApi, session });
 export const loadSelectionRpu = loadSelection({ backendApi, session, selectionStore });
 export const setScopeRpu = setScope({ selectionStore });
 export const setSearchTermRpu = setSearchTerm({ selectionStore });
+export const setIncludeInactiveRpu = setIncludeInactive({ selectionStore });
+export const setSelectedTagsRpu = setSelectedTags({ selectionStore });
 export const getVisibleEntitiesRpu = getVisibleEntities({ selectionStore });
 export const getBusinessPartnerOptionsRpu = () => selectionStore.get()?.business_partners ?? [];
+export const getCrmFilterTagsRpu = () => {
+  const tags = getTagOptions({ selectionStore })();
+  return [...new Set([
+    ...tags.contact.origin,
+    ...tags.contact.relationship,
+    ...tags.contact.role,
+    ...tags.contact.work_area,
+    ...tags.contact.interests,
+    ...tags.contact.tags,
+    ...tags.businessPartner.types,
+    ...tags.businessPartner.business_relationship,
+    ...tags.businessPartner.tags,
+  ])].sort((a, b) => a.localeCompare(b, "de"));
+};
 export const selectEntityRpu = selectEntity({ selectionStore });
 export const getSelectedEntityRpu = getSelectedEntity({ selectionStore });
 export const createContactRpu = createContact({ backendApi, session, selectionStore });

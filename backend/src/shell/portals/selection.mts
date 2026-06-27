@@ -8,13 +8,19 @@ import { json, error, methodNotAllowed } from "../http/responses.js";
  * Returns the initial selection in one response: { contacts, business_partners }.
  */
 export default async function handler(req: Request): Promise<Response> {
-  const client = await authenticate(req);
-  if (!client) return error("Nicht authentifiziert.", 401);
+  try {
+    const client = await authenticate(req);
+    if (!client) return error("Nicht authentifiziert.", 401);
 
-  if (req.method !== "GET") return methodNotAllowed(["GET"]);
+    if (req.method !== "GET") return methodNotAllowed(["GET"]);
 
-  const result = await selectReactor()();
-  return json(result);
+    const includeInactive = new URL(req.url).searchParams.get("include_inactive") === "true";
+    const result = await selectReactor()({ includeInactive });
+    return json(result);
+  } catch (cause) {
+    console.error("GET /api/selection failed", cause);
+    return error("Interner Fehler beim Laden der Auswahl.", 500);
+  }
 }
 
 export const config: Config = {

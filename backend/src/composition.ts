@@ -207,8 +207,10 @@ export function unlinkContactGpRpu() {
 }
 
 export function selectReactor() {
+  const contacts = buildContacts();
   return select({
-    listActiveContacts: listActiveContacts({ contacts: buildContacts() }),
+    listActiveContacts: listActiveContacts({ contacts }),
+    listAllContacts: async () => ({ contacts: await contacts.listAll() }),
     listBusinessPartners: listBusinessPartners({ businessPartners: buildBusinessPartners() }),
     contactGps: buildContactGps(),
   });

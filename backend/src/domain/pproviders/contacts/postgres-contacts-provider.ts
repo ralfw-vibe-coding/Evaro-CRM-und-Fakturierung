@@ -89,6 +89,15 @@ export class PostgresContactsProvider implements ContactsProvider {
     return rows.map(toContact);
   }
 
+  async listAll(): Promise<Contact[]> {
+    const { rows } = await this.pool.query<ContactRow>(
+      `SELECT id, active, data, created_at, updated_at
+       FROM contacts
+       ORDER BY created_at DESC`,
+    );
+    return rows.map(toContact);
+  }
+
   async findById(id: string): Promise<Contact | null> {
     const { rows } = await this.pool.query<ContactRow>(
       `SELECT id, active, data, created_at, updated_at FROM contacts WHERE id = $1`,

@@ -1,14 +1,18 @@
 import * as React from "react";
 import { Filter, IdCard, Loader2, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { tagColorStyle } from "@/lib/tag-colors";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   loadSelectionRpu,
   setScopeRpu,
   setSearchTermRpu,
+  setIncludeInactiveRpu,
+  setSelectedTagsRpu,
   getVisibleEntitiesRpu,
   getBusinessPartnerOptionsRpu,
+  getCrmFilterTagsRpu,
   selectEntityRpu,
   getSelectedEntityRpu,
 } from "@/composition";
@@ -57,8 +61,24 @@ export function CrmArea() {
     setView(getVisibleEntitiesRpu());
   }
 
+  async function changeIncludeInactive(includeInactive: boolean) {
+    setIncludeInactiveRpu(includeInactive);
+    const result = await loadSelectionRpu({ includeInactive });
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setView(getVisibleEntitiesRpu());
+    setSelected(getSelectedEntityRpu());
+  }
+
   function changeSearch(term: string) {
     setSearchTermRpu(term);
+    setView(getVisibleEntitiesRpu());
+  }
+
+  function changeSelectedTags(tags: string[]) {
+    setSelectedTagsRpu(tags);
     setView(getVisibleEntitiesRpu());
   }
 
@@ -87,7 +107,13 @@ export function CrmArea() {
       <Column icon={<Filter className="size-4" />} title="Filter">
         <div className="grid gap-4">
           <SearchField value={view?.searchTerm ?? ""} onChange={changeSearch} />
-          <ScopeFilter view={view} onChange={changeScope} />
+          <ActivityFilter includeInactive={view?.includeInactive ?? false} onChange={changeIncludeInactive} />
+          <ArtFilter scope={view?.scope ?? "both"} onChange={changeScope} />
+          <TagFilter
+            tags={getCrmFilterTagsRpu()}
+            selectedTags={view?.selectedTags ?? []}
+            onChange={changeSelectedTags}
+          />
         </div>
       </Column>
       <Column
@@ -194,57 +220,165 @@ function SearchField({ value, onChange }: { value: string; onChange: (term: stri
   );
 }
 
-function ScopeFilter({
-  view,
+function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-2">
+      <div className="text-[11px] font-semibold uppercase text-[var(--muted-foreground)]">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function FilterChip({
+  active,
+  color = "neutral",
+  children,
+  onClick,
+}: {
+  active: boolean;
+  color?: "neutral" | "contact" | "gp";
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  const activeClass =
+    color === "contact"
+      ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+      : color === "gp"
+        ? "border-[var(--gp)] bg-[var(--gp)] text-white"
+        : "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex min-w-0 items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+        active ? activeClass : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ActivityFilter({
+  includeInactive,
   onChange,
 }: {
-  view: GetVisibleEntitiesResult | null;
-  onChange: (scope: Scope) => void;
+  includeInactive: boolean;
+  onChange: (includeInactive: boolean) => void;
 }) {
-  const contactsActive = view?.scope === "both" || view?.scope === "contacts";
-  const gpActive = view?.scope === "both" || view?.scope === "gp";
+  return (
+    <FilterGroup title="Aktivität">
+      <div className="flex flex-wrap gap-2">
+        <FilterChip active={!includeInactive} onClick={() => onChange(false)}>
+          Aktiv
+        </FilterChip>
+        <FilterChip active={includeInactive} onClick={() => onChange(!includeInactive)}>
+          + Inaktive
+        </FilterChip>
+      </div>
+    </FilterGroup>
+  );
+}
 
-  function toggle(kind: "contacts" | "gp") {
-    if (kind === "contacts") {
-      if (contactsActive && gpActive) onChange("gp");
-      else if (contactsActive) onChange("both");
-      else onChange(gpActive ? "both" : "contacts");
-      return;
-    }
-    if (contactsActive && gpActive) onChange("contacts");
-    else if (gpActive) onChange("both");
-    else onChange(contactsActive ? "both" : "gp");
+function ArtFilter({ scope, onChange }: { scope: Scope; onChange: (scope: Scope) => void }) {
+  return (
+    <FilterGroup title="Art">
+      <div className="flex flex-wrap gap-2">
+        <FilterChip active={scope === "both"} onClick={() => onChange("both")}>
+          Alle
+        </FilterChip>
+        <FilterChip active={scope === "contacts"} color="contact" onClick={() => onChange("contacts")}>
+          Kontakte
+        </FilterChip>
+        <FilterChip active={scope === "gp"} color="gp" onClick={() => onChange("gp")}>
+          Geschäftspartner
+        </FilterChip>
+      </div>
+    </FilterGroup>
+  );
+}
+
+function TagFilter({
+  tags,
+  selectedTags,
+  onChange,
+}: {
+  tags: string[];
+  selectedTags: string[];
+  onChange: (tags: string[]) => void;
+}) {
+  const [filter, setFilter] = React.useState("");
+  const selected = new Set(selectedTags);
+  const visibleTags = tags
+    .filter((tag) => !selected.has(tag))
+    .filter((tag) => tag.toLowerCase().includes(filter.trim().toLowerCase()))
+    .slice(0, 24);
+
+  function add(tag: string) {
+    onChange([...selectedTags, tag]);
+    setFilter("");
+  }
+
+  function remove(tag: string) {
+    onChange(selectedTags.filter((selectedTag) => selectedTag !== tag));
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        type="button"
-        onClick={() => toggle("contacts")}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-          contactsActive
-            ? "border-[var(--brand)] bg-[var(--brand)] text-white"
-            : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
+    <FilterGroup title="Tags">
+      <div className="grid gap-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--muted-foreground)]" />
+          <Input
+            value={filter}
+            onChange={(event) => setFilter(event.target.value)}
+            placeholder="Tag suchen..."
+            className="pl-8 pr-8"
+          />
+          {filter && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+              aria-label="Tag-Suche löschen"
+              title="Tag-Suche löschen"
+              onClick={() => setFilter("")}
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+        {selectedTags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {selectedTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-opacity hover:opacity-80"
+                style={tagColorStyle(tag)}
+                onClick={() => remove(tag)}
+              >
+                {tag}
+                <span aria-hidden>×</span>
+              </button>
+            ))}
+          </div>
         )}
-      >
-        <span>Kontakte</span>
-        {view && <span className="text-xs opacity-80">{view.counts.contacts}</span>}
-      </button>
-      <button
-        type="button"
-        onClick={() => toggle("gp")}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-          gpActive
-            ? "border-[var(--gp)] bg-[var(--gp)] text-white"
-            : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
-        )}
-      >
-        <span>Geschäftspartner</span>
-        {view && <span className="text-xs opacity-80">{view.counts.businessPartners}</span>}
-      </button>
-    </div>
+        <div className="flex flex-wrap gap-1.5">
+          {visibleTags.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              className="rounded-full border px-2 py-0.5 text-xs transition-opacity hover:opacity-80"
+              style={tagColorStyle(tag)}
+              onClick={() => add(tag)}
+            >
+              {tag}
+            </button>
+          ))}
+          {tags.length === 0 && <div className="text-xs text-[var(--muted-foreground)]">Keine Tags vorhanden.</div>}
+        </div>
+      </div>
+    </FilterGroup>
   );
 }
 

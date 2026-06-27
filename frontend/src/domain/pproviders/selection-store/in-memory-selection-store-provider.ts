@@ -13,6 +13,8 @@ export class InMemorySelectionStoreProvider implements SelectionStoreProvider {
   private selection: Selection | null = null;
   private scope: Scope = "both";
   private searchTerm = "";
+  private includeInactive = false;
+  private selectedTags: string[] = [];
   private selected: EntityRef | null = null;
 
   get(): Selection | null {
@@ -37,6 +39,22 @@ export class InMemorySelectionStoreProvider implements SelectionStoreProvider {
 
   setSearchTerm(term: string): void {
     this.searchTerm = term;
+  }
+
+  getIncludeInactive(): boolean {
+    return this.includeInactive;
+  }
+
+  setIncludeInactive(includeInactive: boolean): void {
+    this.includeInactive = includeInactive;
+  }
+
+  getSelectedTags(): string[] {
+    return structuredClone(this.selectedTags);
+  }
+
+  setSelectedTags(tags: string[]): void {
+    this.selectedTags = structuredClone(tags);
   }
 
   getSelected(): EntityRef | null {

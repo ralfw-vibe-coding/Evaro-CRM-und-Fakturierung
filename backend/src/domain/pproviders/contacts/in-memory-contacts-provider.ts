@@ -59,6 +59,11 @@ export class InMemoryContactsProvider implements ContactsProvider {
       .map((c) => structuredClone(c));
   }
 
+  async listAll(): Promise<Contact[]> {
+    this.hydrate();
+    return [...this.contacts.values()].map((c) => structuredClone(c));
+  }
+
   async findById(id: string): Promise<Contact | null> {
     this.hydrate();
     const contact = this.contacts.get(id);

@@ -11,6 +11,7 @@ export interface SelectResult {
 
 export interface SelectDeps {
   listActiveContacts: () => Promise<ListActiveContactsResult>;
+  listAllContacts: () => Promise<ListActiveContactsResult>;
   listBusinessPartners: () => Promise<ListBusinessPartnersResult>;
   contactGps: ContactGpsProvider;
 }
@@ -21,9 +22,9 @@ export interface SelectDeps {
  * needs to refetch (see crm-briefing.md "Data Flow"). Relationships
  */
 export function select(deps: SelectDeps) {
-  return async function process(): Promise<SelectResult> {
+  return async function process(options: { includeInactive?: boolean } = {}): Promise<SelectResult> {
     const [contacts, bps, contactGps] = await Promise.all([
-      deps.listActiveContacts(),
+      options.includeInactive ? deps.listAllContacts() : deps.listActiveContacts(),
       deps.listBusinessPartners(),
       deps.contactGps.listAll(),
     ]);

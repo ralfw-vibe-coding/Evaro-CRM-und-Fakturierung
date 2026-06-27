@@ -21,6 +21,9 @@ export interface ContactsProvider {
   /** All active contacts, used for the initial selection and tests. */
   listActive(): Promise<Contact[]>;
 
+  /** All contacts, including inactive ones. */
+  listAll(): Promise<Contact[]>;
+
   /** A single contact by id, or null if it doesn't exist. */
   findById(id: string): Promise<Contact | null>;
 

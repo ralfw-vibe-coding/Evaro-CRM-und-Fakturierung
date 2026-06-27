@@ -23,6 +23,10 @@ export interface SelectionStoreProvider {
   setScope(scope: Scope): void;
   getSearchTerm(): string;
   setSearchTerm(term: string): void;
+  getIncludeInactive(): boolean;
+  setIncludeInactive(includeInactive: boolean): void;
+  getSelectedTags(): string[];
+  setSelectedTags(tags: string[]): void;
   getSelected(): EntityRef | null;
   setSelected(ref: EntityRef | null): void;
 }

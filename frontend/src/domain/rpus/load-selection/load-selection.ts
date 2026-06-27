@@ -3,6 +3,9 @@ import type { SessionProvider } from "@/domain/pproviders/session/session-provid
 import type { SelectionStoreProvider } from "@/domain/pproviders/selection-store/selection-store-provider";
 
 export type LoadSelectionResult = { ok: true } | { ok: false; error: string };
+export interface LoadSelectionInput {
+  includeInactive?: boolean;
+}
 
 export interface LoadSelectionDeps {
   backendApi: BackendApiProvider;
@@ -16,11 +19,13 @@ export interface LoadSelectionDeps {
  * into the selection store here instead of a full reload.
  */
 export function loadSelection(deps: LoadSelectionDeps) {
-  return async function process(): Promise<LoadSelectionResult> {
+  return async function process(input: LoadSelectionInput = {}): Promise<LoadSelectionResult> {
     const session = deps.session.get();
     if (!session) return { ok: false, error: "Nicht angemeldet." };
 
-    const result = await deps.backendApi.loadSelection(session.token);
+    const result = await deps.backendApi.loadSelection(session.token, {
+      includeInactive: input.includeInactive,
+    });
     if (!result.ok) return { ok: false, error: result.error };
 
     deps.selectionStore.set(result.value);
