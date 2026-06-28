@@ -25,7 +25,7 @@ export function determineInvoiceVatRule(snapshot: InvoiceGpSnapshot): InvoiceVat
     return { vat_rate: 20, reverse_charge: false };
   }
 
-  if (["deutschland", "germany", "de", "deu"].includes(country)) {
+  if (country === "" || ["deutschland", "germany", "de", "deu"].includes(country)) {
     return hasVatId(snapshot)
       ? { vat_rate: 0, reverse_charge: true }
       : { vat_rate: 19, reverse_charge: false };

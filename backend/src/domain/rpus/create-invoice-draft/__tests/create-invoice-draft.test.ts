@@ -110,4 +110,22 @@ describe("createInvoiceDraft RPU", () => {
     expect(result.invoice.vat_rate).toBe(19);
     expect(result.invoice.data.reverse_charge).toBe(false);
   });
+
+  it("treats a missing recipient country as Germany for VAT", async () => {
+    const bp = await env.businessPartners.insert({
+      types: [],
+      data: {
+        name: "Client Without Country",
+        address: {},
+        channels: [],
+      },
+    });
+
+    const result = await env.process({ user_id: USER, business_partner_id: bp.id });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.invoice.vat_rate).toBe(19);
+    expect(result.invoice.data.reverse_charge).toBe(false);
+  });
 });

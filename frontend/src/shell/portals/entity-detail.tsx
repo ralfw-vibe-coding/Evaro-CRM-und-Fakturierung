@@ -207,6 +207,7 @@ function DetailToolbar({
   icon,
   dirty,
   busy,
+  saveFeedback,
   onSave,
   onDelete,
   onClose,
@@ -214,6 +215,7 @@ function DetailToolbar({
   icon: React.ReactNode;
   dirty: boolean;
   busy: boolean;
+  saveFeedback?: "idle" | "saved" | "error";
   onSave: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -227,8 +229,20 @@ function DetailToolbar({
         {icon}
       </div>
       <div className="flex items-center gap-1">
-        <Button type="button" size="icon" onClick={onSave} disabled={!dirty || busy} aria-label="Speichern">
-          <Save />
+        <Button
+          type="button"
+          size="icon"
+          onClick={onSave}
+          disabled={!dirty || busy}
+          aria-label="Speichern"
+          title="Speichern"
+          className={[
+            busy ? "animate-pulse" : "",
+            saveFeedback === "saved" ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[var(--background)]" : "",
+            saveFeedback === "error" ? "ring-2 ring-[var(--destructive)] ring-offset-2 ring-offset-[var(--background)]" : "",
+          ].filter(Boolean).join(" ")}
+        >
+          <Save className={saveFeedback === "saved" ? "text-emerald-100" : ""} />
         </Button>
         <Button
           type="button"
@@ -1094,6 +1108,7 @@ function ContactEditor({
   const [status, setStatus] = React.useState<string | null>(null);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [busy, setBusy] = React.useState(false);
+  const [saveFeedback, setSaveFeedback] = React.useState<"idle" | "saved" | "error">("idle");
   const [pendingNavigation, setPendingNavigation] = React.useState<EntityRef | null>(null);
   const [confirmClose, setConfirmClose] = React.useState(false);
   const companyInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -1113,7 +1128,14 @@ function ContactEditor({
     setFocusNewChannelType(false);
     setStatus(null);
     setErrors({});
+    setSaveFeedback("idle");
   }, [contact.id, contact.updated_at, contact.data, contact.active]);
+
+  React.useEffect(() => {
+    if (saveFeedback === "idle") return;
+    const id = window.setTimeout(() => setSaveFeedback("idle"), saveFeedback === "saved" ? 900 : 1600);
+    return () => window.clearTimeout(id);
+  }, [saveFeedback]);
 
   React.useEffect(() => {
     if (!autoFocusCompany) return;
@@ -1127,7 +1149,8 @@ function ContactEditor({
   async function save(): Promise<boolean> {
     if (!dirty || busy) return true;
     setBusy(true);
-    setStatus("Speichere...");
+    setStatus(null);
+    setSaveFeedback("idle");
     setErrors({});
     const result = await updateContactRpu({
       id: contact.id,
@@ -1136,11 +1159,11 @@ function ContactEditor({
     });
     setBusy(false);
     if (!result.ok) {
-      setStatus(result.error);
+      setSaveFeedback("error");
       setErrors(result.fields ?? {});
       return false;
     }
-    setStatus(result.conflict ? "Gespeichert. Hinweis: Zwischenzeitliche Änderung überschrieben." : "Gespeichert.");
+    setSaveFeedback("saved");
     onChanged();
     return true;
   }
@@ -1188,6 +1211,7 @@ function ContactEditor({
         icon={<User className="size-4 text-[var(--brand)]" />}
         dirty={dirty}
         busy={busy}
+        saveFeedback={saveFeedback}
         onSave={save}
         onDelete={remove}
         onClose={requestClose}
@@ -1438,6 +1462,7 @@ function BusinessPartnerEditor({
   const [status, setStatus] = React.useState<string | null>(null);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [busy, setBusy] = React.useState(false);
+  const [saveFeedback, setSaveFeedback] = React.useState<"idle" | "saved" | "error">("idle");
   const [pendingNavigation, setPendingNavigation] = React.useState<EntityRef | null>(null);
   const [confirmClose, setConfirmClose] = React.useState(false);
   const nameInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -1463,7 +1488,14 @@ function BusinessPartnerEditor({
     setFocusNewChannelType(false);
     setStatus(null);
     setErrors({});
+    setSaveFeedback("idle");
   }, [bp.id, bp.updated_at, bp.types, bp.data]);
+
+  React.useEffect(() => {
+    if (saveFeedback === "idle") return;
+    const id = window.setTimeout(() => setSaveFeedback("idle"), saveFeedback === "saved" ? 900 : 1600);
+    return () => window.clearTimeout(id);
+  }, [saveFeedback]);
 
   React.useEffect(() => {
     if (!autoFocusName) return;
@@ -1477,7 +1509,8 @@ function BusinessPartnerEditor({
   async function save(): Promise<boolean> {
     if (!dirty || busy) return true;
     setBusy(true);
-    setStatus("Speichere...");
+    setStatus(null);
+    setSaveFeedback("idle");
     setErrors({});
     const result = await updateBusinessPartnerRpu({
       id: bp.id,
@@ -1486,11 +1519,11 @@ function BusinessPartnerEditor({
     });
     setBusy(false);
     if (!result.ok) {
-      setStatus(result.error);
+      setSaveFeedback("error");
       setErrors(result.fields ?? {});
       return false;
     }
-    setStatus(result.conflict ? "Gespeichert. Hinweis: Zwischenzeitliche Änderung überschrieben." : "Gespeichert.");
+    setSaveFeedback("saved");
     onChanged();
     return true;
   }
@@ -1545,6 +1578,7 @@ function BusinessPartnerEditor({
         icon={<Building2 className="size-4 text-[var(--gp)]" />}
         dirty={dirty}
         busy={busy}
+        saveFeedback={saveFeedback}
         onSave={save}
         onDelete={remove}
         onClose={requestClose}
