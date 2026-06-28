@@ -611,6 +611,362 @@ function ConfirmRemove({
   );
 }
 
+function ContactCoreSections({
+  active,
+  data,
+  channels,
+  focusNewChannelType,
+  errors,
+  tagOptions,
+  companyInputRef,
+  onActiveChange,
+  onDataChange,
+  onChannelsChange,
+  onFocusedLastChannelType,
+  onAddChannel,
+}: {
+  active: boolean;
+  data: ContactData;
+  channels: Channel[];
+  focusNewChannelType: boolean;
+  errors: Record<string, string>;
+  tagOptions: TagOptions;
+  companyInputRef?: React.Ref<HTMLInputElement>;
+  onActiveChange: (active: boolean) => void;
+  onDataChange: React.Dispatch<React.SetStateAction<ContactData>>;
+  onChannelsChange: (channels: Channel[]) => void;
+  onFocusedLastChannelType: () => void;
+  onAddChannel: () => void;
+}) {
+  return (
+    <>
+      <Section
+        title="Kontakt"
+        action={
+          <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted-foreground)]">
+            <input type="checkbox" checked={active} onChange={(event) => onActiveChange(event.target.checked)} />
+            Aktiv
+          </label>
+        }
+      >
+        <div className="grid grid-cols-12 gap-3">
+          <Input
+            value={data.first_name ?? ""}
+            placeholder="Vorname"
+            aria-label="Vorname"
+            className="col-span-5 h-10 text-lg font-semibold"
+            {...NO_PASSWORD_MANAGER_PROPS}
+            onChange={(event) => onDataChange((current) => ({ ...current, first_name: event.target.value }))}
+          />
+          <div className="col-span-7 grid gap-1">
+            <Input
+              value={data.last_name ?? ""}
+              placeholder="Nachname"
+              aria-label="Nachname"
+              className="h-10 text-lg font-semibold"
+              {...NO_PASSWORD_MANAGER_PROPS}
+              onChange={(event) => onDataChange((current) => ({ ...current, last_name: event.target.value }))}
+            />
+            {errors.last_name && <p className="text-xs text-[var(--destructive)]">{errors.last_name}</p>}
+          </div>
+          <Input
+            ref={companyInputRef}
+            value={data.company_text ?? ""}
+            placeholder="Firma"
+            aria-label="Firma"
+            className="col-span-12"
+            {...NO_PASSWORD_MANAGER_PROPS}
+            onChange={(event) => onDataChange((current) => ({ ...current, company_text: event.target.value }))}
+          />
+          <select
+            value={data.gender ?? ""}
+            aria-label="Geschlecht"
+            onChange={(event) =>
+              onDataChange((current) => ({
+                ...current,
+                gender: (event.target.value || undefined) as ContactData["gender"],
+              }))
+            }
+            className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
+          >
+            <option value="">Geschlecht</option>
+            {GENDER_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={data.salutation ?? ""}
+            aria-label="Anrede"
+            onChange={(event) =>
+              onDataChange((current) => ({
+                ...current,
+                salutation: (event.target.value || undefined) as ContactData["salutation"],
+              }))
+            }
+            className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
+          >
+            <option value="">Anrede</option>
+            {SALUTATION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <Input
+            value={data.title ?? ""}
+            placeholder="Titel"
+            aria-label="Titel"
+            className="col-span-4"
+            {...NO_PASSWORD_MANAGER_PROPS}
+            onChange={(event) => onDataChange((current) => ({ ...current, title: event.target.value }))}
+          />
+          <div className="col-span-12">
+            <TagField
+              label="Kontaktquelle"
+              values={splitCategorizedValue(data.origin)}
+              options={tagOptions.contact.origin}
+              onChange={(origin) =>
+                onDataChange((current) => ({ ...current, origin: serializeCategorizedValue(origin) }))
+              }
+            />
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Kanäle"
+        action={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Kanal hinzufügen"
+            title="Kanal hinzufügen"
+            onClick={onAddChannel}
+          >
+            <Plus />
+          </Button>
+        }
+      >
+        <ChannelsEditor
+          channels={channels}
+          channelTypeOptions={tagOptions.channelTypes}
+          focusLastType={focusNewChannelType}
+          onFocusedLastType={onFocusedLastChannelType}
+          onChange={onChannelsChange}
+        />
+        {errors.channels && <p className="text-xs text-[var(--destructive)]">{errors.channels}</p>}
+      </Section>
+
+      <Section title="Klassifizierungen">
+        <div className="grid grid-cols-2 gap-3">
+          <TagField
+            label="Rollen"
+            values={data.role}
+            options={tagOptions.contact.role}
+            onChange={(role) => onDataChange((current) => ({ ...current, role }))}
+          />
+          <TagField
+            label="Bereiche"
+            values={data.work_area}
+            options={tagOptions.contact.work_area}
+            onChange={(work_area) => onDataChange((current) => ({ ...current, work_area }))}
+          />
+          <TagField
+            label="Interessen"
+            values={data.interests}
+            options={tagOptions.contact.interests}
+            onChange={(interests) => onDataChange((current) => ({ ...current, interests }))}
+          />
+          <TagField
+            label="Beziehungen"
+            values={data.relationship}
+            options={tagOptions.contact.relationship}
+            onChange={(relationship) => onDataChange((current) => ({ ...current, relationship }))}
+          />
+          <div className="col-span-2">
+            <TagField
+              label="Tags"
+              values={data.tags}
+              options={tagOptions.contact.tags}
+              onChange={(tags) => onDataChange((current) => ({ ...current, tags }))}
+            />
+          </div>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+function BusinessPartnerCoreSections({
+  data,
+  types,
+  channels,
+  focusNewChannelType,
+  errors,
+  tagOptions,
+  nameInputRef,
+  mapsHref,
+  onDataChange,
+  onTypesChange,
+  onChannelsChange,
+  onFocusedLastChannelType,
+  onAddChannel,
+}: {
+  data: BusinessPartnerData;
+  types: string[];
+  channels: Channel[];
+  focusNewChannelType: boolean;
+  errors: Record<string, string>;
+  tagOptions: TagOptions;
+  nameInputRef?: React.Ref<HTMLInputElement>;
+  mapsHref: string | null;
+  onDataChange: React.Dispatch<React.SetStateAction<BusinessPartnerData>>;
+  onTypesChange: (types: string[]) => void;
+  onChannelsChange: (channels: Channel[]) => void;
+  onFocusedLastChannelType: () => void;
+  onAddChannel: () => void;
+}) {
+  return (
+    <>
+      <Section title="Geschäftspartner">
+        <div className="grid gap-1">
+          <Input
+            ref={nameInputRef}
+            value={data.name}
+            placeholder="Name"
+            aria-label="Name"
+            className="h-10 text-lg font-semibold"
+            {...NO_PASSWORD_MANAGER_PROPS}
+            onChange={(event) => onDataChange((current) => ({ ...current, name: event.target.value }))}
+          />
+          {errors.name && <p className="text-xs text-[var(--destructive)]">{errors.name}</p>}
+        </div>
+        <Textarea
+          rows={2}
+          value={data.address?.street ?? ""}
+          placeholder="Straße"
+          aria-label="Straße"
+          {...NO_PASSWORD_MANAGER_PROPS}
+          onChange={(event) =>
+            onDataChange((current) => ({ ...current, address: { ...current.address, street: event.target.value } }))
+          }
+        />
+        <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
+          <Input
+            value={data.address?.zip ?? ""}
+            placeholder="PLZ"
+            aria-label="PLZ"
+            {...NO_PASSWORD_MANAGER_PROPS}
+            onChange={(event) =>
+              onDataChange((current) => ({ ...current, address: { ...current.address, zip: event.target.value } }))
+            }
+          />
+          <div className="flex gap-2">
+            <Input
+              value={data.address?.city ?? ""}
+              placeholder="Ort"
+              aria-label="Ort"
+              {...NO_PASSWORD_MANAGER_PROPS}
+              onChange={(event) =>
+                onDataChange((current) => ({
+                  ...current,
+                  address: { ...current.address, city: event.target.value },
+                }))
+              }
+            />
+            {mapsHref && (
+              <Button type="button" variant="ghost" size="icon" asChild aria-label="Ort in Google Maps öffnen">
+                <a href={mapsHref} target="_blank" rel="noreferrer" title="Ort in Google Maps öffnen">
+                  <MapPinned />
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+          <SingleTagField
+            value={data.address?.country ?? ""}
+            placeholder="Land"
+            options={tagOptions.businessPartner.countries}
+            onChange={(value) =>
+              onDataChange((current) => ({ ...current, address: { ...current.address, country: value } }))
+            }
+          />
+          <div className="flex rounded-md border border-[var(--border)] p-0.5">
+            {(["de", "en"] as const).map((language) => {
+              const active = (data.invoice_language ?? "de") === language;
+              return (
+                <button
+                  key={language}
+                  type="button"
+                  className={[
+                    "rounded px-2.5 py-1 text-xs font-semibold transition-colors",
+                    active ? "bg-[var(--brand)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
+                  ].join(" ")}
+                  onClick={() => onDataChange((current) => ({ ...current, invoice_language: language }))}
+                >
+                  {language.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+          <Input
+            value={data.vat_id ?? ""}
+            placeholder="USt-ID"
+            aria-label="USt-ID"
+            {...NO_PASSWORD_MANAGER_PROPS}
+            onChange={(event) => onDataChange((current) => ({ ...current, vat_id: event.target.value }))}
+          />
+        </div>
+      </Section>
+
+      <Section
+        title="Kanäle"
+        action={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Kanal hinzufügen"
+            title="Kanal hinzufügen"
+            onClick={onAddChannel}
+          >
+            <Plus />
+          </Button>
+        }
+      >
+        <ChannelsEditor
+          channels={channels}
+          channelTypeOptions={tagOptions.channelTypes}
+          focusLastType={focusNewChannelType}
+          onFocusedLastType={onFocusedLastChannelType}
+          onChange={onChannelsChange}
+        />
+      </Section>
+
+      <Section title="Klassifizierungen">
+        <div className="grid gap-3">
+          <TagField
+            label="Typen"
+            values={types}
+            options={tagOptions.businessPartner.types}
+            onChange={(next) => onTypesChange(next ?? [])}
+          />
+          <TagField
+            label="Tags"
+            values={data.tags}
+            options={tagOptions.businessPartner.tags}
+            onChange={(tags) => onDataChange((current) => ({ ...current, tags }))}
+          />
+        </div>
+      </Section>
+    </>
+  );
+}
+
 export function CreateContactDetail({
   availableBusinessPartners,
   onClose,
@@ -757,154 +1113,23 @@ export function CreateContactDetail({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,680px)_minmax(320px,380px)] xl:items-start">
         <div className="grid content-start gap-5">
-          <Section
-            title="Kontakt"
-            action={
-              <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted-foreground)]">
-                <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
-              Aktiv
-              </label>
-            }
-          >
-            <div className="grid grid-cols-12 gap-3">
-              <Input
-                value={data.first_name ?? ""}
-                placeholder="Vorname"
-                aria-label="Vorname"
-                className="col-span-5 h-10 text-lg font-semibold"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, first_name: e.target.value })}
-              />
-              <div className="col-span-7 grid gap-1">
-                <Input
-                  value={data.last_name ?? ""}
-                  placeholder="Nachname"
-                  aria-label="Nachname"
-                  className="h-10 text-lg font-semibold"
-                  {...NO_PASSWORD_MANAGER_PROPS}
-                  onChange={(e) => setData({ ...data, last_name: e.target.value })}
-                />
-                {errors.last_name && <p className="text-xs text-[var(--destructive)]">{errors.last_name}</p>}
-              </div>
-              <Input
-                ref={companyInputRef}
-                value={data.company_text ?? ""}
-                placeholder="Firma"
-                aria-label="Firma"
-                className="col-span-12"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, company_text: e.target.value })}
-              />
-              <select
-                value={data.gender ?? ""}
-                aria-label="Geschlecht"
-                onChange={(e) => setData({ ...data, gender: (e.target.value || undefined) as ContactData["gender"] })}
-                className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
-              >
-                <option value="">Geschlecht</option>
-                {GENDER_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={data.salutation ?? ""}
-                aria-label="Anrede"
-                onChange={(e) =>
-                  setData({ ...data, salutation: (e.target.value || undefined) as ContactData["salutation"] })
-                }
-                className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
-              >
-                <option value="">Anrede</option>
-                {SALUTATION_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <Input
-                value={data.title ?? ""}
-                placeholder="Titel"
-                aria-label="Titel"
-                className="col-span-4"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, title: e.target.value })}
-              />
-              <div className="col-span-12">
-                <TagField
-                  label="Kontaktquelle"
-                  values={splitCategorizedValue(data.origin)}
-                  options={tagOptions.contact.origin}
-                  onChange={(origin) => setData({ ...data, origin: serializeCategorizedValue(origin) })}
-                />
-              </div>
-            </div>
-          </Section>
-
-          <Section
-            title="Kanäle"
-            action={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Kanal hinzufügen"
-                title="Kanal hinzufügen"
-                onClick={() => {
-                  setChannels([...channels, { type: "", address: "" }]);
-                  setFocusNewChannelType(true);
-                }}
-              >
-                <Plus />
-              </Button>
-            }
-          >
-            <ChannelsEditor
-              channels={channels}
-              channelTypeOptions={tagOptions.channelTypes}
-              focusLastType={focusNewChannelType}
-              onFocusedLastType={() => setFocusNewChannelType(false)}
-              onChange={setChannels}
-            />
-          </Section>
-
-          <Section title="Klassifizierungen">
-            <div className="grid grid-cols-2 gap-3">
-              <TagField
-                label="Rollen"
-                values={data.role}
-                options={tagOptions.contact.role}
-                onChange={(role) => setData({ ...data, role })}
-              />
-              <TagField
-                label="Bereiche"
-                values={data.work_area}
-                options={tagOptions.contact.work_area}
-                onChange={(work_area) => setData({ ...data, work_area })}
-              />
-              <TagField
-                label="Interessen"
-                values={data.interests}
-                options={tagOptions.contact.interests}
-                onChange={(interests) => setData({ ...data, interests })}
-              />
-              <TagField
-                label="Beziehungen"
-                values={data.relationship}
-                options={tagOptions.contact.relationship}
-                onChange={(relationship) => setData({ ...data, relationship })}
-              />
-              <div className="col-span-2">
-                <TagField
-                  label="Tags"
-                  values={data.tags}
-                  options={tagOptions.contact.tags}
-                  onChange={(tags) => setData({ ...data, tags })}
-                />
-              </div>
-            </div>
-          </Section>
+          <ContactCoreSections
+            active={active}
+            data={data}
+            channels={channels}
+            focusNewChannelType={focusNewChannelType}
+            errors={errors}
+            tagOptions={tagOptions}
+            companyInputRef={companyInputRef}
+            onActiveChange={setActive}
+            onDataChange={setData}
+            onChannelsChange={setChannels}
+            onFocusedLastChannelType={() => setFocusNewChannelType(false)}
+            onAddChannel={() => {
+              setChannels([...channels, { type: "", address: "" }]);
+              setFocusNewChannelType(true);
+            }}
+          />
         </div>
 
         <div className="grid content-start gap-5">
@@ -954,11 +1179,13 @@ export function CreateContactDetail({
 }
 
 export function CreateBusinessPartnerDetail({
+  availableContacts,
   onClose,
   closeRequestToken = 0,
   onCreated,
   onChanged,
 }: {
+  availableContacts: Contact[];
   onClose: () => void;
   closeRequestToken?: number;
   onCreated: (id: string) => void;
@@ -974,14 +1201,19 @@ export function CreateBusinessPartnerDetail({
   const [busy, setBusy] = React.useState(false);
   const [lookupOpen, setLookupOpen] = React.useState(false);
   const [confirmClose, setConfirmClose] = React.useState(false);
+  const [pendingContacts, setPendingContacts] = React.useState<Contact[]>([]);
+  const [contactQuery, setContactQuery] = React.useState("");
   const nameInputRef = React.useRef<HTMLInputElement | null>(null);
   const lastCloseRequestRef = React.useRef(closeRequestToken);
   const currentPayload = {
     types: normalizeTags(types) ?? [],
     data: normalizeBusinessPartnerData(data, channels),
   };
-  const emptyPayload = { types: [], data: normalizeBusinessPartnerData({ name: "", channels: [] }, []) };
-  const dirty = stableJson(currentPayload) !== stableJson(emptyPayload);
+  const emptyPayload = {
+    types: [],
+    data: normalizeBusinessPartnerData({ name: "", channels: [], invoice_language: "de" }, []),
+  };
+  const dirty = stableJson(currentPayload) !== stableJson(emptyPayload) || pendingContacts.length > 0;
   const canSave = Boolean(currentPayload.data.name?.trim()) && !busy;
 
   React.useEffect(() => {
@@ -996,12 +1228,28 @@ export function CreateBusinessPartnerDetail({
     setStatus(null);
     setErrors({});
     const created = await createBusinessPartnerRpu(currentPayload);
-    setBusy(false);
     if (!created.ok) {
+      setBusy(false);
       setStatus(created.error);
       setErrors(created.fields ?? {});
       return;
     }
+
+    for (const contact of pendingContacts) {
+      setStatus(`Verknüpfe ${contactDisplayName(contact)}...`);
+      const linked = await linkContactGpRpu({
+        contact_id: contact.id,
+        gp_id: created.businessPartner.id,
+        primary: false,
+      });
+      if (!linked.ok) {
+        setBusy(false);
+        setStatus(linked.error);
+        return;
+      }
+    }
+
+    setBusy(false);
     onChanged();
     onCreated(created.businessPartner.id);
   }
@@ -1045,6 +1293,7 @@ export function CreateBusinessPartnerDetail({
     data.address?.city,
     data.address?.country,
   ]);
+  const pendingContactIds = new Set(pendingContacts.map((contact) => contact.id));
 
   return (
     <div className="grid gap-5 p-4">
@@ -1075,133 +1324,63 @@ export function CreateBusinessPartnerDetail({
 
       <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
         <div className="grid content-start gap-5">
-          <Section title="Geschäftspartner">
-            <div className="grid gap-1">
-              <Input
-                ref={nameInputRef}
-                value={data.name}
-                placeholder="Name"
-                aria-label="Name"
-                className="h-10 text-lg font-semibold"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, name: e.target.value })}
-              />
-              {errors.name && <p className="text-xs text-[var(--destructive)]">{errors.name}</p>}
-            </div>
-            <Textarea
-              rows={2}
-              value={data.address?.street ?? ""}
-              placeholder="Straße"
-              aria-label="Straße"
-              {...NO_PASSWORD_MANAGER_PROPS}
-              onChange={(e) => setData({ ...data, address: { ...data.address, street: e.target.value } })}
-            />
-            <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
-              <Input
-                value={data.address?.zip ?? ""}
-                placeholder="PLZ"
-                aria-label="PLZ"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, address: { ...data.address, zip: e.target.value } })}
-              />
-              <div className="flex gap-2">
-                <Input
-                  value={data.address?.city ?? ""}
-                  placeholder="Ort"
-                  aria-label="Ort"
-                  {...NO_PASSWORD_MANAGER_PROPS}
-                  onChange={(e) => setData({ ...data, address: { ...data.address, city: e.target.value } })}
-                />
-                {mapsHref && (
-                  <Button type="button" variant="ghost" size="icon" asChild aria-label="Ort in Google Maps öffnen">
-                    <a href={mapsHref} target="_blank" rel="noreferrer" title="Ort in Google Maps öffnen">
-                      <MapPinned />
-                    </a>
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-              <SingleTagField
-                value={data.address?.country ?? ""}
-                placeholder="Land"
-                options={tagOptions.businessPartner.countries}
-                onChange={(value) => setData({ ...data, address: { ...data.address, country: value } })}
-              />
-              <div className="flex rounded-md border border-[var(--border)] p-0.5">
-                {(["de", "en"] as const).map((language) => {
-                  const active = (data.invoice_language ?? "de") === language;
-                  return (
-                    <button
-                      key={language}
-                      type="button"
-                      className={[
-                        "rounded px-2.5 py-1 text-xs font-semibold transition-colors",
-                        active ? "bg-[var(--brand)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
-                      ].join(" ")}
-                      onClick={() => setData({ ...data, invoice_language: language })}
-                    >
-                      {language.toUpperCase()}
-                    </button>
-                  );
-                })}
-              </div>
-              <Input
-                value={data.vat_id ?? ""}
-                placeholder="USt-ID"
-                aria-label="USt-ID"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, vat_id: e.target.value })}
-              />
-            </div>
-          </Section>
-
-          <Section
-            title="Kanäle"
-            action={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Kanal hinzufügen"
-                title="Kanal hinzufügen"
-                onClick={() => {
-                  setChannels([...channels, { type: "", address: "" }]);
-                  setFocusNewChannelType(true);
-                }}
-              >
-                <Plus />
-              </Button>
-            }
-          >
-            <ChannelsEditor
-              channels={channels}
-              channelTypeOptions={tagOptions.channelTypes}
-              focusLastType={focusNewChannelType}
-              onFocusedLastType={() => setFocusNewChannelType(false)}
-              onChange={setChannels}
-            />
-          </Section>
-
-          <Section title="Klassifizierungen">
-            <div className="grid gap-3">
-              <TagField
-                label="Typen"
-                values={types}
-                options={tagOptions.businessPartner.types}
-                onChange={(next) => setTypes(next ?? [])}
-              />
-              <TagField
-                label="Tags"
-                values={data.tags}
-                options={tagOptions.businessPartner.tags}
-                onChange={(tags) => setData({ ...data, tags })}
-              />
-            </div>
-          </Section>
+          <BusinessPartnerCoreSections
+            data={data}
+            types={types}
+            channels={channels}
+            focusNewChannelType={focusNewChannelType}
+            errors={errors}
+            tagOptions={tagOptions}
+            nameInputRef={nameInputRef}
+            mapsHref={mapsHref}
+            onDataChange={setData}
+            onTypesChange={setTypes}
+            onChannelsChange={setChannels}
+            onFocusedLastChannelType={() => setFocusNewChannelType(false)}
+            onAddChannel={() => {
+              setChannels([...channels, { type: "", address: "" }]);
+              setFocusNewChannelType(true);
+            }}
+          />
         </div>
 
         <div className="grid content-start gap-5">
+          <Section title="Kontakte">
+            <div className="grid gap-2">
+              {pendingContacts.map((contact) => (
+                <div key={contact.id} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-md border p-2">
+                  <span className="truncate text-sm font-medium">{contactDisplayName(contact)}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={busy}
+                    aria-label="Verknüpfung entfernen"
+                    title="Verknüpfung entfernen"
+                    onClick={() => setPendingContacts(pendingContacts.filter((item) => item.id !== contact.id))}
+                  >
+                    <X />
+                  </Button>
+                </div>
+              ))}
+              {pendingContacts.length === 0 && (
+                <p className="text-sm text-[var(--muted-foreground)]">Noch keine Verknüpfungen.</p>
+              )}
+            </div>
+            <ContactAttachInput
+              value={contactQuery}
+              contacts={availableContacts.filter((contact) => !pendingContactIds.has(contact.id))}
+              onChange={setContactQuery}
+              onPick={(id) => {
+                const contact = availableContacts.find((candidate) => candidate.id === id);
+                if (!contact || pendingContactIds.has(contact.id)) return;
+                setPendingContacts([...pendingContacts, contact]);
+                setContactQuery("");
+              }}
+              disabled={busy}
+            />
+          </Section>
+
           <Section title="Absprachen">
             <Textarea
               value={data.memo ?? ""}
@@ -1557,155 +1736,23 @@ function ContactEditor({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,680px)_minmax(320px,380px)] xl:items-start">
         <div className="grid content-start gap-5">
-          <Section
-            title="Kontakt"
-            action={
-              <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted-foreground)]">
-                <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
-              Aktiv
-              </label>
-            }
-          >
-            <div className="grid grid-cols-12 gap-3">
-              <Input
-                value={data.first_name ?? ""}
-                placeholder="Vorname"
-                aria-label="Vorname"
-                className="col-span-5 h-10 text-lg font-semibold"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, first_name: e.target.value })}
-              />
-              <div className="col-span-7 grid gap-1">
-                <Input
-                  value={data.last_name ?? ""}
-                  placeholder="Nachname"
-                  aria-label="Nachname"
-                  className="h-10 text-lg font-semibold"
-                  {...NO_PASSWORD_MANAGER_PROPS}
-                  onChange={(e) => setData({ ...data, last_name: e.target.value })}
-                />
-                {errors.last_name && <p className="text-xs text-[var(--destructive)]">{errors.last_name}</p>}
-              </div>
-              <Input
-                ref={companyInputRef}
-                value={data.company_text ?? ""}
-                placeholder="Firma"
-                aria-label="Firma"
-                className="col-span-12"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, company_text: e.target.value })}
-              />
-              <select
-                value={data.gender ?? ""}
-                aria-label="Geschlecht"
-                onChange={(e) => setData({ ...data, gender: (e.target.value || undefined) as ContactData["gender"] })}
-                className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
-              >
-                <option value="">Geschlecht</option>
-                {GENDER_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={data.salutation ?? ""}
-                aria-label="Anrede"
-                onChange={(e) =>
-                  setData({ ...data, salutation: (e.target.value || undefined) as ContactData["salutation"] })
-                }
-                className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
-              >
-                <option value="">Anrede</option>
-                {SALUTATION_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <Input
-                value={data.title ?? ""}
-                placeholder="Titel"
-                aria-label="Titel"
-                className="col-span-4"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, title: e.target.value })}
-              />
-              <div className="col-span-12">
-                <TagField
-                  label="Kontaktquelle"
-                  values={splitCategorizedValue(data.origin)}
-                  options={tagOptions.contact.origin}
-                  onChange={(origin) => setData({ ...data, origin: serializeCategorizedValue(origin) })}
-                />
-              </div>
-            </div>
-          </Section>
-
-          <Section
-            title="Kanäle"
-            action={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Kanal hinzufügen"
-                title="Kanal hinzufügen"
-                onClick={() => {
-                  setChannels([...channels, { type: "", address: "" }]);
-                  setFocusNewChannelType(true);
-                }}
-              >
-                <Plus />
-              </Button>
-            }
-          >
-            <ChannelsEditor
-              channels={channels}
-              channelTypeOptions={tagOptions.channelTypes}
-              focusLastType={focusNewChannelType}
-              onFocusedLastType={() => setFocusNewChannelType(false)}
-              onChange={setChannels}
-            />
-            {errors.channels && <p className="text-xs text-[var(--destructive)]">{errors.channels}</p>}
-          </Section>
-
-          <Section title="Klassifizierungen">
-            <div className="grid grid-cols-2 gap-3">
-              <TagField
-                label="Rollen"
-                values={data.role}
-                options={tagOptions.contact.role}
-                onChange={(role) => setData({ ...data, role })}
-              />
-              <TagField
-                label="Bereiche"
-                values={data.work_area}
-                options={tagOptions.contact.work_area}
-                onChange={(work_area) => setData({ ...data, work_area })}
-              />
-              <TagField
-                label="Interessen"
-                values={data.interests}
-                options={tagOptions.contact.interests}
-                onChange={(interests) => setData({ ...data, interests })}
-              />
-              <TagField
-                label="Beziehungen"
-                values={data.relationship}
-                options={tagOptions.contact.relationship}
-                onChange={(relationship) => setData({ ...data, relationship })}
-              />
-              <div className="col-span-2">
-                <TagField
-                  label="Tags"
-                  values={data.tags}
-                  options={tagOptions.contact.tags}
-                  onChange={(tags) => setData({ ...data, tags })}
-                />
-              </div>
-            </div>
-          </Section>
+          <ContactCoreSections
+            active={active}
+            data={data}
+            channels={channels}
+            focusNewChannelType={focusNewChannelType}
+            errors={errors}
+            tagOptions={tagOptions}
+            companyInputRef={companyInputRef}
+            onActiveChange={setActive}
+            onDataChange={setData}
+            onChannelsChange={setChannels}
+            onFocusedLastChannelType={() => setFocusNewChannelType(false)}
+            onAddChannel={() => {
+              setChannels([...channels, { type: "", address: "" }]);
+              setFocusNewChannelType(true);
+            }}
+          />
         </div>
 
         <div className="grid content-start gap-5">
@@ -1955,130 +2002,24 @@ function BusinessPartnerEditor({
 
       <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
         <div className="grid content-start gap-5">
-          <Section title="Geschäftspartner">
-            <div className="grid gap-1">
-              <Input
-                ref={nameInputRef}
-                value={data.name}
-                placeholder="Name"
-                aria-label="Name"
-                className="h-10 text-lg font-semibold"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, name: e.target.value })}
-              />
-              {errors.name && <p className="text-xs text-[var(--destructive)]">{errors.name}</p>}
-            </div>
-            <Textarea
-              rows={2}
-              value={data.address?.street ?? ""}
-              placeholder="Straße"
-              aria-label="Straße"
-              {...NO_PASSWORD_MANAGER_PROPS}
-              onChange={(e) => setData({ ...data, address: { ...data.address, street: e.target.value } })}
-            />
-            <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
-              <Input
-                value={data.address?.zip ?? ""}
-                placeholder="PLZ"
-                aria-label="PLZ"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, address: { ...data.address, zip: e.target.value } })}
-              />
-              <div className="flex gap-2">
-                <Input
-                  value={data.address?.city ?? ""}
-                  placeholder="Ort"
-                  aria-label="Ort"
-                  {...NO_PASSWORD_MANAGER_PROPS}
-                  onChange={(e) => setData({ ...data, address: { ...data.address, city: e.target.value } })}
-                />
-                {mapsHref && (
-                  <Button type="button" variant="ghost" size="icon" asChild aria-label="Ort in Google Maps öffnen">
-                    <a href={mapsHref} target="_blank" rel="noreferrer" title="Ort in Google Maps öffnen">
-                      <MapPinned />
-                    </a>
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-              <SingleTagField
-                value={data.address?.country ?? ""}
-                placeholder="Land"
-                options={tagOptions.businessPartner.countries}
-                onChange={(value) => setData({ ...data, address: { ...data.address, country: value } })}
-              />
-              <div className="flex rounded-md border border-[var(--border)] p-0.5">
-                {(["de", "en"] as const).map((language) => {
-                  const active = (data.invoice_language ?? "de") === language;
-                  return (
-                    <button
-                      key={language}
-                      type="button"
-                      className={[
-                        "rounded px-2.5 py-1 text-xs font-semibold transition-colors",
-                        active ? "bg-[var(--brand)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
-                      ].join(" ")}
-                      onClick={() => setData({ ...data, invoice_language: language })}
-                    >
-                      {language.toUpperCase()}
-                    </button>
-                  );
-                })}
-              </div>
-              <Input
-                value={data.vat_id ?? ""}
-                placeholder="USt-ID"
-                aria-label="USt-ID"
-                {...NO_PASSWORD_MANAGER_PROPS}
-                onChange={(e) => setData({ ...data, vat_id: e.target.value })}
-              />
-            </div>
-          </Section>
-
-          <Section
-            title="Kanäle"
-            action={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Kanal hinzufügen"
-                title="Kanal hinzufügen"
-                onClick={() => {
-                  setChannels([...channels, { type: "", address: "" }]);
-                  setFocusNewChannelType(true);
-                }}
-              >
-                <Plus />
-              </Button>
-            }
-          >
-            <ChannelsEditor
-              channels={channels}
-              channelTypeOptions={tagOptions.channelTypes}
-              focusLastType={focusNewChannelType}
-              onFocusedLastType={() => setFocusNewChannelType(false)}
-              onChange={setChannels}
-            />
-          </Section>
-
-          <Section title="Klassifizierungen">
-            <div className="grid gap-3">
-              <TagField
-                label="Typen"
-                values={types}
-                options={tagOptions.businessPartner.types}
-                onChange={(next) => setTypes(next ?? [])}
-              />
-              <TagField
-                label="Tags"
-                values={data.tags}
-                options={tagOptions.businessPartner.tags}
-                onChange={(tags) => setData({ ...data, tags })}
-              />
-            </div>
-          </Section>
+          <BusinessPartnerCoreSections
+            data={data}
+            types={types}
+            channels={channels}
+            focusNewChannelType={focusNewChannelType}
+            errors={errors}
+            tagOptions={tagOptions}
+            nameInputRef={nameInputRef}
+            mapsHref={mapsHref}
+            onDataChange={setData}
+            onTypesChange={setTypes}
+            onChannelsChange={setChannels}
+            onFocusedLastChannelType={() => setFocusNewChannelType(false)}
+            onAddChannel={() => {
+              setChannels([...channels, { type: "", address: "" }]);
+              setFocusNewChannelType(true);
+            }}
+          />
         </div>
 
         <div className="grid content-start gap-5">
@@ -2458,11 +2399,13 @@ function ContactAttachInput({
   contacts,
   onChange,
   onPick,
+  disabled = false,
 }: {
   value: string;
   contacts: Contact[];
   onChange: (value: string) => void;
   onPick: (id: string) => void;
+  disabled?: boolean;
 }) {
   const [focused, setFocused] = React.useState(false);
   const query = value.trim().toLowerCase();
@@ -2492,9 +2435,11 @@ function ContactAttachInput({
         onKeyDown={(event) => {
           if (event.key !== "Enter") return;
           event.preventDefault();
+          if (disabled) return;
           const first = visible[0];
           if (first) onPick(first.id);
         }}
+        disabled={disabled}
       />
       {focused && (visible.length > 0 || query) && (
         <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto rounded-md border border-[var(--border)] bg-[var(--background)] shadow-lg">
@@ -2505,6 +2450,7 @@ function ContactAttachInput({
               className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--accent)]"
               onMouseDown={(event) => {
                 event.preventDefault();
+                if (disabled) return;
                 onPick(contact.id);
               }}
             >

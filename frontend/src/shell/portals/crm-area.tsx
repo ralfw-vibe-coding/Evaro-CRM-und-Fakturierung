@@ -17,6 +17,7 @@ import {
   setIncludeInactiveRpu,
   setSelectedTagsRpu,
   getVisibleEntitiesRpu,
+  getContactOptionsRpu,
   getBusinessPartnerOptionsRpu,
   getCrmFilterTagsRpu,
   selectEntityRpu,
@@ -210,6 +211,7 @@ export function CrmArea() {
       {creatingBusinessPartner && (
         <EntityOverlay onClose={() => setCloseRequestToken((token) => token + 1)}>
           <CreateBusinessPartnerDetail
+            availableContacts={getContactOptionsRpu()}
             onClose={() => setCreatingBusinessPartner(false)}
             closeRequestToken={closeRequestToken}
             onCreated={(id) => {

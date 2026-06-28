@@ -61,6 +61,7 @@ export const setSearchTermRpu = setSearchTerm({ selectionStore });
 export const setIncludeInactiveRpu = setIncludeInactive({ selectionStore });
 export const setSelectedTagsRpu = setSelectedTags({ selectionStore });
 export const getVisibleEntitiesRpu = getVisibleEntities({ selectionStore });
+export const getContactOptionsRpu = () => selectionStore.get()?.contacts ?? [];
 export const getBusinessPartnerOptionsRpu = () => selectionStore.get()?.business_partners ?? [];
 export const getCrmFilterTagsRpu = () => {
   const tags = getTagOptions({ selectionStore })();
