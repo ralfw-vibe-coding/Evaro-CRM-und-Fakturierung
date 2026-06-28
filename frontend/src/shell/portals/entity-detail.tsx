@@ -227,6 +227,18 @@ function appendNotes(existing: string | undefined, addition: string): string {
   return current ? `${current}\n\n${addition}` : addition;
 }
 
+function contactDataFromNameInput(input: string, companyText?: string): ContactData {
+  const parts = input.trim().split(/\s+/).filter(Boolean);
+  const last_name = parts.length > 0 ? parts[parts.length - 1] : "";
+  const first_name = parts.length > 1 ? parts.slice(0, -1).join(" ") : undefined;
+  return {
+    first_name,
+    last_name,
+    company_text: normalizeOptional(companyText),
+    channels: [],
+  };
+}
+
 function Section({
   title,
   action,
@@ -1183,12 +1195,14 @@ export function CreateBusinessPartnerDetail({
   onClose,
   closeRequestToken = 0,
   onCreated,
+  onNavigate,
   onChanged,
 }: {
   availableContacts: Contact[];
   onClose: () => void;
   closeRequestToken?: number;
   onCreated: (id: string) => void;
+  onNavigate: (ref: EntityRef) => void;
   onChanged: () => void;
 }) {
   const tagOptions = getTagOptionsRpu();
@@ -1213,7 +1227,9 @@ export function CreateBusinessPartnerDetail({
     types: [],
     data: normalizeBusinessPartnerData({ name: "", channels: [], invoice_language: "de" }, []),
   };
-  const dirty = stableJson(currentPayload) !== stableJson(emptyPayload) || pendingContacts.length > 0;
+  const dirty =
+    stableJson(currentPayload) !== stableJson(emptyPayload) ||
+    pendingContacts.length > 0;
   const canSave = Boolean(currentPayload.data.name?.trim()) && !busy;
 
   React.useEffect(() => {
@@ -1222,8 +1238,11 @@ export function CreateBusinessPartnerDetail({
     }, 0);
   }, []);
 
-  async function save() {
-    if (!canSave) return;
+  async function createBusinessPartnerWithLinks(): Promise<BusinessPartner | null> {
+    if (!canSave) {
+      if (!currentPayload.data.name?.trim()) setErrors({ name: "Name ist erforderlich." });
+      return null;
+    }
     setBusy(true);
     setStatus(null);
     setErrors({});
@@ -1232,7 +1251,7 @@ export function CreateBusinessPartnerDetail({
       setBusy(false);
       setStatus(created.error);
       setErrors(created.fields ?? {});
-      return;
+      return null;
     }
 
     for (const contact of pendingContacts) {
@@ -1245,13 +1264,53 @@ export function CreateBusinessPartnerDetail({
       if (!linked.ok) {
         setBusy(false);
         setStatus(linked.error);
-        return;
+        return null;
       }
     }
 
+    return created.businessPartner;
+  }
+
+  async function save() {
+    const businessPartner = await createBusinessPartnerWithLinks();
+    if (!businessPartner) return;
+
     setBusy(false);
     onChanged();
-    onCreated(created.businessPartner.id);
+    onCreated(businessPartner.id);
+  }
+
+  async function createContactAndNavigate() {
+    const contactData = contactDataFromNameInput(contactQuery, currentPayload.data.name);
+    if (!contactData.last_name) return;
+    const businessPartner = await createBusinessPartnerWithLinks();
+    if (!businessPartner) return;
+
+    const displayName = [contactData.first_name, contactData.last_name].filter(Boolean).join(" ");
+    setStatus(`Lege Kontakt ${displayName || contactData.last_name} an...`);
+    const contact = await createContactRpu({
+      active: true,
+      data: contactData,
+    });
+    if (!contact.ok) {
+      setBusy(false);
+      setStatus(contact.error);
+      return null;
+    }
+
+    setStatus(`Verknüpfe ${contactDisplayName(contact.contact)}...`);
+    const linked = await linkContactGpRpu({
+      contact_id: contact.contact.id,
+      gp_id: businessPartner.id,
+      primary: false,
+    });
+    setBusy(false);
+    if (!linked.ok) {
+      setStatus(linked.error);
+      return;
+    }
+    onChanged();
+    onNavigate({ kind: "contact", id: contact.contact.id });
   }
 
   function requestClose() {
@@ -1377,6 +1436,8 @@ export function CreateBusinessPartnerDetail({
                 setPendingContacts([...pendingContacts, contact]);
                 setContactQuery("");
               }}
+              onCreate={createContactAndNavigate}
+              createLabel="Kontakt neu anlegen"
               disabled={busy}
             />
           </Section>
@@ -2026,6 +2087,7 @@ function BusinessPartnerEditor({
           <BusinessPartnerContactLinks
             selected={selected}
             onChanged={onChanged}
+            onSaveBusinessPartner={save}
             onNavigate={navigateFromDetails}
           />
 
@@ -2317,31 +2379,80 @@ const BusinessPartnerNameAttachInput = React.forwardRef<
 function BusinessPartnerContactLinks({
   selected,
   onChanged,
+  onSaveBusinessPartner,
   onNavigate,
 }: {
   selected: NonNullable<SelectedEntity> & { kind: "business_partner" };
   onChanged: () => void;
+  onSaveBusinessPartner: () => Promise<boolean>;
   onNavigate: (ref: EntityRef) => void;
 }) {
   const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState(false);
 
   React.useEffect(() => {
     setQuery("");
     setStatus(null);
+    setBusy(false);
   }, [selected.businessPartner.id]);
 
   async function addExisting(contactId: string) {
-    if (!contactId) return;
+    if (!contactId || busy) return;
+    setBusy(true);
+    setStatus("Speichere Geschäftspartner...");
+    const saved = await onSaveBusinessPartner();
+    if (!saved) {
+      setBusy(false);
+      return;
+    }
+    setStatus("Verknüpfe Kontakt...");
     const result = await linkContactGpRpu({
       contact_id: contactId,
       gp_id: selected.businessPartner.id,
       primary: false,
     });
+    setBusy(false);
     setStatus(result.ok ? "Verknüpft." : result.error);
     if (result.ok) {
       setQuery("");
       onChanged();
+    }
+  }
+
+  async function createAndAdd() {
+    if (busy) return;
+    const name = query.trim();
+    if (!name) return;
+    setBusy(true);
+    setStatus("Speichere Geschäftspartner...");
+    const saved = await onSaveBusinessPartner();
+    if (!saved) {
+      setBusy(false);
+      return;
+    }
+    setStatus("Lege Kontakt an...");
+    const created = await createContactRpu({
+      active: true,
+      data: contactDataFromNameInput(name, selected.businessPartner.data.name),
+    });
+    if (!created.ok) {
+      setBusy(false);
+      setStatus(created.error);
+      return;
+    }
+    setStatus("Verknüpfe Kontakt...");
+    const linked = await linkContactGpRpu({
+      contact_id: created.contact.id,
+      gp_id: selected.businessPartner.id,
+      primary: false,
+    });
+    setBusy(false);
+    setStatus(linked.ok ? "Neu angelegt und verknüpft." : linked.error);
+    if (linked.ok) {
+      setQuery("");
+      onChanged();
+      onNavigate({ kind: "contact", id: created.contact.id });
     }
   }
 
@@ -2384,6 +2495,9 @@ function BusinessPartnerContactLinks({
         contacts={selected.availableContacts}
         onChange={setQuery}
         onPick={addExisting}
+        onCreate={createAndAdd}
+        createLabel="Kontakt neu anlegen"
+        disabled={busy}
       />
       {status && <p className="text-sm text-[var(--muted-foreground)]">{status}</p>}
     </Section>
@@ -2399,12 +2513,16 @@ function ContactAttachInput({
   contacts,
   onChange,
   onPick,
+  onCreate,
+  createLabel = "Neu anlegen",
   disabled = false,
 }: {
   value: string;
   contacts: Contact[];
   onChange: (value: string) => void;
   onPick: (id: string) => void;
+  onCreate?: () => void;
+  createLabel?: string;
   disabled?: boolean;
 }) {
   const [focused, setFocused] = React.useState(false);
@@ -2425,24 +2543,41 @@ function ContactAttachInput({
 
   return (
     <div className="relative">
-      <Input
-        value={value}
-        {...NO_PASSWORD_MANAGER_PROPS}
-        placeholder="Kontakt suchen"
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        onChange={(event) => onChange(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter") return;
-          event.preventDefault();
-          if (disabled) return;
-          const first = visible[0];
-          if (first) onPick(first.id);
-        }}
-        disabled={disabled}
-      />
+      <div className="flex items-center gap-2">
+        <Input
+          value={value}
+          {...NO_PASSWORD_MANAGER_PROPS}
+          placeholder="Kontakt suchen"
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            if (disabled) return;
+            const first = visible[0];
+            if (first) onPick(first.id);
+            else if (onCreate && value.trim()) onCreate();
+          }}
+          disabled={disabled}
+        />
+        {onCreate && (
+          <Button
+            type="button"
+            size="icon"
+            className="bg-[var(--brand)] text-white hover:opacity-90"
+            disabled={!value.trim() || disabled}
+            aria-label={createLabel}
+            title={createLabel}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={onCreate}
+          >
+            {disabled ? <Loader2 className="animate-spin" /> : <Plus />}
+          </Button>
+        )}
+      </div>
       {focused && (visible.length > 0 || query) && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto rounded-md border border-[var(--border)] bg-[var(--background)] shadow-lg">
+        <div className={`absolute left-0 ${onCreate ? "right-11" : "right-0"} top-full z-20 mt-1 max-h-56 overflow-auto rounded-md border border-[var(--border)] bg-[var(--background)] shadow-lg`}>
           {visible.map((contact) => (
             <button
               key={contact.id}

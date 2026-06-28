@@ -220,6 +220,10 @@ export function CrmArea() {
               setView(getVisibleEntitiesRpu());
               selectEntity({ kind: "business_partner", id });
             }}
+            onNavigate={(ref) => {
+              setCreatingBusinessPartner(false);
+              selectEntity(ref);
+            }}
             onChanged={refreshProjection}
           />
         </EntityOverlay>
