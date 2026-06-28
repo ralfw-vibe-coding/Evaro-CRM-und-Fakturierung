@@ -65,17 +65,21 @@ export const getContactOptionsRpu = () => selectionStore.get()?.contacts ?? [];
 export const getBusinessPartnerOptionsRpu = () => selectionStore.get()?.business_partners ?? [];
 export const getCrmFilterTagsRpu = () => {
   const tags = getTagOptions({ selectionStore })();
-  return [...new Set([
-    ...tags.contact.origin,
-    ...tags.contact.relationship,
-    ...tags.contact.role,
-    ...tags.contact.work_area,
-    ...tags.contact.interests,
-    ...tags.contact.tags,
-    ...tags.businessPartner.types,
-    ...tags.businessPartner.business_relationship,
-    ...tags.businessPartner.tags,
-  ])].sort((a, b) => a.localeCompare(b, "de"));
+  return [
+    { category: "contact.origin", label: "Kontaktquellen", tags: tags.contact.origin },
+    { category: "contact.relationship", label: "Beziehungen", tags: tags.contact.relationship },
+    { category: "contact.role", label: "Rollen", tags: tags.contact.role },
+    { category: "contact.work_area", label: "Bereiche", tags: tags.contact.work_area },
+    { category: "contact.interests", label: "Interessen", tags: tags.contact.interests },
+    { category: "contact.tags", label: "Kontakt-Tags", tags: tags.contact.tags },
+    { category: "businessPartner.types", label: "GP-Typen", tags: tags.businessPartner.types },
+    {
+      category: "businessPartner.business_relationship",
+      label: "GP-Beziehungen",
+      tags: tags.businessPartner.business_relationship,
+    },
+    { category: "businessPartner.tags", label: "GP-Tags", tags: tags.businessPartner.tags },
+  ].filter((group) => group.tags.length > 0);
 };
 export const selectEntityRpu = selectEntity({ selectionStore });
 export const getSelectedEntityRpu = getSelectedEntity({ selectionStore });

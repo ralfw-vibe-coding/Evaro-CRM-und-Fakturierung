@@ -1,5 +1,9 @@
 import type { BusinessPartner, Contact } from "@/domain/model";
-import type { Scope, SelectionStoreProvider } from "@/domain/pproviders/selection-store/selection-store-provider";
+import type {
+  Scope,
+  SelectedTagFilter,
+  SelectionStoreProvider,
+} from "@/domain/pproviders/selection-store/selection-store-provider";
 
 export interface MatchHint {
   label: string;
@@ -15,7 +19,7 @@ export interface GetVisibleEntitiesResult {
   scope: Scope;
   searchTerm: string;
   includeInactive: boolean;
-  selectedTags: string[];
+  selectedTags: SelectedTagFilter[];
   counts: { contacts: number; businessPartners: number };
 }
 
@@ -112,30 +116,50 @@ function splitTags(value: string | undefined): string[] {
   return value?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
 }
 
-function entityTags(entity: VisibleEntity): string[] {
-  if (entity.kind === "contact") {
-    const data = entity.contact.data;
-    return [
-      ...splitTags(data.origin),
-      ...(data.relationship ?? []),
-      ...(data.role ?? []),
-      ...(data.work_area ?? []),
-      ...(data.interests ?? []),
-      ...(data.tags ?? []),
-    ];
+function entityTagsByCategory(entity: VisibleEntity): Map<string, Set<string>> {
+  const result = new Map<string, Set<string>>();
+  function add(category: string, values: string[]) {
+    const normalized = values.map((value) => value.trim().toLowerCase()).filter(Boolean);
+    if (normalized.length === 0) return;
+    result.set(category, new Set(normalized));
   }
 
-  return [
-    ...entity.businessPartner.types,
-    ...(entity.businessPartner.data.business_relationship ?? []),
-    ...(entity.businessPartner.data.tags ?? []),
-  ];
+  if (entity.kind === "contact") {
+    const data = entity.contact.data;
+    add("contact.origin", splitTags(data.origin));
+    add("contact.relationship", data.relationship ?? []);
+    add("contact.role", data.role ?? []);
+    add("contact.work_area", data.work_area ?? []);
+    add("contact.interests", data.interests ?? []);
+    add("contact.tags", data.tags ?? []);
+    return result;
+  }
+
+  add("businessPartner.types", entity.businessPartner.types);
+  add("businessPartner.business_relationship", entity.businessPartner.data.business_relationship ?? []);
+  add("businessPartner.tags", entity.businessPartner.data.tags ?? []);
+  return result;
 }
 
-function matchesTags(entity: VisibleEntity, selectedTags: string[]): boolean {
+function matchesTags(entity: VisibleEntity, selectedTags: SelectedTagFilter[]): boolean {
   if (selectedTags.length === 0) return true;
-  const normalizedEntityTags = new Set(entityTags(entity).map((tag) => tag.toLowerCase()));
-  return selectedTags.some((tag) => normalizedEntityTags.has(tag.toLowerCase()));
+  const entityTags = entityTagsByCategory(entity);
+  const selectedByCategory = new Map<string, Set<string>>();
+  for (const selected of selectedTags) {
+    const category = selected.category.trim();
+    const tag = selected.tag.trim().toLowerCase();
+    if (!category || !tag) continue;
+    selectedByCategory.set(category, selectedByCategory.get(category) ?? new Set());
+    selectedByCategory.get(category)!.add(tag);
+  }
+
+  for (const [category, requiredTags] of selectedByCategory) {
+    const entityCategoryTags = entityTags.get(category);
+    if (!entityCategoryTags) return false;
+    const matchesCategory = [...requiredTags].some((tag) => entityCategoryTags.has(tag));
+    if (!matchesCategory) return false;
+  }
+  return true;
 }
 
 /** Whether a match already shows up elsewhere on the overview card. */

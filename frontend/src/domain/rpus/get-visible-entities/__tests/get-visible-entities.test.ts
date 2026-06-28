@@ -43,6 +43,49 @@ describe("getVisibleEntities RPU — without search", () => {
     expect(result.counts).toEqual({ contacts: 2, businessPartners: 2 });
   });
 
+  it("combines selected tags within one category with OR", () => {
+    const store = storeWith(
+      [
+        contact({ last_name: "Wolf", role: ["Coach"] }),
+        contact({ last_name: "Berger", role: ["Trainer"] }),
+        contact({ last_name: "Meyer", role: ["Berater"] }),
+      ],
+      [],
+    );
+    store.setSelectedTags([
+      { category: "contact.role", tag: "Coach" },
+      { category: "contact.role", tag: "Trainer" },
+    ]);
+
+    const result = getVisibleEntities({ selectionStore: store })();
+
+    expect(result.entities.map((entity) => (entity.kind === "contact" ? entity.contact.data.last_name : ""))).toEqual([
+      "Berger",
+      "Wolf",
+    ]);
+  });
+
+  it("combines selected tags across categories with AND", () => {
+    const store = storeWith(
+      [
+        contact({ last_name: "Wolf", role: ["Coach"], work_area: ["KI"] }),
+        contact({ last_name: "Berger", role: ["Coach"], work_area: ["HR"] }),
+        contact({ last_name: "Meyer", role: ["Berater"], work_area: ["KI"] }),
+      ],
+      [],
+    );
+    store.setSelectedTags([
+      { category: "contact.role", tag: "Coach" },
+      { category: "contact.work_area", tag: "KI" },
+    ]);
+
+    const result = getVisibleEntities({ selectionStore: store })();
+
+    expect(result.entities.map((entity) => (entity.kind === "contact" ? entity.contact.data.last_name : ""))).toEqual([
+      "Wolf",
+    ]);
+  });
+
   it("filters by scope", () => {
     const store = storeWith([contact({ last_name: "Wolf" })], [bp({ name: "AOK Rheinland" })]);
     store.setScope("contacts");

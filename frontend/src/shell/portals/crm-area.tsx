@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Building2, ClipboardPaste, Filter, IdCard, Loader2, Plus, Search, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { tagColorStyle } from "@/lib/tag-colors";
+import { tagCategoryColorStyle } from "@/lib/tag-colors";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,7 @@ import type { Scope } from "@/domain/rpus/set-scope/set-scope";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
 import type { GetVisibleEntitiesResult } from "@/domain/rpus/get-visible-entities/get-visible-entities";
 import type { SelectedEntity } from "@/domain/rpus/get-selected-entity/get-selected-entity";
+import type { SelectedTagFilter } from "@/domain/pproviders/selection-store/selection-store-provider";
 import { ContactCard } from "./contact-card";
 import { GpCard } from "./gp-card";
 import { CreateBusinessPartnerDetail, CreateContactDetail, EntityDetail } from "./entity-detail";
@@ -87,7 +88,7 @@ export function CrmArea() {
     setView(getVisibleEntitiesRpu());
   }
 
-  function changeSelectedTags(tags: string[]) {
+  function changeSelectedTags(tags: SelectedTagFilter[]) {
     setSelectedTagsRpu(tags);
     setView(getVisibleEntitiesRpu());
   }
@@ -367,24 +368,32 @@ function TagFilter({
   selectedTags,
   onChange,
 }: {
-  tags: string[];
-  selectedTags: string[];
-  onChange: (tags: string[]) => void;
+  tags: { category: string; label: string; tags: string[] }[];
+  selectedTags: SelectedTagFilter[];
+  onChange: (tags: SelectedTagFilter[]) => void;
 }) {
   const [filter, setFilter] = React.useState("");
-  const selected = new Set(selectedTags);
-  const visibleTags = tags
-    .filter((tag) => !selected.has(tag))
-    .filter((tag) => tag.toLowerCase().includes(filter.trim().toLowerCase()))
-    .slice(0, 24);
+  const normalizedFilter = filter.trim().toLowerCase();
+  const selected = new Set(selectedTags.map((item) => tagKey(item.category, item.tag)));
+  const visibleGroups = tags
+    .map((group) => ({
+      ...group,
+      tags: group.tags.filter((tag) => {
+        if (selected.has(tagKey(group.category, tag))) return false;
+        if (!normalizedFilter) return true;
+        return tag.toLowerCase().includes(normalizedFilter) || group.label.toLowerCase().includes(normalizedFilter);
+      }),
+    }))
+    .filter((group) => group.tags.length > 0);
 
-  function add(tag: string) {
-    onChange([...selectedTags, tag]);
+  function add(category: string, tag: string) {
+    onChange([...selectedTags, { category, tag }]);
     setFilter("");
   }
 
-  function remove(tag: string) {
-    onChange(selectedTags.filter((selectedTag) => selectedTag !== tag));
+  function remove(category: string, tag: string) {
+    const key = tagKey(category, tag);
+    onChange(selectedTags.filter((selectedTag) => tagKey(selectedTag.category, selectedTag.tag) !== key));
   }
 
   return (
@@ -412,37 +421,46 @@ function TagFilter({
         </div>
         {selectedTags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {selectedTags.map((tag) => (
+            {selectedTags.map((item) => (
               <button
-                key={tag}
+                key={tagKey(item.category, item.tag)}
                 type="button"
                 className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-opacity hover:opacity-80"
-                style={tagColorStyle(tag)}
-                onClick={() => remove(tag)}
+                style={tagCategoryColorStyle(item.category)}
+                onClick={() => remove(item.category, item.tag)}
               >
-                {tag}
+                {item.tag}
                 <span aria-hidden>×</span>
               </button>
             ))}
           </div>
         )}
-        <div className="flex flex-wrap gap-1.5">
-          {visibleTags.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              className="rounded-full border px-2 py-0.5 text-xs transition-opacity hover:opacity-80"
-              style={tagColorStyle(tag)}
-              onClick={() => add(tag)}
-            >
-              {tag}
-            </button>
-          ))}
-          {tags.length === 0 && <div className="text-xs text-[var(--muted-foreground)]">Keine Tags vorhanden.</div>}
-        </div>
+        {visibleGroups.map((group) => (
+          <div key={group.category} className="grid gap-1">
+            <div className="text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">{group.label}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {group.tags.map((tag) => (
+                <button
+                  key={tagKey(group.category, tag)}
+                  type="button"
+                  className="rounded-full border px-2 py-0.5 text-xs transition-opacity hover:opacity-80"
+                  style={tagCategoryColorStyle(group.category)}
+                  onClick={() => add(group.category, tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+        {tags.length === 0 && <div className="text-xs text-[var(--muted-foreground)]">Keine Tags vorhanden.</div>}
       </div>
     </FilterGroup>
   );
+}
+
+function tagKey(category: string, tag: string): string {
+  return `${category.toLowerCase()}:${tag.toLowerCase()}`;
 }
 
 function isSelected(selected: SelectedEntity, entity: { kind: string; contact?: { id: string }; businessPartner?: { id: string } }): boolean {

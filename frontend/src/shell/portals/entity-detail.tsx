@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Building2, Loader2, MapPinned, Plus, Save, SaveOff, Search, Trash2, User, X } from "lucide-react";
-import { tagColorStyle } from "@/lib/tag-colors";
+import { tagCategoryColorStyle, tagColorStyle } from "@/lib/tag-colors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -334,11 +334,13 @@ function TagField({
   label,
   values,
   options,
+  colorCategory,
   onChange,
 }: {
   label: string;
   values: string[] | undefined;
   options: string[];
+  colorCategory?: string;
   onChange: (values: string[] | undefined) => void;
 }) {
   const [draft, setDraft] = React.useState("");
@@ -350,6 +352,7 @@ function TagField({
   const suggestions = allOptions.filter(
     (option) => option.toLowerCase().includes(normalizedDraft),
   );
+  const chipStyle = colorCategory ? tagCategoryColorStyle(colorCategory) : undefined;
 
   function add(value: string) {
     const next = value.trim();
@@ -367,7 +370,7 @@ function TagField({
             <span
               key={value}
               className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
-              style={tagColorStyle(value)}
+              style={chipStyle ?? tagColorStyle(value)}
             >
               {value}
               <button
@@ -737,6 +740,7 @@ function ContactCoreSections({
           <div className="col-span-12">
             <TagField
               label="Kontaktquelle"
+              colorCategory="contact.origin"
               values={splitCategorizedValue(data.origin)}
               options={tagOptions.contact.origin}
               onChange={(origin) =>
@@ -776,24 +780,28 @@ function ContactCoreSections({
         <div className="grid grid-cols-2 gap-3">
           <TagField
             label="Rollen"
+            colorCategory="contact.role"
             values={data.role}
             options={tagOptions.contact.role}
             onChange={(role) => onDataChange((current) => ({ ...current, role }))}
           />
           <TagField
             label="Bereiche"
+            colorCategory="contact.work_area"
             values={data.work_area}
             options={tagOptions.contact.work_area}
             onChange={(work_area) => onDataChange((current) => ({ ...current, work_area }))}
           />
           <TagField
             label="Interessen"
+            colorCategory="contact.interests"
             values={data.interests}
             options={tagOptions.contact.interests}
             onChange={(interests) => onDataChange((current) => ({ ...current, interests }))}
           />
           <TagField
             label="Beziehungen"
+            colorCategory="contact.relationship"
             values={data.relationship}
             options={tagOptions.contact.relationship}
             onChange={(relationship) => onDataChange((current) => ({ ...current, relationship }))}
@@ -801,6 +809,7 @@ function ContactCoreSections({
           <div className="col-span-2">
             <TagField
               label="Tags"
+              colorCategory="contact.tags"
               values={data.tags}
               options={tagOptions.contact.tags}
               onChange={(tags) => onDataChange((current) => ({ ...current, tags }))}
@@ -963,12 +972,14 @@ function BusinessPartnerCoreSections({
         <div className="grid gap-3">
           <TagField
             label="Typen"
+            colorCategory="businessPartner.types"
             values={types}
             options={tagOptions.businessPartner.types}
             onChange={(next) => onTypesChange(next ?? [])}
           />
           <TagField
             label="Tags"
+            colorCategory="businessPartner.tags"
             values={data.tags}
             options={tagOptions.businessPartner.tags}
             onChange={(tags) => onDataChange((current) => ({ ...current, tags }))}

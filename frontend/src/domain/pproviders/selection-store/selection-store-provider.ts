@@ -1,6 +1,10 @@
 import type { Selection } from "@/domain/model";
 
 export type Scope = "both" | "contacts" | "gp";
+export interface SelectedTagFilter {
+  category: string;
+  tag: string;
+}
 
 /** A raw reference to a selected entity — just an id, no looked-up data. */
 export type EntityRef =
@@ -25,8 +29,8 @@ export interface SelectionStoreProvider {
   setSearchTerm(term: string): void;
   getIncludeInactive(): boolean;
   setIncludeInactive(includeInactive: boolean): void;
-  getSelectedTags(): string[];
-  setSelectedTags(tags: string[]): void;
+  getSelectedTags(): SelectedTagFilter[];
+  setSelectedTags(tags: SelectedTagFilter[]): void;
   getSelected(): EntityRef | null;
   setSelected(ref: EntityRef | null): void;
 }

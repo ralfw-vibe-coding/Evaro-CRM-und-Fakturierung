@@ -1,5 +1,5 @@
 import type { Selection } from "@/domain/model";
-import type { EntityRef, Scope, SelectionStoreProvider } from "./selection-store-provider";
+import type { EntityRef, Scope, SelectedTagFilter, SelectionStoreProvider } from "./selection-store-provider";
 
 /**
  * Clones in and out on every access, just like the backend's in-memory
@@ -14,7 +14,7 @@ export class InMemorySelectionStoreProvider implements SelectionStoreProvider {
   private scope: Scope = "both";
   private searchTerm = "";
   private includeInactive = false;
-  private selectedTags: string[] = [];
+  private selectedTags: SelectedTagFilter[] = [];
   private selected: EntityRef | null = null;
 
   get(): Selection | null {
@@ -49,11 +49,11 @@ export class InMemorySelectionStoreProvider implements SelectionStoreProvider {
     this.includeInactive = includeInactive;
   }
 
-  getSelectedTags(): string[] {
+  getSelectedTags(): SelectedTagFilter[] {
     return structuredClone(this.selectedTags);
   }
 
-  setSelectedTags(tags: string[]): void {
+  setSelectedTags(tags: SelectedTagFilter[]): void {
     this.selectedTags = structuredClone(tags);
   }
 
