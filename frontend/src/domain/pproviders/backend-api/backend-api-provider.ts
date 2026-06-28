@@ -67,6 +67,31 @@ export interface EmailImportAnalysis {
   };
 }
 
+export interface BusinessPartnerLookupSource {
+  url: string;
+  title?: string;
+  fields?: string[];
+}
+
+export interface BusinessPartnerLookupCandidate {
+  company_name: string;
+  confidence: number;
+  address?: {
+    street?: string;
+    zip?: string;
+    city?: string;
+    country?: string;
+  };
+  vat_id?: string;
+  channels: Array<{ type: string; address: string }>;
+  contacts_note?: string;
+  sources: BusinessPartnerLookupSource[];
+}
+
+export interface BusinessPartnerLookupResult {
+  candidates: BusinessPartnerLookupCandidate[];
+}
+
 export interface UpdateInvoiceDraftInput {
   id: string;
   data: InvoiceData;
@@ -107,6 +132,7 @@ export interface BackendApiProvider {
   linkContactGp(token: string, input: ContactGpInput): Promise<ApiResult<{ link: ContactGp }>>;
   unlinkContactGp(token: string, input: ContactGpInput): Promise<ApiResult<void>>;
   analyzeEmailImport(token: string, emailText: string): Promise<ApiResult<EmailImportAnalysis>>;
+  lookupBusinessPartner(token: string, data: BusinessPartnerData): Promise<ApiResult<BusinessPartnerLookupResult>>;
   loadInvoicingData(token: string): Promise<ApiResult<InvoicingData>>;
   createInvoiceDraft(
     token: string,

@@ -34,6 +34,7 @@ import { InMemoryOtpProvider } from "./shell/xproviders/otp/in-memory-otp-provid
 import { PostgresOtpProvider } from "./shell/xproviders/otp/postgres-otp-provider.js";
 import type { OtpProvider } from "./shell/xproviders/otp/otp-provider.js";
 import { extractEmailImportWithOpenAi } from "./shell/xproviders/openai/email-import-extractor.js";
+import { lookupBusinessPartnerWithOpenAi } from "./shell/xproviders/openai/business-partner-lookup.js";
 
 import { createContact } from "./domain/rpus/create-contact/create-contact.js";
 import { updateContact } from "./domain/rpus/update-contact/update-contact.js";
@@ -60,6 +61,7 @@ import { createPaymentTerm } from "./domain/rpus/create-payment-term/create-paym
 import { getAppSettings } from "./domain/rpus/get-app-settings/get-app-settings.js";
 import { updateAppSettings } from "./domain/rpus/update-app-settings/update-app-settings.js";
 import { analyzeEmailImport } from "./domain/rpus/analyze-email-import/analyze-email-import.js";
+import { lookupBusinessPartnerData } from "./domain/rpus/lookup-business-partner-data/lookup-business-partner-data.js";
 import { verifyOtp } from "./reactors/verify-otp/verify-otp.js";
 import { requestOtp } from "./reactors/request-otp/request-otp.js";
 import { select } from "./reactors/select/select.js";
@@ -223,6 +225,10 @@ export function analyzeEmailImportRpu() {
     loadSelection: async () => selectReactor()({ includeInactive: true }),
     extract: extractEmailImportWithOpenAi,
   });
+}
+
+export function lookupBusinessPartnerDataRpu() {
+  return lookupBusinessPartnerData({ lookup: lookupBusinessPartnerWithOpenAi });
 }
 
 export function verifyOtpReactor() {

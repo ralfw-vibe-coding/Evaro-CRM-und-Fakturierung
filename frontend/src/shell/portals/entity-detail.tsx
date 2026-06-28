@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Building2, Loader2, MapPinned, Plus, Save, SaveOff, Trash2, User, X } from "lucide-react";
+import { Building2, Loader2, MapPinned, Plus, Save, SaveOff, Search, Trash2, User, X } from "lucide-react";
 import { tagColorStyle } from "@/lib/tag-colors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,13 @@ import {
   deleteContactRpu,
   getTagOptionsRpu,
   linkContactGpRpu,
+  lookupBusinessPartnerRpu,
   unlinkContactGpRpu,
   updateBusinessPartnerRpu,
   updateContactRpu,
 } from "@/composition";
 import type { BusinessPartner, BusinessPartnerData, Channel, Contact, ContactData } from "@/domain/model";
+import type { BusinessPartnerLookupCandidate } from "@/domain/pproviders/backend-api/backend-api-provider";
 import type { SelectedEntity } from "@/domain/rpus/get-selected-entity/get-selected-entity";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
 import type { TagOptions } from "@/domain/rpus/get-tag-options/get-tag-options";
@@ -184,6 +186,47 @@ function googleMapsUrl(parts: Array<string | undefined>): string | null {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
+function mergeChannels(existing: Channel[], incoming: Channel[]): Channel[] {
+  const seen = new Set<string>();
+  const result: Channel[] = [];
+  for (const channel of [...existing, ...incoming]) {
+    const type = channel.type.trim();
+    const address = channel.address.trim();
+    if (!type || !address) continue;
+    const key = `${type.toLowerCase()}:${address.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({ type, address });
+  }
+  return result;
+}
+
+function lookupNote(candidate: BusinessPartnerLookupCandidate): string {
+  const today = new Intl.DateTimeFormat("de-DE").format(new Date());
+  const lines = [`Recherche vom ${today}:`];
+  const address = [
+    candidate.address?.street,
+    [candidate.address?.zip, candidate.address?.city].filter(Boolean).join(" "),
+    candidate.address?.country,
+  ].filter(Boolean).join(", ");
+  if (address) lines.push(`Adresse: ${address}`);
+  if (candidate.vat_id) lines.push(`USt-ID: ${candidate.vat_id}`);
+  if (candidate.channels.length > 0) {
+    lines.push(`Kanäle: ${candidate.channels.map((channel) => channel.address).join(", ")}`);
+  }
+  if (candidate.contacts_note) lines.push(`Ansprechpartner: ${candidate.contacts_note}`);
+  if (candidate.sources.length > 0) {
+    lines.push("", "Quellen:");
+    for (const source of candidate.sources) lines.push(`- ${source.url}`);
+  }
+  return lines.join("\n");
+}
+
+function appendNotes(existing: string | undefined, addition: string): string {
+  const current = existing?.trim();
+  return current ? `${current}\n\n${addition}` : addition;
+}
+
 function Section({
   title,
   action,
@@ -209,6 +252,7 @@ function DetailToolbar({
   dirty,
   busy,
   saveFeedback,
+  extraAction,
   onSave,
   onDelete,
   onClose,
@@ -217,6 +261,7 @@ function DetailToolbar({
   dirty: boolean;
   busy: boolean;
   saveFeedback?: "idle" | "saved" | "error";
+  extraAction?: React.ReactNode;
   onSave: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -230,6 +275,7 @@ function DetailToolbar({
         {icon}
       </div>
       <div className="flex items-center gap-1">
+        {extraAction}
         <Button
           type="button"
           size="icon"
@@ -907,6 +953,297 @@ export function CreateContactDetail({
   );
 }
 
+export function CreateBusinessPartnerDetail({
+  onClose,
+  closeRequestToken = 0,
+  onCreated,
+  onChanged,
+}: {
+  onClose: () => void;
+  closeRequestToken?: number;
+  onCreated: (id: string) => void;
+  onChanged: () => void;
+}) {
+  const tagOptions = getTagOptionsRpu();
+  const [types, setTypes] = React.useState<string[]>([]);
+  const [data, setData] = React.useState<BusinessPartnerData>({ name: "", channels: [], invoice_language: "de" });
+  const [channels, setChannels] = React.useState<Channel[]>([]);
+  const [focusNewChannelType, setFocusNewChannelType] = React.useState(false);
+  const [status, setStatus] = React.useState<string | null>(null);
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [busy, setBusy] = React.useState(false);
+  const [lookupOpen, setLookupOpen] = React.useState(false);
+  const [confirmClose, setConfirmClose] = React.useState(false);
+  const nameInputRef = React.useRef<HTMLInputElement | null>(null);
+  const lastCloseRequestRef = React.useRef(closeRequestToken);
+  const currentPayload = {
+    types: normalizeTags(types) ?? [],
+    data: normalizeBusinessPartnerData(data, channels),
+  };
+  const emptyPayload = { types: [], data: normalizeBusinessPartnerData({ name: "", channels: [] }, []) };
+  const dirty = stableJson(currentPayload) !== stableJson(emptyPayload);
+  const canSave = Boolean(currentPayload.data.name?.trim()) && !busy;
+
+  React.useEffect(() => {
+    window.setTimeout(() => {
+      nameInputRef.current?.focus();
+    }, 0);
+  }, []);
+
+  async function save() {
+    if (!canSave) return;
+    setBusy(true);
+    setStatus(null);
+    setErrors({});
+    const created = await createBusinessPartnerRpu(currentPayload);
+    setBusy(false);
+    if (!created.ok) {
+      setStatus(created.error);
+      setErrors(created.fields ?? {});
+      return;
+    }
+    onChanged();
+    onCreated(created.businessPartner.id);
+  }
+
+  function requestClose() {
+    if (dirty) {
+      setConfirmClose(true);
+      return;
+    }
+    onClose();
+  }
+
+  React.useEffect(() => {
+    if (closeRequestToken === lastCloseRequestRef.current) return;
+    lastCloseRequestRef.current = closeRequestToken;
+    if (closeRequestToken === 0) return;
+    requestClose();
+  }, [closeRequestToken, dirty]);
+
+  function applyLookupCandidate(candidate: BusinessPartnerLookupCandidate) {
+    setData((current) => ({
+      ...current,
+      name: candidate.company_name || current.name,
+      vat_id: candidate.vat_id ?? current.vat_id,
+      address: {
+        ...current.address,
+        street: candidate.address?.street ?? current.address?.street,
+        zip: candidate.address?.zip ?? current.address?.zip,
+        city: candidate.address?.city ?? current.address?.city,
+        country: candidate.address?.country ?? current.address?.country,
+      },
+      notes: appendNotes(current.notes, lookupNote(candidate)),
+    }));
+    setChannels((current) => mergeChannels(current, candidate.channels));
+    setLookupOpen(false);
+  }
+
+  const mapsHref = googleMapsUrl([
+    data.address?.street,
+    data.address?.zip,
+    data.address?.city,
+    data.address?.country,
+  ]);
+
+  return (
+    <div className="grid gap-5 p-4">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border)] bg-[var(--background)] pb-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <span>Details</span>
+          <Building2 className="size-4 text-[var(--gp)]" />
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Unternehmensdaten suchen"
+            title="Unternehmensdaten suchen"
+            onClick={() => setLookupOpen(true)}
+          >
+            <Search />
+          </Button>
+          <Button type="button" size="icon" onClick={save} disabled={!canSave} aria-label="Speichern">
+            {busy ? <Loader2 className="animate-spin" /> : <Save />}
+          </Button>
+          <Button type="button" variant="ghost" size="icon" onClick={requestClose} aria-label="Schließen">
+            <X />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
+        <div className="grid content-start gap-5">
+          <Section title="Geschäftspartner">
+            <div className="grid gap-1">
+              <Input
+                ref={nameInputRef}
+                value={data.name}
+                placeholder="Name"
+                aria-label="Name"
+                className="h-10 text-lg font-semibold"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, name: e.target.value })}
+              />
+              {errors.name && <p className="text-xs text-[var(--destructive)]">{errors.name}</p>}
+            </div>
+            <Textarea
+              rows={2}
+              value={data.address?.street ?? ""}
+              placeholder="Straße"
+              aria-label="Straße"
+              {...NO_PASSWORD_MANAGER_PROPS}
+              onChange={(e) => setData({ ...data, address: { ...data.address, street: e.target.value } })}
+            />
+            <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
+              <Input
+                value={data.address?.zip ?? ""}
+                placeholder="PLZ"
+                aria-label="PLZ"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, address: { ...data.address, zip: e.target.value } })}
+              />
+              <div className="flex gap-2">
+                <Input
+                  value={data.address?.city ?? ""}
+                  placeholder="Ort"
+                  aria-label="Ort"
+                  {...NO_PASSWORD_MANAGER_PROPS}
+                  onChange={(e) => setData({ ...data, address: { ...data.address, city: e.target.value } })}
+                />
+                {mapsHref && (
+                  <Button type="button" variant="ghost" size="icon" asChild aria-label="Ort in Google Maps öffnen">
+                    <a href={mapsHref} target="_blank" rel="noreferrer" title="Ort in Google Maps öffnen">
+                      <MapPinned />
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+              <SingleTagField
+                value={data.address?.country ?? ""}
+                placeholder="Land"
+                options={tagOptions.businessPartner.countries}
+                onChange={(value) => setData({ ...data, address: { ...data.address, country: value } })}
+              />
+              <div className="flex rounded-md border border-[var(--border)] p-0.5">
+                {(["de", "en"] as const).map((language) => {
+                  const active = (data.invoice_language ?? "de") === language;
+                  return (
+                    <button
+                      key={language}
+                      type="button"
+                      className={[
+                        "rounded px-2.5 py-1 text-xs font-semibold transition-colors",
+                        active ? "bg-[var(--brand)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
+                      ].join(" ")}
+                      onClick={() => setData({ ...data, invoice_language: language })}
+                    >
+                      {language.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
+              <Input
+                value={data.vat_id ?? ""}
+                placeholder="USt-ID"
+                aria-label="USt-ID"
+                {...NO_PASSWORD_MANAGER_PROPS}
+                onChange={(e) => setData({ ...data, vat_id: e.target.value })}
+              />
+            </div>
+          </Section>
+
+          <Section
+            title="Kanäle"
+            action={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Kanal hinzufügen"
+                title="Kanal hinzufügen"
+                onClick={() => {
+                  setChannels([...channels, { type: "", address: "" }]);
+                  setFocusNewChannelType(true);
+                }}
+              >
+                <Plus />
+              </Button>
+            }
+          >
+            <ChannelsEditor
+              channels={channels}
+              channelTypeOptions={tagOptions.channelTypes}
+              focusLastType={focusNewChannelType}
+              onFocusedLastType={() => setFocusNewChannelType(false)}
+              onChange={setChannels}
+            />
+          </Section>
+
+          <Section title="Klassifizierungen">
+            <div className="grid gap-3">
+              <TagField
+                label="Typen"
+                values={types}
+                options={tagOptions.businessPartner.types}
+                onChange={(next) => setTypes(next ?? [])}
+              />
+              <TagField
+                label="Tags"
+                values={data.tags}
+                options={tagOptions.businessPartner.tags}
+                onChange={(tags) => setData({ ...data, tags })}
+              />
+            </div>
+          </Section>
+        </div>
+
+        <div className="grid content-start gap-5">
+          <Section title="Absprachen">
+            <Textarea
+              value={data.memo ?? ""}
+              rows={5}
+              {...NO_PASSWORD_MANAGER_PROPS}
+              onChange={(e) => setData({ ...data, memo: e.target.value })}
+            />
+            <h3 className="pt-2 text-xs font-semibold uppercase text-[var(--muted-foreground)]">Notizen</h3>
+            <Textarea
+              value={data.notes ?? ""}
+              rows={8}
+              {...NO_PASSWORD_MANAGER_PROPS}
+              onChange={(e) => setData({ ...data, notes: e.target.value })}
+            />
+          </Section>
+        </div>
+      </div>
+
+      {status && <p className="text-sm text-[var(--muted-foreground)]">{status}</p>}
+      {confirmClose && (
+        <UnsavedCloseDialog
+          onCancel={() => setConfirmClose(false)}
+          onSaveAndClose={async () => {
+            await save();
+          }}
+          onCloseWithoutSave={() => {
+            setConfirmClose(false);
+            onClose();
+          }}
+        />
+      )}
+      {lookupOpen && (
+        <BusinessPartnerLookupOverlay
+          businessPartner={currentPayload.data}
+          onClose={() => setLookupOpen(false)}
+          onApply={applyLookupCandidate}
+        />
+      )}
+    </div>
+  );
+}
+
 function DraftContactBusinessPartnerLinks({
   pendingBusinessPartners,
   availableBusinessPartners,
@@ -1464,6 +1801,7 @@ function BusinessPartnerEditor({
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [busy, setBusy] = React.useState(false);
   const [saveFeedback, setSaveFeedback] = React.useState<"idle" | "saved" | "error">("idle");
+  const [lookupOpen, setLookupOpen] = React.useState(false);
   const [pendingNavigation, setPendingNavigation] = React.useState<EntityRef | null>(null);
   const [confirmClose, setConfirmClose] = React.useState(false);
   const nameInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -1573,6 +1911,24 @@ function BusinessPartnerEditor({
     data.address?.country,
   ]);
 
+  function applyLookupCandidate(candidate: BusinessPartnerLookupCandidate) {
+    setData((current) => ({
+      ...current,
+      name: candidate.company_name || current.name,
+      vat_id: candidate.vat_id ?? current.vat_id,
+      address: {
+        ...current.address,
+        street: candidate.address?.street ?? current.address?.street,
+        zip: candidate.address?.zip ?? current.address?.zip,
+        city: candidate.address?.city ?? current.address?.city,
+        country: candidate.address?.country ?? current.address?.country,
+      },
+      notes: appendNotes(current.notes, lookupNote(candidate)),
+    }));
+    setChannels((current) => mergeChannels(current, candidate.channels));
+    setLookupOpen(false);
+  }
+
   return (
     <div className="grid gap-5">
       <DetailToolbar
@@ -1580,6 +1936,18 @@ function BusinessPartnerEditor({
         dirty={dirty}
         busy={busy}
         saveFeedback={saveFeedback}
+        extraAction={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Unternehmensdaten suchen"
+            title="Unternehmensdaten suchen"
+            onClick={() => setLookupOpen(true)}
+          >
+            <Search />
+          </Button>
+        }
         onSave={save}
         onDelete={remove}
         onClose={requestClose}
@@ -1771,6 +2139,14 @@ function BusinessPartnerEditor({
             setConfirmClose(false);
             onClose();
           }}
+        />
+      )}
+
+      {lookupOpen && (
+        <BusinessPartnerLookupOverlay
+          businessPartner={currentPayload.data}
+          onClose={() => setLookupOpen(false)}
+          onApply={applyLookupCandidate}
         />
       )}
 
@@ -2143,6 +2519,120 @@ function ContactAttachInput({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function BusinessPartnerLookupOverlay({
+  businessPartner,
+  onClose,
+  onApply,
+}: {
+  businessPartner: BusinessPartnerData;
+  onClose: () => void;
+  onApply: (candidate: BusinessPartnerLookupCandidate) => void;
+}) {
+  const [busy, setBusy] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [candidates, setCandidates] = React.useState<BusinessPartnerLookupCandidate[]>([]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    lookupBusinessPartnerRpu(businessPartner).then((result) => {
+      if (cancelled) return;
+      setBusy(false);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setCandidates(result.lookup.candidates);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [businessPartner]);
+
+  React.useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[60] grid place-items-center bg-black/25 p-4">
+      <div className="grid max-h-[90vh] w-full max-w-4xl grid-rows-[auto_1fr] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+          <div className="flex items-center gap-2 font-semibold">
+            <Search className="size-4 text-[var(--gp)]" />
+            Unternehmensdaten suchen
+          </div>
+          <Button type="button" variant="ghost" size="icon" aria-label="Schließen" onClick={onClose}>
+            <X />
+          </Button>
+        </div>
+        <div className="min-h-0 overflow-auto p-4">
+          {busy && (
+            <div className="grid min-h-52 place-items-center text-[var(--muted-foreground)]">
+              <Loader2 className="size-5 animate-spin" />
+            </div>
+          )}
+          {error && (
+            <div className="rounded-md border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 p-3 text-sm">
+              {error}
+            </div>
+          )}
+          {!busy && !error && candidates.length === 0 && (
+            <div className="rounded-md border border-[var(--border)] p-6 text-center text-sm text-[var(--muted-foreground)]">
+              Keine passenden Unternehmensdaten gefunden.
+            </div>
+          )}
+          <div className="grid gap-3">
+            {candidates.map((candidate, index) => {
+              const address = [
+                candidate.address?.street,
+                [candidate.address?.zip, candidate.address?.city].filter(Boolean).join(" "),
+                candidate.address?.country,
+              ].filter(Boolean).join(", ");
+              return (
+                <section key={`${candidate.company_name}-${index}`} className="grid gap-3 rounded-lg border border-[var(--border)] p-3 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-semibold">{candidate.company_name}</div>
+                      <div className="text-xs text-[var(--muted-foreground)]">
+                        Sicherheit: {Math.round(candidate.confidence * 100)}%
+                      </div>
+                    </div>
+                    <Button type="button" onClick={() => onApply(candidate)}>
+                      Übernehmen
+                    </Button>
+                  </div>
+                  <div className="grid gap-1 text-sm">
+                    {address && <div>{address}</div>}
+                    {candidate.vat_id && <div>USt-ID: {candidate.vat_id}</div>}
+                    {candidate.channels.length > 0 && (
+                      <div className="text-[var(--muted-foreground)]">
+                        {candidate.channels.map((channel) => `${channel.type}: ${channel.address}`).join(" · ")}
+                      </div>
+                    )}
+                    {candidate.contacts_note && <div>Ansprechpartner: {candidate.contacts_note}</div>}
+                  </div>
+                  {candidate.sources.length > 0 && (
+                    <div className="grid gap-1 border-t border-[var(--border)] pt-2 text-xs text-[var(--muted-foreground)]">
+                      {candidate.sources.map((source) => (
+                        <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="truncate underline">
+                          {source.title ? `${source.title} - ${source.url}` : source.url}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

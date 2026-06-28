@@ -1,9 +1,15 @@
 import * as React from "react";
-import { ClipboardPaste, Filter, IdCard, Loader2, Plus, Search, X } from "lucide-react";
+import { Building2, ClipboardPaste, Filter, IdCard, Loader2, Plus, Search, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tagColorStyle } from "@/lib/tag-colors";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   loadSelectionRpu,
   setScopeRpu,
@@ -22,7 +28,7 @@ import type { GetVisibleEntitiesResult } from "@/domain/rpus/get-visible-entitie
 import type { SelectedEntity } from "@/domain/rpus/get-selected-entity/get-selected-entity";
 import { ContactCard } from "./contact-card";
 import { GpCard } from "./gp-card";
-import { CreateContactDetail, EntityDetail } from "./entity-detail";
+import { CreateBusinessPartnerDetail, CreateContactDetail, EntityDetail } from "./entity-detail";
 import { EmailImportOverlay } from "./email-import-overlay";
 
 /**
@@ -41,6 +47,7 @@ export function CrmArea() {
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [, setDetailDirty] = React.useState(false);
   const [creatingContact, setCreatingContact] = React.useState(false);
+  const [creatingBusinessPartner, setCreatingBusinessPartner] = React.useState(false);
   const [importingEmail, setImportingEmail] = React.useState(false);
   const [closeRequestToken, setCloseRequestToken] = React.useState(0);
   const [focusCompanyContactId, setFocusCompanyContactId] = React.useState<string | null>(null);
@@ -123,17 +130,30 @@ export function CrmArea() {
         title={`Übersicht (${view?.entities.length ?? 0})`}
         action={
           <div className="flex items-center gap-1.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="bg-[var(--brand)] text-white hover:opacity-90"
-              aria-label="Neuen Kontakt anlegen"
-              title="Neuen Kontakt anlegen"
-              onClick={() => setCreatingContact(true)}
-            >
-              <Plus />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="bg-[var(--brand)] text-white hover:opacity-90"
+                  aria-label="Neu anlegen"
+                  title="Neu anlegen"
+                >
+                  <Plus />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setCreatingContact(true)}>
+                  <User className="text-[var(--brand)]" />
+                  Kontakt
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setCreatingBusinessPartner(true)}>
+                  <Building2 className="text-[var(--gp)]" />
+                  Geschäftspartner
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               type="button"
               variant="ghost"
@@ -182,6 +202,21 @@ export function CrmArea() {
             onNavigate={(ref) => {
               setCreatingContact(false);
               selectEntity(ref);
+            }}
+            onChanged={refreshProjection}
+          />
+        </EntityOverlay>
+      )}
+      {creatingBusinessPartner && (
+        <EntityOverlay onClose={() => setCloseRequestToken((token) => token + 1)}>
+          <CreateBusinessPartnerDetail
+            onClose={() => setCreatingBusinessPartner(false)}
+            closeRequestToken={closeRequestToken}
+            onCreated={(id) => {
+              setCreatingBusinessPartner(false);
+              setFocusBusinessPartnerId(id);
+              setView(getVisibleEntitiesRpu());
+              selectEntity({ kind: "business_partner", id });
             }}
             onChanged={refreshProjection}
           />

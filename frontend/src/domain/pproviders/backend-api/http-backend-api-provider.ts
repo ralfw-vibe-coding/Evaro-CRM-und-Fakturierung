@@ -17,6 +17,7 @@ import type {
   ContactGpInput,
   CreateBusinessPartnerInput,
   CreateContactInput,
+  BusinessPartnerLookupResult,
   EmailImportAnalysis,
   UpdateBusinessPartnerInput,
   UpdateContactInput,
@@ -168,6 +169,14 @@ export const httpBackendApiProvider: BackendApiProvider = {
       method: "POST",
       headers: { authorization: `Bearer ${token}` },
       body: JSON.stringify({ email_text: emailText }),
+    });
+  },
+
+  async lookupBusinessPartner(token, data) {
+    return request<BusinessPartnerLookupResult>("/business-partner-lookup", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ business_partner: data }),
     });
   },
 

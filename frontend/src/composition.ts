@@ -41,6 +41,7 @@ import { createPaymentTerm } from "./domain/rpus/create-payment-term/create-paym
 import { loadAppSettings } from "./domain/rpus/load-app-settings/load-app-settings.js";
 import { updateAppSettings } from "./domain/rpus/update-app-settings/update-app-settings.js";
 import { analyzeEmailImport } from "./domain/rpus/analyze-email-import/analyze-email-import.js";
+import { lookupBusinessPartner } from "./domain/rpus/lookup-business-partner/lookup-business-partner.js";
 
 const backendApi = httpBackendApiProvider;
 const session = browserSessionProvider;
@@ -104,3 +105,4 @@ export const createPaymentTermRpu = createPaymentTerm({ backendApi, session, inv
 export const loadAppSettingsRpu = loadAppSettings({ backendApi, session });
 export const updateAppSettingsRpu = updateAppSettings({ backendApi, session });
 export const analyzeEmailImportRpu = analyzeEmailImport({ backendApi, session });
+export const lookupBusinessPartnerRpu = lookupBusinessPartner({ backendApi, session });

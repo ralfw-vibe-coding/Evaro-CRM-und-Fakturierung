@@ -23,6 +23,7 @@ function fakeBackendApi(overrides: Partial<BackendApiProvider> = {}): BackendApi
     linkContactGp: async () => ({ ok: false, error: "not used" }),
     unlinkContactGp: async () => ({ ok: false, error: "not used" }),
     analyzeEmailImport: async () => ({ ok: false, error: "not used" }),
+    lookupBusinessPartner: async () => ({ ok: false, error: "not used" }),
     loadInvoicingData: async () => ({ ok: false, error: "not used" }),
     createInvoiceDraft: async () => ({ ok: false, error: "not used" }),
     updateInvoiceDraft: async () => ({ ok: false, error: "not used" }),
