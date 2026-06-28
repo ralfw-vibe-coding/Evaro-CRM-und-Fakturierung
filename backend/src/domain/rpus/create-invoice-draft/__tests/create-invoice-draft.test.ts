@@ -47,6 +47,7 @@ describe("createInvoiceDraft RPU", () => {
       vat_id: "DE123",
       address: { street: "Markt 1", zip: "20095", city: "Hamburg", country: "DE" },
       email: "rechnung@acme.test",
+      invoice_language: "de",
     });
 
     const stored = await env.invoices.listAll();
@@ -68,6 +69,18 @@ describe("createInvoiceDraft RPU", () => {
     expect(log).toHaveLength(1);
     expect(log[0].type).toBe("invoice_draft_created");
     expect(log[0].payload).toEqual({ invoice_id: result.invoice.id });
+  });
+
+  it("copies the business partner invoice language into the invoice snapshot", async () => {
+    const bp = await env.businessPartners.insert({
+      types: [],
+      data: { name: "Acme Ltd.", invoice_language: "en", channels: [] },
+    });
+
+    const result = await env.process({ user_id: USER, business_partner_id: bp.id });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.invoice.gp_snapshot.invoice_language).toBe("en");
   });
 
   it("rejects an unknown business partner", async () => {

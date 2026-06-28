@@ -165,6 +165,7 @@ function normalizeBusinessPartnerData(data: BusinessPartnerData, channels: Chann
           country: normalizeOptional(data.address.country),
         }
       : undefined,
+    invoice_language: data.invoice_language === "en" ? "en" : data.invoice_language === "de" ? "de" : undefined,
     channels: normalizeChannels(channels),
     business_relationship: normalizeTags(data.business_relationship ?? []),
     tags: normalizeTags(data.tags ?? []),
@@ -1632,13 +1633,31 @@ function BusinessPartnerEditor({
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
               <SingleTagField
                 value={data.address?.country ?? ""}
                 placeholder="Land"
                 options={tagOptions.businessPartner.countries}
                 onChange={(value) => setData({ ...data, address: { ...data.address, country: value } })}
               />
+              <div className="flex rounded-md border border-[var(--border)] p-0.5">
+                {(["de", "en"] as const).map((language) => {
+                  const active = (data.invoice_language ?? "de") === language;
+                  return (
+                    <button
+                      key={language}
+                      type="button"
+                      className={[
+                        "rounded px-2.5 py-1 text-xs font-semibold transition-colors",
+                        active ? "bg-[var(--brand)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
+                      ].join(" ")}
+                      onClick={() => setData({ ...data, invoice_language: language })}
+                    >
+                      {language.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
               <Input
                 value={data.vat_id ?? ""}
                 placeholder="USt-ID"

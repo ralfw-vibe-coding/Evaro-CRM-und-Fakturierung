@@ -79,6 +79,7 @@ function normalizeSnapshot(value: unknown): InvoiceGpSnapshot {
     vat_id: text(data.vat_id),
     address: normalizeAddress(data.address),
     email: text(data.email),
+    invoice_language: data.invoice_language === "en" ? "en" : "de",
   };
 }
 

@@ -836,7 +836,7 @@ function InvoiceDetail({
                 {...NO_PASSWORD_MANAGER_PROPS}
               />
               <div className="text-sm text-[var(--muted-foreground)]">
-                {standardPaymentTermsLine(draft.payment_due_days, invoice.invoice_date)}
+                {standardPaymentTermsLine(draft.payment_due_days, invoice.invoice_date, "de")}
               </div>
             </div>
             <textarea
@@ -930,6 +930,9 @@ function InvoicePrintPreview({
   const invoiceNumber = invoice.invoice_number ?? "0000000000";
   const invoiceDate = invoice.invoice_date ? formatDate(invoice.invoice_date) : "DD.MM.YYYY";
   const reverseCharge = invoice.data.reverse_charge === true;
+  const language = invoice.gp_snapshot.invoice_language ?? "de";
+  const labels = invoicePrintLabels[language];
+  const paymentTerms = paymentTermsText(invoice.data, invoice.invoice_date, language);
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-zinc-950/50 p-6">
@@ -953,30 +956,30 @@ function InvoicePrintPreview({
         <header className="border-b border-zinc-300 pb-3">
           <div className="flex items-baseline justify-between gap-12">
             <div className="text-2xl font-bold">{sellerName}</div>
-            <div className="text-right text-2xl font-bold tracking-normal">Invoice #{invoiceNumber}</div>
+            <div className="text-right text-2xl font-bold tracking-normal">{invoiceTitle(language, invoiceNumber)}</div>
           </div>
           <div className="mt-1 text-right text-sm text-zinc-600">{invoiceDate}</div>
         </header>
 
         <section className="mt-8 grid grid-cols-2 gap-12">
           <div>
-            <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Bill To</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.billTo}</div>
             <div className="mt-3 whitespace-pre-line text-sm leading-6">{buyerLines.join("\n")}</div>
             {invoice.gp_snapshot.vat_id && (
-              <div className="mt-3 text-sm text-zinc-700">VAT ID: {invoice.gp_snapshot.vat_id}</div>
+              <div className="mt-3 text-sm text-zinc-700">{labels.buyerVatId}: {invoice.gp_snapshot.vat_id}</div>
             )}
             {invoice.data.reference && (
-              <div className="mt-1 text-sm text-zinc-700">Customer Ref.: {invoice.data.reference}</div>
+              <div className="mt-1 text-sm text-zinc-700">{labels.customerRef}: {invoice.data.reference}</div>
             )}
           </div>
           <div>
-            <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Seller</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.seller}</div>
             <div className="mt-3 grid gap-1 text-sm leading-6 text-zinc-700">
               <div className="font-medium text-black">{sellerName}</div>
               {sellerAddressLines.length > 0 && (
                 <div className="whitespace-pre-line">{sellerAddressLines.join("\n")}</div>
               )}
-              {seller.vat_number && <div>VAT No.: {seller.vat_number}</div>}
+              {seller.vat_number && <div>{labels.sellerVatNo}: {seller.vat_number}</div>}
             </div>
           </div>
         </section>
@@ -985,12 +988,12 @@ function InvoicePrintPreview({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-zinc-300 text-left text-xs uppercase tracking-wide text-zinc-500">
-                <th className="py-2 pr-3 font-bold">Service Date</th>
-                <th className="py-2 pr-3 font-bold">Description</th>
-                <th className="py-2 pr-3 text-right font-bold">Qty</th>
-                <th className="py-2 pr-3 font-bold">Unit</th>
-                <th className="py-2 pr-3 text-right font-bold">Unit Price</th>
-                <th className="py-2 text-right font-bold">Total</th>
+                <th className="py-2 pr-3 font-bold">{labels.serviceDate}</th>
+                <th className="py-2 pr-3 font-bold">{labels.description}</th>
+                <th className="py-2 pr-3 text-right font-bold">{labels.qty}</th>
+                <th className="py-2 pr-3 font-bold">{labels.unit}</th>
+                <th className="py-2 pr-3 text-right font-bold">{labels.unitPrice}</th>
+                <th className="py-2 text-right font-bold">{labels.total}</th>
               </tr>
             </thead>
             <tbody>
@@ -1018,45 +1021,45 @@ function InvoicePrintPreview({
           <div className="grid content-start gap-6 text-sm">
             {invoice.data.comment && (
               <div>
-                <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Comment</div>
+                <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.comment}</div>
                 <div className="mt-2 whitespace-pre-line leading-6">{invoice.data.comment}</div>
               </div>
             )}
-            {paymentTermsText(invoice.data, invoice.invoice_date) && (
+            {paymentTerms && (
               <div>
-                <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Payment Terms</div>
+                <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.paymentTerms}</div>
                 <div className="mt-2 whitespace-pre-line leading-6">
-                  {paymentTermsText(invoice.data, invoice.invoice_date)}
+                  {paymentTerms}
                 </div>
               </div>
             )}
           </div>
           <div className="grid gap-2 border-t border-zinc-300 pt-3 text-sm">
-            <PrintTotal label="Net" value={formatMoney(totals.net)} />
-            <PrintTotal label={`VAT (${formatNumber(invoice.vat_rate)}%)`} value={formatMoney(totals.vat)} />
+            <PrintTotal label={labels.net} value={formatMoney(totals.net)} />
+            <PrintTotal label={`${labels.vat} (${formatNumber(invoice.vat_rate)}%)`} value={formatMoney(totals.vat)} />
             <div className="mt-2 border-t border-zinc-300 pt-3">
-              <PrintTotal label="Amount Due" value={formatMoney(totals.gross)} strong />
+              <PrintTotal label={labels.amountDue} value={formatMoney(totals.gross)} strong />
             </div>
           </div>
         </section>
 
         {reverseCharge && (
           <div className="mt-6 break-inside-avoid border-t border-zinc-300 pt-4 text-sm">
-            Tax liability of the recipient of the service (reverse charge).
+            {labels.reverseCharge}
           </div>
         )}
 
         <footer className="mt-12 grid break-inside-avoid grid-cols-3 gap-6 border-t border-zinc-300 pt-5 text-xs leading-5 text-zinc-600">
           <div>
-            <div className="font-bold text-zinc-800">Registration</div>
+            <div className="font-bold text-zinc-800">{labels.registration}</div>
             <div className="mt-1 whitespace-pre-line">{registrationLines.join("\n")}</div>
           </div>
           <div>
-            <div className="font-bold text-zinc-800">Bank</div>
+            <div className="font-bold text-zinc-800">{labels.bank}</div>
             <div className="mt-1 whitespace-pre-line">{bankLines.join("\n")}</div>
           </div>
           <div>
-            <div className="font-bold text-zinc-800">Contact</div>
+            <div className="font-bold text-zinc-800">{labels.contact}</div>
             <div className="mt-1 whitespace-pre-line">
               {[seller.contact_person, seller.email, seller.phone, seller.website].filter(Boolean).join("\n")}
             </div>
@@ -1076,9 +1079,67 @@ function PrintTotal({ label, value, strong }: { label: string; value: string; st
   );
 }
 
+type InvoicePrintLanguage = "de" | "en";
+
+const invoicePrintLabels: Record<InvoicePrintLanguage, Record<string, string>> = {
+  de: {
+    invoiceNo: "Rechnung Nr.",
+    billTo: "Rechnung an",
+    buyerVatId: "USt-ID",
+    customerRef: "Kundenreferenz",
+    seller: "Rechnungssteller",
+    sellerVatNo: "USt-Nr.",
+    serviceDate: "Leistungsdatum",
+    description: "Beschreibung",
+    qty: "Menge",
+    unit: "Einheit",
+    unitPrice: "Einzelpreis",
+    total: "Gesamt",
+    comment: "Kommentar",
+    paymentTerms: "Zahlungsbedingungen",
+    net: "Netto",
+    vat: "USt.",
+    amountDue: "Rechnungsbetrag",
+    reverseCharge: "Steuerschuldnerschaft des Leistungsempfängers (reverse charge).",
+    registration: "Registrierung",
+    bank: "Bank",
+    contact: "Kontakt",
+    paymentDueLine: "Der Rechnungsbetrag ist ohne Abzug zahlbar bis:",
+  },
+  en: {
+    invoiceNo: "Invoice #",
+    billTo: "Bill To",
+    buyerVatId: "VAT ID",
+    customerRef: "Customer Ref.",
+    seller: "Seller",
+    sellerVatNo: "VAT No.",
+    serviceDate: "Service Date",
+    description: "Description",
+    qty: "Qty",
+    unit: "Unit",
+    unitPrice: "Unit Price",
+    total: "Total",
+    comment: "Comment",
+    paymentTerms: "Payment Terms",
+    net: "Net",
+    vat: "VAT",
+    amountDue: "Amount Due",
+    reverseCharge: "Tax liability of the recipient of the service (reverse charge).",
+    registration: "Registration",
+    bank: "Bank",
+    contact: "Contact",
+    paymentDueLine: "The invoice amount is payable without deduction by:",
+  },
+};
+
+function invoiceTitle(language: InvoicePrintLanguage, invoiceNumber: string): string {
+  return language === "en" ? `Invoice #${invoiceNumber}` : `Rechnung Nr. ${invoiceNumber}`;
+}
+
 function ReadOnlySnapshot({ invoice }: { invoice: Invoice }) {
   const address = invoice.gp_snapshot.address;
   const cityLine = [address?.zip, address?.city].filter(Boolean).join(" ");
+  const language = (invoice.gp_snapshot.invoice_language ?? "de").toUpperCase();
   return (
     <div className="rounded-md border border-[var(--border)] p-4">
       <div className="font-semibold">{invoice.gp_snapshot.name}</div>
@@ -1086,7 +1147,7 @@ function ReadOnlySnapshot({ invoice }: { invoice: Invoice }) {
       {cityLine && <div className="text-sm">{cityLine}</div>}
       {address?.country && <div className="text-sm">{address.country}</div>}
       <div className="mt-3 grid gap-1 text-sm text-[var(--muted-foreground)]">
-        {invoice.gp_snapshot.vat_id && <span>USt-ID: {invoice.gp_snapshot.vat_id}</span>}
+        {invoice.gp_snapshot.vat_id && <span>USt-ID: {invoice.gp_snapshot.vat_id} ({language})</span>}
         {invoice.gp_snapshot.email && (
           <span className="flex items-center gap-1.5">
             <span>{invoice.gp_snapshot.email}</span>
@@ -1445,15 +1506,20 @@ function splitLines(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
-function standardPaymentTermsLine(days: number | undefined, invoiceDate: string | null): string {
-  if (days === undefined) return "Der Rechnungsbetrag ist ohne Abzug zahlbar bis: -";
+function standardPaymentTermsLine(
+  days: number | undefined,
+  invoiceDate: string | null,
+  language: InvoicePrintLanguage,
+): string {
+  const prefix = invoicePrintLabels[language].paymentDueLine;
+  if (days === undefined) return `${prefix} -`;
   const base = invoiceDate ? new Date(`${invoiceDate}T00:00:00`) : new Date();
-  return `Der Rechnungsbetrag ist ohne Abzug zahlbar bis: ${formatOffsetDate(base, days)}`;
+  return `${prefix} ${formatOffsetDate(base, days)}`;
 }
 
-function paymentTermsText(data: InvoiceData, invoiceDate: string | null): string {
+function paymentTermsText(data: InvoiceData, invoiceDate: string | null, language: InvoicePrintLanguage): string {
   const parts = [
-    data.payment_due_days !== undefined ? standardPaymentTermsLine(data.payment_due_days, invoiceDate) : undefined,
+    data.payment_due_days !== undefined ? standardPaymentTermsLine(data.payment_due_days, invoiceDate, language) : undefined,
     data.payment_free_text?.trim(),
   ].filter(Boolean);
   if (parts.length > 0) return parts.join("\n");

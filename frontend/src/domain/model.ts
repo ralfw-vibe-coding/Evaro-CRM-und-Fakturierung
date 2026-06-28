@@ -41,6 +41,7 @@ export interface BusinessPartnerData {
   name: string;
   vat_id?: string;
   address?: Address;
+  invoice_language?: "de" | "en";
   channels: Channel[];
   business_relationship?: string[];
   tags?: string[];
@@ -84,6 +85,7 @@ export interface InvoiceGpSnapshot {
   vat_id?: string;
   address?: Address;
   email?: string;
+  invoice_language?: "de" | "en";
 }
 
 export interface InvoiceLine {

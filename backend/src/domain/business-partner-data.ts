@@ -9,6 +9,7 @@ export interface RawBusinessPartnerData {
     city?: string;
     country?: string;
   };
+  invoice_language?: string;
   channels?: { type?: string; address?: string }[];
   business_relationship?: string[];
   tags?: string[];
@@ -44,6 +45,11 @@ function normalizeChannels(channels: RawBusinessPartnerData["channels"]): Busine
     .filter((c) => c.type.length > 0 && c.address.length > 0);
 }
 
+function normalizeInvoiceLanguage(value: string | undefined): BusinessPartnerData["invoice_language"] {
+  const normalized = trimOrUndefined(value)?.toLowerCase();
+  return normalized === "en" ? "en" : normalized === "de" ? "de" : undefined;
+}
+
 export function normalizeTypes(types: string[] | undefined): string[] {
   if (!Array.isArray(types)) return [];
   return [...new Set(types.map((t) => (typeof t === "string" ? t.trim() : "")).filter(Boolean))];
@@ -73,6 +79,7 @@ export function validateBusinessPartnerData(
       name: name!,
       vat_id: trimOrUndefined(raw.vat_id),
       address,
+      invoice_language: normalizeInvoiceLanguage(raw.invoice_language),
       channels: normalizeChannels(raw.channels),
       business_relationship: normalizeStringList(raw.business_relationship),
       tags: normalizeStringList(raw.tags),

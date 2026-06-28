@@ -33,6 +33,7 @@ function snapshotFromBusinessPartner(bp: BusinessPartner): InvoiceGpSnapshot {
     vat_id: text(bp.data.vat_id),
     address: bp.data.address,
     email: text(email),
+    invoice_language: bp.data.invoice_language ?? "de",
   };
 }
 
