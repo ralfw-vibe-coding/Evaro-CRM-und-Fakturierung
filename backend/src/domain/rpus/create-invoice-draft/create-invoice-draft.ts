@@ -1,6 +1,7 @@
 import type { BusinessPartner, Invoice, InvoiceGpSnapshot } from "../../model.js";
 import { determineInvoiceVatRule } from "../../invoice-tax.js";
 import type { ActivityLogProvider } from "../../pproviders/activity-log/activity-log-provider.js";
+import type { AppSettingsProvider } from "../../pproviders/app-settings/app-settings-provider.js";
 import type { BusinessPartnersProvider } from "../../pproviders/business-partners/business-partners-provider.js";
 import type { InvoicesProvider } from "../../pproviders/invoices/invoices-provider.js";
 
@@ -16,6 +17,7 @@ export type CreateInvoiceDraftResult =
 export interface CreateInvoiceDraftDeps {
   invoices: InvoicesProvider;
   businessPartners: BusinessPartnersProvider;
+  appSettings: AppSettingsProvider;
   activityLog: ActivityLogProvider;
 }
 
@@ -49,11 +51,13 @@ export function createInvoiceDraft(deps: CreateInvoiceDraftDeps) {
 
     const gp_snapshot = snapshotFromBusinessPartner(businessPartner);
     const vatRule = determineInvoiceVatRule(gp_snapshot);
+    const settings = await deps.appSettings.get();
     const invoice = await deps.invoices.insertDraft({
       business_partner_id,
       gp_snapshot,
       vat_rate: vatRule.vat_rate,
       reverse_charge: vatRule.reverse_charge,
+      payment_due_days: settings.invoicing.default_payment_due_days,
     });
 
     await deps.activityLog.append({

@@ -43,7 +43,7 @@ export class InMemoryInvoicesProvider implements InvoicesProvider {
       invoice_date: null,
       vat_rate: input.vat_rate,
       gp_snapshot: structuredClone(input.gp_snapshot),
-      data: { lines: [], reverse_charge: input.reverse_charge === true },
+      data: { lines: [], reverse_charge: input.reverse_charge === true, payment_due_days: input.payment_due_days },
       created_at: now,
       updated_at: now,
     };

@@ -190,6 +190,8 @@ const EMPTY_INVOICING_SETTINGS: InvoicingAppSettings = {
   company_name: "",
   sender_address: "",
   bank_details: "",
+  company_registration: "",
+  default_payment_due_days: undefined,
   vat_number: "",
   contact_person: "",
   email: "",
@@ -229,13 +231,12 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
 
-  function patch(key: keyof InvoicingAppSettings, value: string) {
+  function patch(key: keyof InvoicingAppSettings, value: string | number | undefined) {
     setDraft((current) => ({ ...current, [key]: value }));
     setStatus(null);
   }
 
-  async function save(event: React.FormEvent) {
-    event.preventDefault();
+  async function save() {
     if (!dirty || busy) return;
     setBusy(true);
     setStatus(null);
@@ -249,21 +250,24 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
     const next = normalizeInvoicingSettings(result.settings);
     setInitial(next);
     setDraft(next);
-    setStatusTone("info");
-    setStatus("Gespeichert.");
   }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/20 px-4">
       <form
-        onSubmit={save}
+        onSubmit={(event) => event.preventDefault()}
         className="grid max-h-[90vh] w-full max-w-2xl gap-4 overflow-auto rounded-md border border-[var(--border)] bg-[var(--background)] p-4 shadow-xl"
       >
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold">App Settings</div>
-          <Button type="button" variant="ghost" size="icon" aria-label="Schließen" onClick={onClose}>
-            <X />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button type="button" size="icon" aria-label="Speichern" onClick={save} disabled={!dirty || busy}>
+              <Save />
+            </Button>
+            <Button type="button" variant="ghost" size="icon" aria-label="Schließen" onClick={onClose}>
+              <X />
+            </Button>
+          </div>
         </div>
 
         <section className="grid gap-3">
@@ -283,21 +287,45 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
               className="w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             />
           </SettingsField>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 items-start gap-3">
             <SettingsField label="USt-Nr.">
               <Input value={draft.vat_number ?? ""} onChange={(event) => patch("vat_number", event.target.value)} />
             </SettingsField>
+            <SettingsField label="Firmenregistrierung">
+              <textarea
+                value={draft.company_registration ?? ""}
+                onChange={(event) => patch("company_registration", event.target.value)}
+                rows={3}
+                className="w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              />
+            </SettingsField>
+            <SettingsField label="Zahlungszeitraum in Tagen">
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                value={draft.default_payment_due_days ?? ""}
+                onChange={(event) =>
+                  patch(
+                    "default_payment_due_days",
+                    event.target.value === "" ? undefined : Math.max(0, Number(event.target.value)),
+                  )
+                }
+              />
+            </SettingsField>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <SettingsField label="Ansprechpartner">
               <Input
                 value={draft.contact_person ?? ""}
                 onChange={(event) => patch("contact_person", event.target.value)}
               />
             </SettingsField>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
             <SettingsField label="E-Mail">
               <Input value={draft.email ?? ""} onChange={(event) => patch("email", event.target.value)} />
             </SettingsField>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <SettingsField label="Telefon">
               <Input value={draft.phone ?? ""} onChange={(event) => patch("phone", event.target.value)} />
             </SettingsField>
@@ -316,14 +344,6 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
         </section>
 
         {status && <p className={cn("text-sm", statusTone === "error" && "text-[var(--destructive)]")}>{status}</p>}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Schließen
-          </Button>
-          <Button type="submit" disabled={!dirty || busy}>
-            <Save /> Speichern
-          </Button>
-        </div>
       </form>
     </div>
   );

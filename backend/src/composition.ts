@@ -265,6 +265,7 @@ export function createInvoiceDraftRpu() {
   return createInvoiceDraft({
     invoices: buildInvoices(),
     businessPartners: buildBusinessPartners(),
+    appSettings: buildAppSettings(),
     activityLog: buildActivityLog(),
   });
 }

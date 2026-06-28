@@ -112,6 +112,9 @@ export interface InvoiceLine {
 export interface InvoiceData {
   reference?: string;
   comment?: string;
+  payment_due_days?: number;
+  payment_free_text?: string;
+  /** Legacy free-form template kept so existing invoices still render. */
   payment_terms?: string;
   reverse_charge?: boolean;
   lines: InvoiceLine[];
@@ -142,6 +145,8 @@ export interface InvoicingAppSettings {
   company_name?: string;
   sender_address?: string;
   bank_details?: string;
+  company_registration?: string;
+  default_payment_due_days?: number;
   vat_number?: string;
   contact_person?: string;
   email?: string;

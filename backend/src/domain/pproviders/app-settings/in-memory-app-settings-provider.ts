@@ -12,11 +12,19 @@ function normalizeText(value: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+function normalizePositiveInt(value: unknown): number | undefined {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) return undefined;
+  return parsed;
+}
+
 function normalizeInvoicing(value: InvoicingAppSettings): InvoicingAppSettings {
   return {
     company_name: normalizeText(value.company_name),
     sender_address: normalizeText(value.sender_address),
     bank_details: normalizeText(value.bank_details),
+    company_registration: normalizeText(value.company_registration),
+    default_payment_due_days: normalizePositiveInt(value.default_payment_due_days),
     vat_number: normalizeText(value.vat_number),
     contact_person: normalizeText(value.contact_person),
     email: normalizeText(value.email),

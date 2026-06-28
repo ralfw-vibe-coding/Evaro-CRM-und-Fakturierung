@@ -15,11 +15,19 @@ function text(value: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+function positiveInt(value: number | undefined): number | undefined {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) return undefined;
+  return parsed;
+}
+
 function normalize(input: InvoicingAppSettings): InvoicingAppSettings {
   return {
     company_name: text(input.company_name),
     sender_address: text(input.sender_address),
     bank_details: text(input.bank_details),
+    company_registration: text(input.company_registration),
+    default_payment_due_days: positiveInt(input.default_payment_due_days),
     vat_number: text(input.vat_number),
     contact_person: text(input.contact_person),
     email: text(input.email),

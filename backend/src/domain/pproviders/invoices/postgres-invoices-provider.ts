@@ -49,6 +49,12 @@ function number(value: unknown, fallback = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function optionalNonNegativeInt(value: unknown): number | undefined {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) return undefined;
+  return parsed;
+}
+
 function dateOnly(value: Date | string | null): string | null {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString().slice(0, 10);
@@ -96,6 +102,8 @@ function normalizeData(value: unknown): InvoiceData {
   return {
     reference: text(data.reference),
     comment: text(data.comment),
+    payment_due_days: optionalNonNegativeInt(data.payment_due_days),
+    payment_free_text: text(data.payment_free_text),
     payment_terms: text(data.payment_terms),
     reverse_charge: data.reverse_charge === true,
     lines: rawLines.map(normalizeLine),
@@ -140,7 +148,12 @@ export class PostgresInvoicesProvider implements InvoicesProvider {
        VALUES ($1, $2, $3, $4)
        RETURNING id, business_partner_id, status, invoice_number, invoice_date, vat_rate,
                  gp_snapshot, data, created_at, updated_at`,
-      [input.business_partner_id, input.gp_snapshot, { lines: [], reverse_charge: input.reverse_charge === true }, input.vat_rate],
+      [
+        input.business_partner_id,
+        input.gp_snapshot,
+        { lines: [], reverse_charge: input.reverse_charge === true, payment_due_days: input.payment_due_days },
+        input.vat_rate,
+      ],
     );
     return toInvoice(rows[0]);
   }

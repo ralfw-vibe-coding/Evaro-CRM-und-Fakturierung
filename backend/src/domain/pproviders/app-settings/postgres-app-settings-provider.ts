@@ -14,12 +14,20 @@ function text(value: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+function positiveInt(value: unknown): number | undefined {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) return undefined;
+  return parsed;
+}
+
 function normalizeInvoicing(value: unknown): InvoicingAppSettings {
   const data = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   return {
     company_name: text(data.company_name),
     sender_address: text(data.sender_address),
     bank_details: text(data.bank_details),
+    company_registration: text(data.company_registration),
+    default_payment_due_days: positiveInt(data.default_payment_due_days),
     vat_number: text(data.vat_number),
     contact_person: text(data.contact_person),
     email: text(data.email),

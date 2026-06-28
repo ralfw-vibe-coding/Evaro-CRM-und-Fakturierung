@@ -5,6 +5,7 @@ export interface NewInvoiceDraft {
   gp_snapshot: InvoiceGpSnapshot;
   vat_rate: number;
   reverse_charge?: boolean;
+  payment_due_days?: number;
 }
 
 export interface InvoiceDraftUpdate {

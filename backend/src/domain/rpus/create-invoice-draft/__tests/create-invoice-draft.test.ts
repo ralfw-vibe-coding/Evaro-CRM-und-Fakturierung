@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createInvoiceDraft } from "../create-invoice-draft.js";
 import { InMemoryActivityLogProvider } from "../../../pproviders/activity-log/in-memory-activity-log-provider.js";
+import { InMemoryAppSettingsProvider } from "../../../pproviders/app-settings/in-memory-app-settings-provider.js";
 import { InMemoryBusinessPartnersProvider } from "../../../pproviders/business-partners/in-memory-business-partners-provider.js";
 import { InMemoryInvoicesProvider } from "../../../pproviders/invoices/in-memory-invoices-provider.js";
 
@@ -10,8 +11,9 @@ function setup() {
   const businessPartners = new InMemoryBusinessPartnersProvider();
   const invoices = new InMemoryInvoicesProvider();
   const activityLog = new InMemoryActivityLogProvider();
-  const process = createInvoiceDraft({ businessPartners, invoices, activityLog });
-  return { businessPartners, invoices, activityLog, process };
+  const appSettings = new InMemoryAppSettingsProvider();
+  const process = createInvoiceDraft({ businessPartners, invoices, appSettings, activityLog });
+  return { businessPartners, invoices, appSettings, activityLog, process };
 }
 
 describe("createInvoiceDraft RPU", () => {

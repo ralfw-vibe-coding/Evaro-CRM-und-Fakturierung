@@ -439,7 +439,6 @@ function InvoiceDetail({
   const dirty = JSON.stringify({ data: draft, vat_rate: vatRate }) !== JSON.stringify({ data: invoice.data, vat_rate: invoice.vat_rate });
   const totals = invoiceTotal({ ...invoice, data: draft, vat_rate: vatRate });
   const tagOptions = getInvoiceTagOptions(allInvoices);
-  const paymentTermSuggestions = getPaymentTermSuggestions(allInvoices, draft.payment_terms);
   const showReverseChargeNote = draft.reverse_charge === true;
   const canDeleteInvoice = invoice.status === "draft" && !invoice.invoice_number;
   const canPrint = draft.lines.length > 0;
@@ -817,40 +816,39 @@ function InvoiceDetail({
       <section className="grid grid-cols-[1fr_320px] gap-6 border-t border-[var(--border)] pt-5">
         <div className="grid content-start gap-3">
           <div className="grid gap-1">
-            <div className="flex items-baseline gap-2">
-              <span className="text-sm font-medium">Zahlungsbedingungen</span>
-              <span className="text-xs text-[var(--muted-foreground)]">
-                Platzhalter {"{##}"} für Zahlungsziel-Datum, z.B. {"{10}"}, {"{30}"}
-              </span>
+            <span className="text-sm font-medium">Zahlungsbedingungen</span>
+            <div className="grid grid-cols-[9rem_1fr] items-center gap-3">
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                value={draft.payment_due_days ?? ""}
+                onChange={(event) =>
+                  patch({
+                    payment_due_days: event.target.value === "" ? undefined : Math.max(0, Number(event.target.value)),
+                    payment_terms: undefined,
+                  })
+                }
+                className="text-right"
+                aria-label="Zahlungszeitraum in Tagen"
+                placeholder="Tage"
+                disabled={invoice.status !== "draft"}
+                {...NO_PASSWORD_MANAGER_PROPS}
+              />
+              <div className="text-sm text-[var(--muted-foreground)]">
+                {standardPaymentTermsLine(draft.payment_due_days, invoice.invoice_date)}
+              </div>
             </div>
             <textarea
-              value={draft.payment_terms ?? ""}
-              onChange={(event) => patch({ payment_terms: event.target.value })}
-              className="min-h-10 w-full resize-y rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm leading-5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-              rows={1}
+              value={draft.payment_free_text ?? ""}
+              onChange={(event) => patch({ payment_free_text: event.target.value, payment_terms: undefined })}
+              className="min-h-16 w-full resize-y rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm leading-5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              rows={2}
+              placeholder="Freier Text"
               disabled={invoice.status !== "draft"}
               {...NO_PASSWORD_MANAGER_PROPS}
             />
           </div>
-          <div className="min-h-5 text-sm text-[var(--muted-foreground)]">
-            {previewPaymentTerms(draft.payment_terms, invoice.invoice_date)}
-          </div>
-          {paymentTermSuggestions.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2 border-t border-[var(--border)] pt-3">
-              {paymentTermSuggestions.map((term) => (
-                <button
-                  key={term}
-                  type="button"
-                  className="max-w-full truncate rounded-full bg-[var(--accent)] px-3 py-1 text-left text-xs text-[var(--foreground)] hover:opacity-80"
-                  title={term}
-                  onClick={() => patch({ payment_terms: term })}
-                  disabled={invoice.status !== "draft"}
-                >
-                  {term}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
         <div className="grid content-start gap-2 rounded-md border border-[var(--border)] p-4">
           <SummaryRow label="Netto" value={formatMoney(totals.net)} />
@@ -919,9 +917,9 @@ function InvoicePrintPreview({
   const totals = invoiceTotal(invoice);
   const seller = settings.invoicing;
   const sellerName = seller.company_name?.trim() || "Evaro";
-  const sellerLines = [sellerName, ...splitLines(seller.sender_address)];
   const sellerAddressLines = splitLines(seller.sender_address);
   const bankLines = splitLines(seller.bank_details);
+  const registrationLines = splitLines(seller.company_registration);
   const address = invoice.gp_snapshot.address;
   const buyerLines = [
     invoice.gp_snapshot.name,
@@ -936,11 +934,18 @@ function InvoicePrintPreview({
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-zinc-950/50 p-6">
       <div className="no-print sticky top-0 mx-auto mb-4 flex max-w-[210mm] items-center justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onClose}>
-          <X /> Schließen
+        <Button
+          type="button"
+          size="icon"
+          className="bg-[var(--brand)] text-white hover:opacity-90"
+          aria-label="Drucken"
+          title="Drucken"
+          onClick={() => window.print()}
+        >
+          <Printer />
         </Button>
-        <Button type="button" className="bg-[var(--brand)] text-white hover:opacity-90" onClick={() => window.print()}>
-          <Printer /> Drucken
+        <Button type="button" variant="outline" size="icon" aria-label="Schließen" title="Schließen" onClick={onClose}>
+          <X />
         </Button>
       </div>
 
@@ -1017,11 +1022,11 @@ function InvoicePrintPreview({
                 <div className="mt-2 whitespace-pre-line leading-6">{invoice.data.comment}</div>
               </div>
             )}
-            {invoice.data.payment_terms && (
+            {paymentTermsText(invoice.data, invoice.invoice_date) && (
               <div>
                 <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Payment Terms</div>
                 <div className="mt-2 whitespace-pre-line leading-6">
-                  {previewPaymentTerms(invoice.data.payment_terms, invoice.invoice_date)}
+                  {paymentTermsText(invoice.data, invoice.invoice_date)}
                 </div>
               </div>
             )}
@@ -1043,8 +1048,8 @@ function InvoicePrintPreview({
 
         <footer className="mt-12 grid break-inside-avoid grid-cols-3 gap-6 border-t border-zinc-300 pt-5 text-xs leading-5 text-zinc-600">
           <div>
-            <div className="font-bold text-zinc-800">Seller</div>
-            <div className="mt-1 whitespace-pre-line">{sellerLines.join("\n")}</div>
+            <div className="font-bold text-zinc-800">Registration</div>
+            <div className="mt-1 whitespace-pre-line">{registrationLines.join("\n")}</div>
           </div>
           <div>
             <div className="font-bold text-zinc-800">Bank</div>
@@ -1411,33 +1416,6 @@ function getInvoiceTagOptions(invoices: Invoice[]) {
   return { forms: sort(forms), topics: sort(topics), units: sort(units) };
 }
 
-function getPaymentTermSuggestions(invoices: Invoice[], current: string | undefined): string[] {
-  const currentText = current?.trim() ?? "";
-  const terms = [
-    ...new Set(
-      invoices
-        .map((invoice) => invoice.data.payment_terms?.trim())
-        .filter((term): term is string => Boolean(term) && term !== currentText),
-    ),
-  ];
-  const needle = currentText.toLowerCase();
-  if (!needle) return terms.slice(0, 5);
-
-  const words = needle.split(/\s+/).filter((word) => word.length > 1);
-  return terms
-    .map((term) => {
-      const haystack = term.toLowerCase();
-      const score =
-        (haystack.includes(needle) ? 10 : 0) +
-        words.reduce((sum, word) => sum + (haystack.includes(word) ? 1 : 0), 0);
-      return { term, score };
-    })
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.term.localeCompare(b.term, "de"))
-    .slice(0, 5)
-    .map((item) => item.term);
-}
-
 function lineTotal(line: InvoiceLine): number {
   return Math.max(0, Number(line.quantity) || 0) * Math.max(0, Number(line.unit_price) || 0);
 }
@@ -1465,6 +1443,21 @@ function splitLines(value: string | undefined): string[] {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function standardPaymentTermsLine(days: number | undefined, invoiceDate: string | null): string {
+  if (days === undefined) return "Der Rechnungsbetrag ist ohne Abzug zahlbar bis: -";
+  const base = invoiceDate ? new Date(`${invoiceDate}T00:00:00`) : new Date();
+  return `Der Rechnungsbetrag ist ohne Abzug zahlbar bis: ${formatOffsetDate(base, days)}`;
+}
+
+function paymentTermsText(data: InvoiceData, invoiceDate: string | null): string {
+  const parts = [
+    data.payment_due_days !== undefined ? standardPaymentTermsLine(data.payment_due_days, invoiceDate) : undefined,
+    data.payment_free_text?.trim(),
+  ].filter(Boolean);
+  if (parts.length > 0) return parts.join("\n");
+  return previewPaymentTerms(data.payment_terms, invoiceDate);
 }
 
 function previewPaymentTerms(template: string | undefined, invoiceDate: string | null): string {

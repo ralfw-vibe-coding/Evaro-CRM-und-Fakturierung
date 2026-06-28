@@ -28,6 +28,13 @@ function number(value: unknown, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function optionalNonNegativeInt(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) return undefined;
+  return parsed;
+}
+
 function normalizeLine(value: unknown, index: number, fields: Record<string, string>): InvoiceLine {
   const data = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   const quantity = Math.max(0, number(data.quantity, 1));
@@ -53,6 +60,8 @@ function normalizeData(raw: unknown): { data: InvoiceData; fields: Record<string
     data: {
       reference: text(data.reference),
       comment: text(data.comment),
+      payment_due_days: optionalNonNegativeInt(data.payment_due_days),
+      payment_free_text: text(data.payment_free_text),
       payment_terms: text(data.payment_terms),
       reverse_charge: data.reverse_charge === true,
       lines: rawLines.map((line, index) => normalizeLine(line, index, fields)),
