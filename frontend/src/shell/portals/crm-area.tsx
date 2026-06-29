@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Building2, ClipboardPaste, Filter, IdCard, Inbox, Loader2, MailCheck, Plus, Search, User, X } from "lucide-react";
+import { Building2, ClipboardPaste, FileDown, Filter, IdCard, Inbox, Loader2, MailCheck, Plus, Search, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tagCategoryColorStyle } from "@/lib/tag-colors";
 import { Input } from "@/components/ui/input";
@@ -27,13 +27,72 @@ import {
 } from "@/composition";
 import type { Scope } from "@/domain/rpus/set-scope/set-scope";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
-import type { GetVisibleEntitiesResult } from "@/domain/rpus/get-visible-entities/get-visible-entities";
+import type { GetVisibleEntitiesResult, VisibleEntity } from "@/domain/rpus/get-visible-entities/get-visible-entities";
 import type { SelectedEntity } from "@/domain/rpus/get-selected-entity/get-selected-entity";
 import type { SelectedTagFilter } from "@/domain/pproviders/selection-store/selection-store-provider";
 import { ContactCard } from "./contact-card";
 import { GpCard } from "./gp-card";
 import { CreateBusinessPartnerDetail, CreateContactDetail, EntityDetail } from "./entity-detail";
 import { EmailImportOverlay } from "./email-import-overlay";
+
+function csvCell(value: string | undefined): string {
+  const text = value ?? "";
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function firstEmail(entity: VisibleEntity): string | undefined {
+  const channels =
+    entity.kind === "contact" ? entity.contact.data.channels : entity.businessPartner.data.channels;
+  return channels.find((channel) => channel.type.toLowerCase() === "email")?.address;
+}
+
+function genderLabel(value: string | undefined): string {
+  if (value === "m") return "m";
+  if (value === "f") return "w";
+  if (value === "d") return "d";
+  return "";
+}
+
+function salutationLabel(value: string | undefined): string {
+  if (value === "formal") return "s";
+  if (value === "informal") return "d";
+  return "";
+}
+
+function newsletterCsv(entities: VisibleEntity[]): string {
+  const emailableEntities = entities
+    .map((entity) => ({ entity, email: firstEmail(entity) }))
+    .filter((item): item is { entity: VisibleEntity; email: string } => Boolean(item.email));
+  const rows = [
+    ["vorname", "nachname", "geschlecht", "anrede", "email-adresse"],
+    ...emailableEntities.map(({ entity, email }) => {
+      if (entity.kind === "business_partner") return ["", "", "", "", email];
+      const data = entity.contact.data;
+      return [
+        data.first_name ?? "",
+        data.last_name ?? "",
+        genderLabel(data.gender),
+        salutationLabel(data.salutation),
+        email,
+      ];
+    }),
+  ];
+  return rows.map((row) => row.map(csvCell).join(";")).join("\r\n");
+}
+
+function downloadNewsletterCsv(entities: VisibleEntity[]) {
+  const csv = newsletterCsv(entities);
+  const today = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `newsletter-export-${today}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 /**
  * CRM area: two-column layout.
@@ -236,6 +295,29 @@ export function CrmArea() {
                 </span>
               )}
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="bg-[var(--brand)] text-white hover:opacity-90"
+                  aria-label="Import/Export"
+                  title="Import/Export"
+                >
+                  <FileDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => downloadNewsletterCsv(view?.entities ?? [])}
+                  disabled={(view?.entities.length ?? 0) === 0}
+                >
+                  <FileDown className="text-[var(--brand)]" />
+                  Newsletter export
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         }
       >
