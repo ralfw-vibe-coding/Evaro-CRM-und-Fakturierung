@@ -65,22 +65,22 @@ describe("createContact RPU", () => {
     expect(result.contact.active).toBe(false);
   });
 
-  it("rejects a contact without any name", async () => {
+  it("rejects a contact without a last name", async () => {
     const result = await env.process(
-      validCommand({ data: { channels: [{ type: "email", address: "x@y.de" }] } }),
+      validCommand({ data: { first_name: "Petra", channels: [{ type: "email", address: "x@y.de" }] } }),
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.fields?.last_name).toBeTruthy();
   });
 
-  it("creates a contact without any channel", async () => {
+  it("rejects a contact without email or phone channel", async () => {
     const result = await env.process(
       validCommand({ data: { last_name: "Paulsen", channels: [] } }),
     );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.contact.data.channels).toEqual([]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.fields?.channels).toBeTruthy();
   });
 
   it("rejects when no user is authenticated", async () => {
@@ -93,6 +93,7 @@ describe("createContact RPU", () => {
       validCommand({
         data: {
           first_name: "Petra",
+          last_name: "Paulsen",
           channels: [
             { type: "phone", address: "+49 1" },
             { type: "phone", address: "+49 2" },
@@ -133,6 +134,7 @@ describe("createContact RPU", () => {
       validCommand({
         data: {
           first_name: "Petra",
+          last_name: "Paulsen",
           gender: "x",
           channels: [{ type: "email", address: "petra@aok.de" }],
         },

@@ -47,21 +47,21 @@ describe("updateContact RPU", () => {
     const result = await env.process({
       user_id: USER,
       id: "does-not-exist",
-      data: { first_name: "X", channels: [{ type: "email", address: "x@y.de" }] },
+      data: { last_name: "X", channels: [{ type: "email", address: "x@y.de" }] },
     });
     expect(result.ok).toBe(false);
   });
 
-  it("allows removing all channels", async () => {
+  it("rejects removing all email and phone channels", async () => {
     const existing = await seedContact(env.contacts);
     const result = await env.process({
       user_id: USER,
       id: existing.id,
       data: { first_name: "Petra", last_name: "Paulsen", channels: [] },
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.contact.data.channels).toEqual([]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.fields?.channels).toBeTruthy();
   });
 
   it("flags a conflict when expected_updated_at no longer matches, but still writes", async () => {
@@ -87,7 +87,7 @@ describe("updateContact RPU", () => {
       user_id: USER,
       id: existing.id,
       expected_updated_at: existing.updated_at,
-      data: { first_name: "Petra", channels: [{ type: "email", address: "p@aok.de" }] },
+      data: { first_name: "Petra", last_name: "Paulsen", channels: [{ type: "email", address: "p@aok.de" }] },
     });
 
     expect(result.ok).toBe(true);
@@ -101,7 +101,7 @@ describe("updateContact RPU", () => {
       user_id: USER,
       id: existing.id,
       active: false,
-      data: { first_name: "Petra", channels: [{ type: "email", address: "p@aok.de" }] },
+      data: { first_name: "Petra", last_name: "Paulsen", channels: [{ type: "email", address: "p@aok.de" }] },
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;

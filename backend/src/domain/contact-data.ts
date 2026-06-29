@@ -49,25 +49,32 @@ function normalizeChannels(channels: RawContactData["channels"]): Channel[] {
     .filter((c) => c.type.length > 0 && c.address.length > 0);
 }
 
+function hasDirectContactChannel(channels: Channel[]): boolean {
+  return channels.some((channel) => ["email", "phone", "mobile"].includes(channel.type.toLowerCase()));
+}
+
 /**
  * Shared validation/normalization for contact data, used by both the
  * create-contact and update-contact RPUs. Not itself an RPU — RPUs must stay
  * independent of each other (architektur.md), but pure helper functions are
  * fine to share.
  *
- * Domain rule: a contact is a human and needs a name. Communication channels
- * can be filled in later from the detail view.
+ * Domain rule: a contact is a human and needs at least a family name plus one
+ * direct communication channel.
  */
 export function validateContactData(raw: RawContactData): ValidateContactDataResult {
   const fields: Record<string, string> = {};
 
   const first_name = trimOrUndefined(raw.first_name);
   const last_name = trimOrUndefined(raw.last_name);
-  if (!first_name && !last_name) {
-    fields.last_name = "Bitte einen Vor- oder Nachnamen angeben.";
+  if (!last_name) {
+    fields.last_name = "Bitte einen Nachnamen angeben.";
   }
 
   const channels = normalizeChannels(raw.channels);
+  if (!hasDirectContactChannel(channels)) {
+    fields.channels = "Bitte mindestens eine E-Mail-Adresse oder Telefonnummer angeben.";
+  }
 
   const gender = trimOrUndefined(raw.gender);
   if (gender && !GENDERS.includes(gender as Gender)) {

@@ -41,17 +41,63 @@ function normalize(value: string | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }
 
-function words(value: string | undefined): string[] {
-  return normalize(value)
-    .split(/[^a-z0-9äöüß]+/i)
-    .map((part) => part.trim())
-    .filter((part) => part.length >= 3);
+function stripDiacritics(value: string): string {
+  return value.normalize("NFD").replace(/\p{Diacritic}/gu, "");
 }
 
-function channelsOf(data: { channels: { type: string; address: string }[] }, type: string): string[] {
+function normalizeLoose(value: string | undefined): string {
+  return stripDiacritics(normalize(value))
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss");
+}
+
+function normalizeEmail(value: string | undefined): string {
+  return normalize(value);
+}
+
+function normalizePhone(value: string | undefined): string {
+  let phone = (value ?? "").replace(/\D/g, "");
+  if (phone.startsWith("00")) phone = phone.slice(2);
+  return phone;
+}
+
+function legalFormStrippedName(value: string | undefined): string {
+  return normalizeLoose(value)
+    .replace(/\b(gesellschaft\s+mit\s+beschraenkter\s+haftung|gesellschaft\s+mbh|gmbh|ug|ag|se|kg|ohg|gbr|ev|e\.v\.|ek|e\.k\.|ltd|limited|llc|inc|corp|co|kg)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function bigrams(value: string): string[] {
+  if (value.length <= 1) return value ? [value] : [];
+  const result: string[] = [];
+  for (let index = 0; index < value.length - 1; index += 1) result.push(value.slice(index, index + 2));
+  return result;
+}
+
+function diceSimilarity(a: string, b: string): number {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const aBigrams = bigrams(a);
+  const bBigrams = bigrams(b);
+  const bCounts = new Map<string, number>();
+  for (const bigram of bBigrams) bCounts.set(bigram, (bCounts.get(bigram) ?? 0) + 1);
+  let intersection = 0;
+  for (const bigram of aBigrams) {
+    const count = bCounts.get(bigram) ?? 0;
+    if (count <= 0) continue;
+    intersection += 1;
+    bCounts.set(bigram, count - 1);
+  }
+  return (2 * intersection) / (aBigrams.length + bBigrams.length);
+}
+
+function channelsOf(data: { channels: { type: string; address: string }[] }, types: string[]): string[] {
+  const normalizedTypes = new Set(types.map((type) => type.toLowerCase()));
   return data.channels
-    .filter((channel) => channel.type.toLowerCase() === type)
-    .map((channel) => normalize(channel.address))
+    .filter((channel) => normalizedTypes.has(channel.type.toLowerCase()))
+    .map((channel) => channel.address)
     .filter(Boolean);
 }
 
@@ -60,70 +106,89 @@ function contactDisplayName(contact: Contact): string {
 }
 
 function scoreContact(proposal: ContactData, contact: Contact): EmailImportMatch<Contact> | null {
-  let score = 0;
-  const reasons: string[] = [];
-  const proposalEmails = new Set(channelsOf(proposal, "email"));
-  const contactEmails = channelsOf(contact.data, "email");
-  if (contactEmails.some((email) => proposalEmails.has(email))) {
-    score += 90;
-    reasons.push("E-Mail stimmt überein");
+  const proposalLastName = normalizeLoose(proposal.last_name);
+  const existingLastName = normalizeLoose(contact.data.last_name);
+  if (!proposalLastName || !existingLastName) return null;
+
+  let best: EmailImportMatch<Contact> | null = null;
+  const setBest = (score: number, reason: string) => {
+    if (!best || score > best.score) best = { entity: contact, score, reason };
+  };
+
+  if (proposalLastName === existingLastName) {
+    const proposalEmails = new Set(channelsOf(proposal, ["email"]).map(normalizeEmail).filter(Boolean));
+    const contactEmails = channelsOf(contact.data, ["email"]).map(normalizeEmail).filter(Boolean);
+    if (contactEmails.some((email) => proposalEmails.has(email))) {
+      setBest(100, "Nachname und E-Mail stimmen überein");
+    }
+
+    const proposalPhones = new Set(channelsOf(proposal, ["phone", "mobile"]).map(normalizePhone).filter(Boolean));
+    const contactPhones = channelsOf(contact.data, ["phone", "mobile"]).map(normalizePhone).filter(Boolean);
+    if (contactPhones.some((phone) => proposalPhones.has(phone))) {
+      setBest(95, "Nachname und Telefonnummer stimmen überein");
+    }
   }
 
-  const proposedName = normalize([proposal.first_name, proposal.last_name].filter(Boolean).join(" "));
-  const existingName = normalize(contactDisplayName(contact));
-  if (proposedName && existingName && (proposedName === existingName || existingName.includes(proposedName) || proposedName.includes(existingName))) {
-    score += 45;
-    reasons.push("Name passt");
-  } else if (proposal.last_name && normalize(proposal.last_name) === normalize(contact.data.last_name)) {
-    score += 25;
-    reasons.push("Nachname passt");
+  const proposedName = normalizeLoose([proposal.first_name, proposal.last_name].filter(Boolean).join(" "));
+  const existingName = normalizeLoose(contactDisplayName(contact));
+  if (proposedName && existingName) {
+    const nameSimilarity = diceSimilarity(proposedName.replace(/[^a-z0-9]+/g, ""), existingName.replace(/[^a-z0-9]+/g, ""));
+    if (proposalLastName === existingLastName && nameSimilarity >= 0.86) {
+      setBest(80, "Name ist ähnlich");
+    }
   }
 
-  const proposedCompany = normalize(proposal.company_text);
-  const existingCompany = normalize(contact.data.company_text);
-  if (proposedCompany && existingCompany && (proposedCompany === existingCompany || existingCompany.includes(proposedCompany) || proposedCompany.includes(existingCompany))) {
-    score += 20;
-    reasons.push("Firma passt");
+  const proposedCompany = legalFormStrippedName(proposal.company_text);
+  const existingCompany = legalFormStrippedName(contact.data.company_text);
+  if (proposalLastName === existingLastName && diceSimilarity(proposedCompany, existingCompany) >= 0.82) {
+    setBest(70, "Nachname passt, Firma ist ähnlich");
   }
 
-  if (score < 20) return null;
-  return { entity: contact, score, reason: reasons.join(", ") };
+  return best;
 }
 
 function scoreBusinessPartner(
   proposal: BusinessPartnerData,
   businessPartner: BusinessPartner,
 ): EmailImportMatch<BusinessPartner> | null {
+  const proposedName = legalFormStrippedName(proposal.name);
+  const existingName = legalFormStrippedName(businessPartner.data.name);
+  if (!proposedName || !existingName) return null;
+
+  const similarity = diceSimilarity(proposedName, existingName);
   let score = 0;
-  const reasons: string[] = [];
-  const proposedName = normalize(proposal.name);
-  const existingName = normalize(businessPartner.data.name);
-  if (proposedName && existingName && (proposedName === existingName || existingName.includes(proposedName) || proposedName.includes(existingName))) {
-    score += 60;
-    reasons.push("Name passt");
-  } else {
-    const proposedWords = new Set(words(proposal.name));
-    const overlap = words(businessPartner.data.name).filter((word) => proposedWords.has(word)).length;
-    if (overlap > 0) {
-      score += Math.min(35, overlap * 12);
-      reasons.push("Namensbestandteile passen");
-    }
+  let reason = "";
+  if (proposedName === existingName) {
+    score = 100;
+    reason = "Firmenname stimmt überein";
+  } else if (proposedName.includes(existingName) || existingName.includes(proposedName)) {
+    score = 82;
+    reason = "Firmenname ist enthalten";
+  } else if (similarity >= 0.92) {
+    score = 90;
+    reason = "Firmenname ist sehr ähnlich";
+  } else if (similarity >= 0.82) {
+    score = 80;
+    reason = "Firmenname ist ähnlich";
+  } else if (similarity >= 0.72) {
+    score = 65;
+    reason = "Firmenname ist entfernt ähnlich";
   }
 
   if (proposal.vat_id && normalize(proposal.vat_id) === normalize(businessPartner.data.vat_id)) {
-    score += 80;
-    reasons.push("USt-ID stimmt überein");
+    score = Math.max(score, 100);
+    reason = "USt-ID stimmt überein";
   }
 
-  const proposedWebsites = new Set(channelsOf(proposal, "website"));
-  const existingWebsites = channelsOf(businessPartner.data, "website");
-  if (existingWebsites.some((website) => proposedWebsites.has(website))) {
-    score += 45;
-    reasons.push("Website stimmt überein");
+  const proposedCity = normalizeLoose(proposal.address?.city);
+  const existingCity = normalizeLoose(businessPartner.data.address?.city);
+  if (score >= 65 && proposedCity && proposedCity === existingCity) {
+    score = Math.min(100, score + 8);
+    reason = `${reason}, Ort passt`;
   }
 
-  if (score < 20) return null;
-  return { entity: businessPartner, score, reason: reasons.join(", ") };
+  if (score < 70) return null;
+  return { entity: businessPartner, score, reason };
 }
 
 function topMatches<T>(matches: Array<EmailImportMatch<T>>): Array<EmailImportMatch<T>> {
