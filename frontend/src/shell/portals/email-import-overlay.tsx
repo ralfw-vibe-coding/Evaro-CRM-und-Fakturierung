@@ -32,6 +32,31 @@ function compactLines(lines: Array<string | undefined>): string[] {
   return lines.map((line) => line?.trim()).filter(Boolean) as string[];
 }
 
+function ingestHistoryClass(status: IngestItem["status"], selected: boolean): string {
+  const selectedClass = selected ? "ring-2 ring-[var(--foreground)]/25 shadow-sm" : "";
+  if (status === "pending") {
+    return selected
+      ? `border-[var(--brand)] bg-[var(--brand)]/15 ${selectedClass}`
+      : "border-[var(--brand)] bg-[var(--brand)]/5";
+  }
+  if (status === "accepted") {
+    return selected
+      ? `border-emerald-600 bg-emerald-100 ${selectedClass}`
+      : "border-emerald-500 bg-emerald-50/70";
+  }
+  if (status === "ignored") {
+    return [
+      selected ? "border-[var(--muted-foreground)]" : "border-[var(--border)]",
+      selectedClass,
+      "text-[var(--muted-foreground)] opacity-75 hover:opacity-100",
+      "bg-[repeating-linear-gradient(135deg,var(--accent)_0,var(--accent)_6px,transparent_6px,transparent_12px)]",
+    ].join(" ");
+  }
+  return selected
+    ? `border-[var(--destructive)] bg-[var(--destructive)]/10 ${selectedClass}`
+    : "border-[var(--destructive)]/50 bg-[var(--destructive)]/5";
+}
+
 function SummaryLines({ lines }: { lines: string[] }) {
   return (
     <div className="grid gap-0.5 text-xs text-[var(--muted-foreground)]">
@@ -388,24 +413,23 @@ export function EmailImportOverlay({
           </div>
         </div>
         <div className="grid min-h-0 grid-cols-[280px_minmax(0,1fr)]">
-          <div className="min-h-0 overflow-auto border-r border-[var(--border)] p-3">
+          <div className="min-h-0 overflow-y-auto overflow-x-hidden border-r border-[var(--border)] p-3">
             <div className="grid gap-2">
               {ingests.map((ingest) => (
                 <button
                   key={ingest.id}
                   type="button"
                   className={[
-                    "grid gap-1 rounded-md border p-2 text-left text-sm",
-                    selected?.id === ingest.id ? "border-[var(--brand)] bg-[var(--brand)]/10" : "border-[var(--border)] hover:bg-[var(--accent)]",
+                    "grid w-full min-w-0 gap-1 rounded-md border p-2 text-left text-sm",
+                    ingestHistoryClass(ingest.status, selected?.id === ingest.id),
                   ].join(" ")}
                   onClick={() => {
                     setSelectedId(ingest.id);
                     setClipboardPanelOpen(false);
                   }}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate font-medium">{ingest.source_label ?? ingest.source_type}</span>
-                    <span className="text-[10px] uppercase text-[var(--muted-foreground)]">{ingest.status}</span>
+                  <div className="min-w-0">
+                    <span className="block max-w-full truncate font-medium">{ingest.source_label ?? ingest.source_type}</span>
                   </div>
                   <div className="truncate text-xs text-[var(--muted-foreground)]">
                     {new Date(ingest.created_at).toLocaleString("de-DE")}

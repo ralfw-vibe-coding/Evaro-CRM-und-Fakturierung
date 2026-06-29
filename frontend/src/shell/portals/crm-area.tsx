@@ -115,6 +115,7 @@ export function CrmArea() {
   const [initialIngestId, setInitialIngestId] = React.useState<string | null>(null);
   const [ingestPendingCount, setIngestPendingCount] = React.useState(0);
   const [checkingEmail, setCheckingEmail] = React.useState(false);
+  const [emailIngestMessage, setEmailIngestMessage] = React.useState<string | null>(null);
   const [closeRequestToken, setCloseRequestToken] = React.useState(0);
   const [focusCompanyContactId, setFocusCompanyContactId] = React.useState<string | null>(null);
   const [focusBusinessPartnerId, setFocusBusinessPartnerId] = React.useState<string | null>(null);
@@ -134,6 +135,12 @@ export function CrmArea() {
   React.useEffect(() => {
     refreshIngestCount();
   }, []);
+
+  React.useEffect(() => {
+    if (!emailIngestMessage || checkingEmail) return;
+    const timeout = window.setTimeout(() => setEmailIngestMessage(null), 4500);
+    return () => window.clearTimeout(timeout);
+  }, [emailIngestMessage, checkingEmail]);
 
   function changeScope(scope: Scope) {
     setScopeRpu(scope);
@@ -181,10 +188,19 @@ export function CrmArea() {
 
   async function checkEmailAndOpenInbox() {
     setCheckingEmail(true);
+    setEmailIngestMessage("Prüfe Postfach...");
     const result = await checkEmailIngestRpu();
     setCheckingEmail(false);
     await refreshIngestCount();
-    if (!result.ok || result.imported.length === 0) return;
+    if (!result.ok) {
+      setEmailIngestMessage(result.error);
+      return;
+    }
+    if (result.imported.length === 0) {
+      setEmailIngestMessage("Keine neuen Emails.");
+      return;
+    }
+    setEmailIngestMessage(`${result.imported.length} neue Emails analysiert.`);
     setInitialIngestId(result.imported[0].id);
     setIngestOverlayMode("inbox");
   }
@@ -232,6 +248,11 @@ export function CrmArea() {
         title={`Übersicht (${view?.entities.length ?? 0})`}
         action={
           <div className="flex items-center gap-1.5">
+            {emailIngestMessage && (
+              <span className="max-w-56 truncate rounded-full border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted-foreground)]">
+                {emailIngestMessage}
+              </span>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

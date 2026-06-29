@@ -24,7 +24,7 @@ function header(raw: string, name: string): string | undefined {
 
 function parseFetchResponses(output: string): ImapMail[] {
   const result: ImapMail[] = [];
-  const chunks = output.split(/\n\* \d+ FETCH /).slice(1);
+  const chunks = output.split(/(?:^|\n)\* \d+ FETCH /).slice(1);
   for (const chunk of chunks) {
     const uid = chunk.match(/UID (\d+)/i)?.[1];
     if (!uid) continue;
@@ -95,8 +95,13 @@ export class ImapMailProvider {
           buffer = "";
           await waitFor(write("SELECT INBOX"));
           buffer = "";
-          const search = await waitFor(write("UID SEARCH UNSEEN"));
-          const uids = search.match(/\* SEARCH ([\d\s]+)/)?.[1]?.trim().split(/\s+/).filter(Boolean) ?? [];
+          const search = await waitFor(write("UID SEARCH ALL"));
+          const uids = (search.match(/\* SEARCH ([\d\s]+)/)?.[1]?.trim().split(/\s+/).filter(Boolean) ?? [])
+            .map((uid) => Number(uid))
+            .filter(Number.isFinite)
+            .sort((a, b) => a - b)
+            .slice(-Number(process.env.EMAIL_INGEST_IMAP_LOOKBACK ?? 50))
+            .map(String);
           if (uids.length === 0) {
             socket.end();
             resolve([]);
@@ -106,10 +111,6 @@ export class ImapMailProvider {
           buffer = "";
           const fetch = await waitFor(write(`UID FETCH ${uids.join(",")} (UID BODY.PEEK[])`));
           const mails = parseFetchResponses(fetch);
-          for (const uid of uids) {
-            buffer = "";
-            await waitFor(write(`UID STORE ${uid} +FLAGS (\\Seen)`));
-          }
           socket.end();
           resolve(mails);
         } catch (cause) {
