@@ -160,3 +160,19 @@ export interface AppSettings {
   invoicing: InvoicingAppSettings;
   updated_at: string | null;
 }
+
+export type IngestSourceType = "clipboard" | "email";
+export type IngestStatus = "pending" | "accepted" | "ignored" | "error";
+
+export interface IngestItem {
+  id: string;
+  source_type: IngestSourceType;
+  source_id: string | null;
+  source_label: string | null;
+  raw_text: string;
+  analysis: unknown;
+  status: IngestStatus;
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+}

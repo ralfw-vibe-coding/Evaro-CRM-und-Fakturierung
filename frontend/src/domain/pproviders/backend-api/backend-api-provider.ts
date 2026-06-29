@@ -10,6 +10,8 @@ import type {
   InvoicingData,
   InvoiceData,
   InvoiceStatus,
+  IngestItem,
+  IngestStatus,
   PaymentTerm,
   Selection,
   SessionUser,
@@ -92,6 +94,16 @@ export interface BusinessPartnerLookupResult {
   candidates: BusinessPartnerLookupCandidate[];
 }
 
+export interface IngestListResult {
+  ingests: IngestItem[];
+  pending_count: number;
+}
+
+export interface CheckEmailIngestResult {
+  imported: IngestItem[];
+  duplicates: number;
+}
+
 export interface UpdateInvoiceDraftInput {
   id: string;
   data: InvoiceData;
@@ -132,6 +144,10 @@ export interface BackendApiProvider {
   linkContactGp(token: string, input: ContactGpInput): Promise<ApiResult<{ link: ContactGp }>>;
   unlinkContactGp(token: string, input: ContactGpInput): Promise<ApiResult<void>>;
   analyzeEmailImport(token: string, emailText: string): Promise<ApiResult<EmailImportAnalysis>>;
+  loadIngests(token: string): Promise<ApiResult<IngestListResult>>;
+  createClipboardIngest(token: string, rawText: string): Promise<ApiResult<{ ingest: IngestItem; duplicate: boolean }>>;
+  checkEmailIngest(token: string): Promise<ApiResult<CheckEmailIngestResult>>;
+  updateIngestStatus(token: string, id: string, status: IngestStatus): Promise<ApiResult<{ ingest: IngestItem }>>;
   lookupBusinessPartner(token: string, data: BusinessPartnerData): Promise<ApiResult<BusinessPartnerLookupResult>>;
   loadInvoicingData(token: string): Promise<ApiResult<InvoicingData>>;
   createInvoiceDraft(

@@ -42,6 +42,10 @@ import { loadAppSettings } from "./domain/rpus/load-app-settings/load-app-settin
 import { updateAppSettings } from "./domain/rpus/update-app-settings/update-app-settings.js";
 import { analyzeEmailImport } from "./domain/rpus/analyze-email-import/analyze-email-import.js";
 import { lookupBusinessPartner } from "./domain/rpus/lookup-business-partner/lookup-business-partner.js";
+import { loadIngests } from "./domain/rpus/load-ingests/load-ingests.js";
+import { createClipboardIngest } from "./domain/rpus/create-clipboard-ingest/create-clipboard-ingest.js";
+import { checkEmailIngest } from "./domain/rpus/check-email-ingest/check-email-ingest.js";
+import { updateIngestStatus } from "./domain/rpus/update-ingest-status/update-ingest-status.js";
 
 const backendApi = httpBackendApiProvider;
 const session = browserSessionProvider;
@@ -111,3 +115,7 @@ export const loadAppSettingsRpu = loadAppSettings({ backendApi, session });
 export const updateAppSettingsRpu = updateAppSettings({ backendApi, session });
 export const analyzeEmailImportRpu = analyzeEmailImport({ backendApi, session });
 export const lookupBusinessPartnerRpu = lookupBusinessPartner({ backendApi, session });
+export const loadIngestsRpu = loadIngests({ backendApi, session });
+export const createClipboardIngestRpu = createClipboardIngest({ backendApi, session });
+export const checkEmailIngestRpu = checkEmailIngest({ backendApi, session });
+export const updateIngestStatusRpu = updateIngestStatus({ backendApi, session });

@@ -18,18 +18,20 @@ function firstChannelObject(contact: Contact, type: string) {
 export function ContactCard({
   contact,
   connectionCount,
+  companyFallback,
   matchHint,
   selected,
   onClick,
 }: {
   contact: Contact;
   connectionCount: number;
+  companyFallback?: string;
   matchHint?: MatchHint;
   selected?: boolean;
   onClick?: () => void;
 }) {
   const name = [contact.data.first_name, contact.data.last_name].filter(Boolean).join(" ");
-  const company = contact.data.company_text;
+  const company = contact.data.company_text?.trim() || companyFallback;
   const channels = ["email", "phone", "website"]
     .map((type) => firstChannelObject(contact, type))
     .filter((channel): channel is NonNullable<typeof channel> => Boolean(channel));

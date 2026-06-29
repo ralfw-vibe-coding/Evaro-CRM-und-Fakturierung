@@ -5,6 +5,8 @@ import type {
   AppSettings,
   InvoicingData,
   InvoicingAppSettings,
+  IngestItem,
+  IngestStatus,
   Invoice,
   InvoiceStatus,
   PaymentTerm,
@@ -18,7 +20,9 @@ import type {
   CreateBusinessPartnerInput,
   CreateContactInput,
   BusinessPartnerLookupResult,
+  CheckEmailIngestResult,
   EmailImportAnalysis,
+  IngestListResult,
   UpdateBusinessPartnerInput,
   UpdateContactInput,
   UpdateInvoiceDraftInput,
@@ -169,6 +173,37 @@ export const httpBackendApiProvider: BackendApiProvider = {
       method: "POST",
       headers: { authorization: `Bearer ${token}` },
       body: JSON.stringify({ email_text: emailText }),
+    });
+  },
+
+  async loadIngests(token) {
+    return request<IngestListResult>("/ingests", {
+      method: "GET",
+      headers: { authorization: `Bearer ${token}` },
+    });
+  },
+
+  async createClipboardIngest(token, rawText) {
+    return request<{ ingest: IngestItem; duplicate: boolean }>("/ingests", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ raw_text: rawText, source_label: "Zwischenablage" }),
+    });
+  },
+
+  async checkEmailIngest(token) {
+    return request<CheckEmailIngestResult>("/ingests", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: "check_email" }),
+    });
+  },
+
+  async updateIngestStatus(token, id: string, status: IngestStatus) {
+    return request<{ ingest: IngestItem }>("/ingests", {
+      method: "PATCH",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id, status }),
     });
   },
 

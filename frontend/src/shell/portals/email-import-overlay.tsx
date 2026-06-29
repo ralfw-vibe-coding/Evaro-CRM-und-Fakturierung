@@ -1,33 +1,20 @@
 import * as React from "react";
-import { Building2, ClipboardPaste, Loader2, User, WandSparkles, X } from "lucide-react";
+import { Building2, Check, Inbox, Loader2, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  analyzeEmailImportRpu,
+  createClipboardIngestRpu,
   createBusinessPartnerRpu,
   createContactRpu,
+  loadIngestsRpu,
   linkContactGpRpu,
+  updateIngestStatusRpu,
 } from "@/composition";
-import type { BusinessPartner, BusinessPartnerData, Contact, ContactData } from "@/domain/model";
+import type { BusinessPartner, BusinessPartnerData, Contact, ContactData, IngestItem } from "@/domain/model";
 import type { EmailImportAnalysis, EmailImportMatch } from "@/domain/pproviders/backend-api/backend-api-provider";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
 
 type Choice = "new" | string;
-
-function StepChip({ active, children }: { active: boolean; children: React.ReactNode }) {
-  return (
-    <span
-      className={[
-        "rounded-full border px-2.5 py-1 text-xs font-medium",
-        active
-          ? "border-[var(--brand)] bg-[var(--brand)] text-white"
-          : "border-[var(--border)] text-[var(--muted-foreground)]",
-      ].join(" ")}
-    >
-      {children}
-    </span>
-  );
-}
 
 function contactName(data: ContactData): string {
   return [data.first_name, data.last_name].filter(Boolean).join(" ").trim() || "Neuer Kontakt";
@@ -92,19 +79,29 @@ function ContactChoice({
   matches,
   choice,
   onChoice,
+  enabled,
+  onEnabledChange,
 }: {
   proposal: ContactData;
   matches: Array<EmailImportMatch<Contact>>;
   choice: Choice;
   onChoice: (choice: Choice) => void;
+  enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
 }) {
   return (
-    <section className="grid gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-sm">
-      <div className="flex min-h-7 items-center gap-2 border-b border-[var(--border)] bg-[var(--accent)] px-3 text-xs font-semibold uppercase text-[var(--muted-foreground)]">
-        <User className="size-3.5 text-[var(--brand)]" />
-        Kontakt
+    <section className="flex h-full flex-col rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-sm">
+      <div className="flex h-9 min-h-9 items-center justify-between gap-3 overflow-hidden border-b border-[var(--border)] bg-[var(--accent)] px-3 text-xs">
+        <div className="flex min-w-0 items-center gap-2 whitespace-nowrap font-semibold uppercase text-[var(--muted-foreground)]">
+          <User className="size-3.5 text-[var(--brand)]" />
+          <span className="truncate">Kontakt</span>
+        </div>
+        <label className="flex shrink-0 items-center gap-1.5 whitespace-nowrap font-medium text-[var(--foreground)]">
+          <input type="checkbox" checked={enabled} onChange={(event) => onEnabledChange(event.target.checked)} />
+          übernehmen
+        </label>
       </div>
-      <div className="grid gap-2 p-3">
+      <div className={["flex flex-1 flex-col justify-start gap-2 p-3", enabled ? "" : "pointer-events-none opacity-45"].join(" ")}>
         <MatchButton
           active={choice === "new"}
           title={`Neu anlegen: ${contactName(proposal)}`}
@@ -136,20 +133,30 @@ function BusinessPartnerChoice({
   matches,
   choice,
   onChoice,
+  enabled,
+  onEnabledChange,
 }: {
   proposal: BusinessPartnerData;
   matches: Array<EmailImportMatch<BusinessPartner>>;
   choice: Choice;
   onChoice: (choice: Choice) => void;
+  enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
 }) {
   const address = proposal.address;
   return (
-    <section className="grid gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-sm">
-      <div className="flex min-h-7 items-center gap-2 border-b border-[var(--border)] bg-[var(--accent)] px-3 text-xs font-semibold uppercase text-[var(--muted-foreground)]">
-        <Building2 className="size-3.5 text-[var(--gp)]" />
-        Geschäftspartner
+    <section className="flex h-full flex-col rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-sm">
+      <div className="flex h-9 min-h-9 items-center justify-between gap-3 overflow-hidden border-b border-[var(--border)] bg-[var(--accent)] px-3 text-xs">
+        <div className="flex min-w-0 items-center gap-2 whitespace-nowrap font-semibold uppercase text-[var(--muted-foreground)]">
+          <Building2 className="size-3.5 text-[var(--gp)]" />
+          <span className="truncate">Geschäftspartner</span>
+        </div>
+        <label className="flex shrink-0 items-center gap-1.5 whitespace-nowrap font-medium text-[var(--foreground)]">
+          <input type="checkbox" checked={enabled} onChange={(event) => onEnabledChange(event.target.checked)} />
+          übernehmen
+        </label>
       </div>
-      <div className="grid gap-2 p-3">
+      <div className={["flex flex-1 flex-col justify-start gap-2 p-3", enabled ? "" : "pointer-events-none opacity-45"].join(" ")}>
         <MatchButton
           active={choice === "new"}
           title={`Neu anlegen: ${proposal.name || "Geschäftspartner"}`}
@@ -183,18 +190,29 @@ export function EmailImportOverlay({
   onClose,
   onChanged,
   onNavigate,
+  initialMode = "inbox",
+  initialSelectedId,
 }: {
   onClose: () => void;
   onChanged: () => void;
   onNavigate: (ref: EntityRef) => void;
+  initialMode?: "inbox" | "clipboard";
+  initialSelectedId?: string | null;
 }) {
-  const [step, setStep] = React.useState<1 | 2>(1);
-  const [text, setText] = React.useState("");
-  const [analysis, setAnalysis] = React.useState<EmailImportAnalysis | null>(null);
+  const [ingests, setIngests] = React.useState<IngestItem[]>([]);
+  const [pendingCount, setPendingCount] = React.useState(0);
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [contactChoice, setContactChoice] = React.useState<Choice>("new");
   const [gpChoice, setGpChoice] = React.useState<Choice>("new");
+  const [includeContact, setIncludeContact] = React.useState(true);
+  const [includeGp, setIncludeGp] = React.useState(true);
+  const [clipboardPanelOpen, setClipboardPanelOpen] = React.useState(initialMode === "clipboard");
+  const [clipboardText, setClipboardText] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const clipboardTextRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const selected = ingests.find((ingest) => ingest.id === selectedId) ?? ingests[0] ?? null;
+  const analysis = selected?.analysis as EmailImportAnalysis | null;
 
   React.useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
@@ -204,33 +222,66 @@ export function EmailImportOverlay({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose]);
 
-  async function pasteClipboard() {
+  React.useEffect(() => {
+    void refresh();
+  }, []);
+
+  React.useEffect(() => {
+    if (initialMode !== "clipboard") return;
+    void openClipboardPanel();
+  }, [initialMode]);
+
+  React.useEffect(() => {
+    if (!analysis) return;
+    setContactChoice(analysis.matches.contacts[0]?.entity.id ?? "new");
+    setGpChoice(analysis.matches.business_partners[0]?.entity.id ?? "new");
+    setIncludeContact(true);
+    setIncludeGp(true);
+  }, [selected?.id]);
+
+  async function refresh(selectId?: string) {
+    const result = await loadIngestsRpu();
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setIngests(result.result.ingests);
+    setPendingCount(result.result.pending_count);
+    setSelectedId(selectId ?? initialSelectedId ?? selectedId ?? result.result.ingests[0]?.id ?? null);
+  }
+
+  async function openClipboardPanel() {
+    setClipboardPanelOpen(true);
     setError(null);
+    window.setTimeout(() => clipboardTextRef.current?.focus(), 0);
     try {
       const value = await navigator.clipboard.readText();
-      setText(value);
+      if (value.trim()) setClipboardText(value);
     } catch {
-      setError("Die Zwischenablage konnte nicht gelesen werden. Du kannst den Text einfach einfügen.");
+      setError("Die Zwischenablage konnte nicht gelesen werden. Du kannst den Text manuell einsetzen.");
     }
   }
 
-  async function analyze() {
+  async function createFromClipboardText() {
+    if (!clipboardText.trim()) {
+      setError("Bitte setze zuerst den E-Mail-Text ein.");
+      return;
+    }
     setBusy(true);
     setError(null);
-    const result = await analyzeEmailImportRpu(text);
+    const result = await createClipboardIngestRpu(clipboardText);
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
       return;
     }
-    setAnalysis(result.analysis);
-    setContactChoice(result.analysis.matches.contacts[0]?.entity.id ?? "new");
-    setGpChoice(result.analysis.matches.business_partners[0]?.entity.id ?? "new");
-    setStep(2);
+    setClipboardPanelOpen(false);
+    setClipboardText("");
+    await refresh(result.ingest.id);
   }
 
   async function resolveContact(): Promise<Contact | null> {
-    if (!analysis) return null;
+    if (!analysis || !includeContact) return null;
     if (contactChoice !== "new") {
       return analysis.matches.contacts.find((match) => match.entity.id === contactChoice)?.entity ?? null;
     }
@@ -243,7 +294,7 @@ export function EmailImportOverlay({
   }
 
   async function resolveBusinessPartner(): Promise<BusinessPartner | null> {
-    if (!analysis) return null;
+    if (!analysis || !includeGp) return null;
     if (gpChoice !== "new") {
       return analysis.matches.business_partners.find((match) => match.entity.id === gpChoice)?.entity ?? null;
     }
@@ -256,29 +307,67 @@ export function EmailImportOverlay({
   }
 
   async function accept() {
-    if (!analysis) return;
+    if (!analysis || !selected) return;
+    if (!includeContact && !includeGp) {
+      setError("Bitte wähle Kontakt, Geschäftspartner oder beides zur Übernahme.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const contact = await resolveContact();
-    const businessPartner = contact ? await resolveBusinessPartner() : null;
-    if (!contact || !businessPartner) {
+    const businessPartner = await resolveBusinessPartner();
+    if ((includeContact && !contact) || (includeGp && !businessPartner)) {
       setBusy(false);
       return;
     }
-    const link = await linkContactGpRpu({
-      contact_id: contact.id,
-      gp_id: businessPartner.id,
-      role: "",
-      primary: false,
-    });
+    if (contact && businessPartner) {
+      const link = await linkContactGpRpu({
+        contact_id: contact.id,
+        gp_id: businessPartner.id,
+        role: "",
+        primary: false,
+      });
+      if (!link.ok) {
+        setBusy(false);
+        setError(link.error);
+        return;
+      }
+    }
+    const status = await updateIngestStatusRpu(selected.id, "accepted");
     setBusy(false);
-    if (!link.ok) {
-      setError(link.error);
+    if (!status.ok) {
+      setError(status.error);
       return;
     }
     onChanged();
-    onClose();
-    onNavigate({ kind: "contact", id: contact.id });
+    await refresh(selected.id);
+    if (contact) onNavigate({ kind: "contact", id: contact.id });
+    else if (businessPartner) onNavigate({ kind: "business_partner", id: businessPartner.id });
+  }
+
+  async function ignoreSelected() {
+    if (!selected) return;
+    const ignoredId = selected.id;
+    setBusy(true);
+    setError(null);
+    const result = await updateIngestStatusRpu(ignoredId, "ignored");
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    const refreshed = await loadIngestsRpu();
+    if (!refreshed.ok) {
+      setError(refreshed.error);
+      return;
+    }
+    setIngests(refreshed.result.ingests);
+    setPendingCount(refreshed.result.pending_count);
+    const next =
+      refreshed.result.ingests.find((ingest) => ingest.status === "pending" && ingest.id !== ignoredId) ??
+      refreshed.result.ingests.find((ingest) => ingest.id !== ignoredId) ??
+      null;
+    setSelectedId(next?.id ?? null);
   }
 
   return (
@@ -286,49 +375,80 @@ export function EmailImportOverlay({
       <div className="grid max-h-[92vh] w-full max-w-5xl grid-rows-[auto_1fr] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-2xl">
         <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
           <div className="flex items-center gap-3">
-            <ClipboardPaste className="size-4 text-[var(--brand)]" />
-            <div className="font-semibold">E-Mail übernehmen</div>
-            <div className="flex items-center gap-1.5">
-              <StepChip active={step === 1}>1. Text einsetzen</StepChip>
-              <StepChip active={step === 2}>2. Analyse übernehmen</StepChip>
-            </div>
+            <Inbox className="size-4 text-[var(--brand)]" />
+            <div className="font-semibold">Ingest Inbox</div>
+            <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--muted-foreground)]">
+              {pendingCount} offen
+            </span>
           </div>
           <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={pasteClipboard}
-              aria-label="Text aus Zwischenablage einsetzen"
-              title="Text aus Zwischenablage einsetzen"
-            >
-              <ClipboardPaste />
-            </Button>
             <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Schließen">
               <X />
             </Button>
           </div>
         </div>
-        <div className="min-h-0 overflow-auto p-4">
-          {step === 1 && (
-            <div className="grid gap-3">
+        <div className="grid min-h-0 grid-cols-[280px_minmax(0,1fr)]">
+          <div className="min-h-0 overflow-auto border-r border-[var(--border)] p-3">
+            <div className="grid gap-2">
+              {ingests.map((ingest) => (
+                <button
+                  key={ingest.id}
+                  type="button"
+                  className={[
+                    "grid gap-1 rounded-md border p-2 text-left text-sm",
+                    selected?.id === ingest.id ? "border-[var(--brand)] bg-[var(--brand)]/10" : "border-[var(--border)] hover:bg-[var(--accent)]",
+                  ].join(" ")}
+                  onClick={() => {
+                    setSelectedId(ingest.id);
+                    setClipboardPanelOpen(false);
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium">{ingest.source_label ?? ingest.source_type}</span>
+                    <span className="text-[10px] uppercase text-[var(--muted-foreground)]">{ingest.status}</span>
+                  </div>
+                  <div className="truncate text-xs text-[var(--muted-foreground)]">
+                    {new Date(ingest.created_at).toLocaleString("de-DE")}
+                  </div>
+                </button>
+              ))}
+              {ingests.length === 0 && (
+                <div className="rounded-md border border-[var(--border)] p-4 text-sm text-[var(--muted-foreground)]">
+                  Noch keine Ingests.
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="min-h-0 overflow-auto p-4">
+          {clipboardPanelOpen ? (
+            <div className="mb-4 grid gap-3 rounded-lg border border-[var(--border)] bg-[var(--accent)]/35 p-3">
+              <div className="text-sm font-semibold">E-Mail-Text einsetzen</div>
               <Textarea
-                value={text}
-                onChange={(event) => setText(event.target.value)}
-                placeholder="E-Mail-Text hier einfügen..."
-                className="min-h-[42vh] resize-y"
-                autoFocus
+                ref={clipboardTextRef}
+                value={clipboardText}
+                onChange={(event) => setClipboardText(event.target.value)}
+                placeholder="Text aus einer E-Mail hier einsetzen..."
+                className="min-h-40 resize-y bg-[var(--background)]"
               />
-              <div className="flex items-center justify-between gap-2">
-                <div />
-                <Button type="button" onClick={analyze} disabled={busy || text.trim().length < 20}>
-                  {busy ? <Loader2 className="animate-spin" /> : <WandSparkles />}
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setClipboardPanelOpen(false);
+                    setError(null);
+                  }}
+                  disabled={busy}
+                >
+                  Abbrechen
+                </Button>
+                <Button type="button" onClick={createFromClipboardText} disabled={busy || !clipboardText.trim()}>
+                  {busy ? <Loader2 className="animate-spin" /> : <Check />}
                   Analysieren
                 </Button>
               </div>
             </div>
-          )}
-          {step === 2 && analysis && (
+          ) : selected && analysis ? (
             <div className="grid gap-4">
               <div className="grid gap-4 lg:grid-cols-2">
                 <ContactChoice
@@ -336,26 +456,45 @@ export function EmailImportOverlay({
                   matches={analysis.matches.contacts}
                   choice={contactChoice}
                   onChoice={setContactChoice}
+                  enabled={includeContact}
+                  onEnabledChange={setIncludeContact}
                 />
                 <BusinessPartnerChoice
                   proposal={analysis.proposal.business_partner}
                   matches={analysis.matches.business_partners}
                   choice={gpChoice}
                   onChoice={setGpChoice}
+                  enabled={includeGp}
+                  onEnabledChange={setIncludeGp}
                 />
               </div>
               <div className="flex justify-between gap-2">
-                <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={busy}>
-                  Zurück
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={ignoreSelected}
+                  disabled={busy}
+                  title="Ohne Übernahme als erledigt markieren"
+                >
+                  Verwerfen
                 </Button>
                 <Button type="button" onClick={accept} disabled={busy}>
-                  {busy ? <Loader2 className="animate-spin" /> : null}
+                  {busy ? <Loader2 className="animate-spin" /> : <Check />}
                   Übernehmen
                 </Button>
               </div>
             </div>
+          ) : selected && !analysis ? (
+            <div className="rounded-md border border-[var(--border)] p-4 text-sm text-[var(--muted-foreground)]">
+              Keine Analyse vorhanden. {selected.error}
+            </div>
+          ) : (
+            <div className="rounded-md border border-[var(--border)] p-4 text-sm text-[var(--muted-foreground)]">
+              Wähle einen Ingest aus der Liste.
+            </div>
           )}
           {error && <div className="mt-3 rounded-md border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 p-3 text-sm">{error}</div>}
+          </div>
         </div>
       </div>
     </div>

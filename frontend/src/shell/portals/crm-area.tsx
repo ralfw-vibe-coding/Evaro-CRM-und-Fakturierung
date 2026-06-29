@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Building2, ClipboardPaste, Filter, IdCard, Loader2, Plus, Search, User, X } from "lucide-react";
+import { Building2, ClipboardPaste, Filter, IdCard, Inbox, Loader2, MailCheck, Plus, Search, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tagCategoryColorStyle } from "@/lib/tag-colors";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,8 @@ import {
   getCrmFilterTagsRpu,
   selectEntityRpu,
   getSelectedEntityRpu,
+  checkEmailIngestRpu,
+  loadIngestsRpu,
 } from "@/composition";
 import type { Scope } from "@/domain/rpus/set-scope/set-scope";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
@@ -50,7 +52,10 @@ export function CrmArea() {
   const [, setDetailDirty] = React.useState(false);
   const [creatingContact, setCreatingContact] = React.useState(false);
   const [creatingBusinessPartner, setCreatingBusinessPartner] = React.useState(false);
-  const [importingEmail, setImportingEmail] = React.useState(false);
+  const [ingestOverlayMode, setIngestOverlayMode] = React.useState<"inbox" | "clipboard" | null>(null);
+  const [initialIngestId, setInitialIngestId] = React.useState<string | null>(null);
+  const [ingestPendingCount, setIngestPendingCount] = React.useState(0);
+  const [checkingEmail, setCheckingEmail] = React.useState(false);
   const [closeRequestToken, setCloseRequestToken] = React.useState(0);
   const [focusCompanyContactId, setFocusCompanyContactId] = React.useState<string | null>(null);
   const [focusBusinessPartnerId, setFocusBusinessPartnerId] = React.useState<string | null>(null);
@@ -65,6 +70,10 @@ export function CrmArea() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  React.useEffect(() => {
+    refreshIngestCount();
   }, []);
 
   function changeScope(scope: Scope) {
@@ -103,6 +112,38 @@ export function CrmArea() {
   function refreshProjection() {
     setView(getVisibleEntitiesRpu());
     setSelected(getSelectedEntityRpu());
+    refreshIngestCount();
+  }
+
+  async function refreshIngestCount() {
+    const result = await loadIngestsRpu();
+    if (result.ok) setIngestPendingCount(result.result.pending_count);
+  }
+
+  async function checkEmailAndOpenInbox() {
+    setCheckingEmail(true);
+    const result = await checkEmailIngestRpu();
+    setCheckingEmail(false);
+    await refreshIngestCount();
+    if (!result.ok || result.imported.length === 0) return;
+    setInitialIngestId(result.imported[0].id);
+    setIngestOverlayMode("inbox");
+  }
+
+  function openClipboardIngest() {
+    setInitialIngestId(null);
+    setIngestOverlayMode("clipboard");
+  }
+
+  function openIngestInbox() {
+    setInitialIngestId(null);
+    setIngestOverlayMode("inbox");
+  }
+
+  function closeIngestOverlay() {
+    setIngestOverlayMode(null);
+    setInitialIngestId(null);
+    refreshIngestCount();
   }
 
   function closeDetails() {
@@ -162,10 +203,38 @@ export function CrmArea() {
               size="icon"
               className="bg-[var(--brand)] text-white hover:opacity-90"
               aria-label="E-Mail übernehmen"
-              title="E-Mail übernehmen"
-              onClick={() => setImportingEmail(true)}
+              title="Zwischenablage übernehmen"
+              onClick={openClipboardIngest}
             >
               <ClipboardPaste />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="bg-[var(--brand)] text-white hover:opacity-90"
+              aria-label="Postfach prüfen"
+              title="Postfach prüfen"
+              onClick={checkEmailAndOpenInbox}
+              disabled={checkingEmail}
+            >
+              {checkingEmail ? <Loader2 className="animate-spin" /> : <MailCheck />}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="relative bg-[var(--brand)] text-white hover:opacity-90"
+              aria-label="Ingest Inbox öffnen"
+              title="Ingest Inbox öffnen"
+              onClick={openIngestInbox}
+            >
+              <Inbox />
+              {ingestPendingCount > 0 && (
+                <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-[var(--foreground)] px-1 text-[10px] leading-4 text-[var(--background)]">
+                  {ingestPendingCount}
+                </span>
+              )}
             </Button>
           </div>
         }
@@ -229,9 +298,11 @@ export function CrmArea() {
           />
         </EntityOverlay>
       )}
-      {importingEmail && (
+      {ingestOverlayMode && (
         <EmailImportOverlay
-          onClose={() => setImportingEmail(false)}
+          initialMode={ingestOverlayMode}
+          initialSelectedId={initialIngestId}
+          onClose={closeIngestOverlay}
           onChanged={refreshProjection}
           onNavigate={selectEntity}
         />
@@ -499,6 +570,7 @@ function CardList({
             key={`c-${entity.contact.id}`}
             contact={entity.contact}
             connectionCount={entity.connectionCount}
+            companyFallback={entity.companyFallback}
             matchHint={entity.matchHint}
             selected={isSelected(selected, entity)}
             onClick={() => onSelect({ kind: "contact", id: entity.contact.id })}

@@ -123,6 +123,26 @@ describe("getVisibleEntities RPU — without search", () => {
     expect(wolf?.connectionCount).toBe(2);
     expect(aok?.connectionCount).toBe(2);
   });
+
+  it("projects the first linked business partner name as company fallback for contacts without company", () => {
+    const contacts = [contact({ last_name: "Wolf" })];
+    const businessPartners = [bp({ name: "AOK Rheinland" }), bp({ name: "Zeitgewinn Hamburg" })];
+    const store = storeWith(contacts, businessPartners);
+    store.set({
+      contacts,
+      business_partners: businessPartners,
+      contact_gps: [
+        { contact_id: contacts[0].id, gp_id: businessPartners[0].id, role: "", primary: false, created_at: "" },
+        { contact_id: contacts[0].id, gp_id: businessPartners[1].id, role: "", primary: false, created_at: "" },
+      ],
+    });
+
+    const result = getVisibleEntities({ selectionStore: store })();
+    const wolf = result.entities.find((entity) => entity.kind === "contact" && entity.contact.id === contacts[0].id);
+
+    expect(wolf?.kind).toBe("contact");
+    if (wolf?.kind === "contact") expect(wolf.companyFallback).toBe("AOK Rheinland");
+  });
 });
 
 describe("getVisibleEntities RPU — full-text search", () => {

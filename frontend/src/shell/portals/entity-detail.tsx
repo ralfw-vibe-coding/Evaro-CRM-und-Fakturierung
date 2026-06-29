@@ -1690,8 +1690,13 @@ function ContactEditor({
   tagOptions: TagOptions;
 }) {
   const contact = selected.contact;
+  const firstBusinessPartnerName = selected.relatedBusinessPartners[0]?.businessPartner.data.name.trim();
+  const contactDataWithCompanyFallback =
+    !contact.data.company_text?.trim() && firstBusinessPartnerName
+      ? { ...contact.data, company_text: firstBusinessPartnerName }
+      : contact.data;
   const [active, setActive] = React.useState(contact.active);
-  const [data, setData] = React.useState<ContactData>(contact.data);
+  const [data, setData] = React.useState<ContactData>(contactDataWithCompanyFallback);
   const [channels, setChannels] = React.useState<Channel[]>(contact.data.channels);
   const [focusNewChannelType, setFocusNewChannelType] = React.useState(false);
   const [status, setStatus] = React.useState<string | null>(null);
@@ -1712,13 +1717,13 @@ function ContactEditor({
 
   React.useEffect(() => {
     setActive(contact.active);
-    setData(contact.data);
+    setData(contactDataWithCompanyFallback);
     setChannels(contact.data.channels);
     setFocusNewChannelType(false);
     setStatus(null);
     setErrors({});
     setSaveFeedback("idle");
-  }, [contact.id, contact.updated_at, contact.data, contact.active]);
+  }, [contact.id, contact.updated_at, contact.data, contact.active, firstBusinessPartnerName]);
 
   React.useEffect(() => {
     if (saveFeedback === "idle") return;

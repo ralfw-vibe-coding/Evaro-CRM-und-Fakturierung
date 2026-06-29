@@ -26,6 +26,9 @@ import { PostgresInvoicesProvider } from "./domain/pproviders/invoices/postgres-
 import type { AppSettingsProvider } from "./domain/pproviders/app-settings/app-settings-provider.js";
 import { InMemoryAppSettingsProvider } from "./domain/pproviders/app-settings/in-memory-app-settings-provider.js";
 import { PostgresAppSettingsProvider } from "./domain/pproviders/app-settings/postgres-app-settings-provider.js";
+import type { IngestsProvider } from "./domain/pproviders/ingests/ingests-provider.js";
+import { InMemoryIngestsProvider } from "./domain/pproviders/ingests/in-memory-ingests-provider.js";
+import { PostgresIngestsProvider } from "./domain/pproviders/ingests/postgres-ingests-provider.js";
 
 import { JwtTokensProvider } from "./shell/xproviders/tokens/jwt-tokens-provider.js";
 import type { TokensProvider } from "./shell/xproviders/tokens/tokens-provider.js";
@@ -35,6 +38,7 @@ import { PostgresOtpProvider } from "./shell/xproviders/otp/postgres-otp-provide
 import type { OtpProvider } from "./shell/xproviders/otp/otp-provider.js";
 import { extractEmailImportWithOpenAi } from "./shell/xproviders/openai/email-import-extractor.js";
 import { lookupBusinessPartnerWithOpenAi } from "./shell/xproviders/openai/business-partner-lookup.js";
+import { ImapMailProvider } from "./shell/xproviders/imap/imap-mail-provider.js";
 
 import { createContact } from "./domain/rpus/create-contact/create-contact.js";
 import { updateContact } from "./domain/rpus/update-contact/update-contact.js";
@@ -62,6 +66,10 @@ import { getAppSettings } from "./domain/rpus/get-app-settings/get-app-settings.
 import { updateAppSettings } from "./domain/rpus/update-app-settings/update-app-settings.js";
 import { analyzeEmailImport } from "./domain/rpus/analyze-email-import/analyze-email-import.js";
 import { lookupBusinessPartnerData } from "./domain/rpus/lookup-business-partner-data/lookup-business-partner-data.js";
+import { createIngest } from "./domain/rpus/create-ingest/create-ingest.js";
+import { listIngests } from "./domain/rpus/list-ingests/list-ingests.js";
+import { updateIngestStatus } from "./domain/rpus/update-ingest-status/update-ingest-status.js";
+import { checkEmailIngest } from "./domain/rpus/check-email-ingest/check-email-ingest.js";
 import { verifyOtp } from "./reactors/verify-otp/verify-otp.js";
 import { requestOtp } from "./reactors/request-otp/request-otp.js";
 import { select } from "./reactors/select/select.js";
@@ -90,6 +98,7 @@ interface MemoryProviders {
   invoices?: InMemoryInvoicesProvider;
   appSettings?: InMemoryAppSettingsProvider;
   otps?: InMemoryOtpProvider;
+  ingests?: InMemoryIngestsProvider;
 }
 
 const memory = ((globalThis as typeof globalThis & { __evaroMemory?: MemoryProviders })
@@ -146,6 +155,11 @@ function buildUsers(): UsersProvider {
 function buildOtps(): OtpProvider {
   if (usePostgres()) return new PostgresOtpProvider();
   return (memory.otps ??= new InMemoryOtpProvider());
+}
+
+function buildIngests(): IngestsProvider {
+  if (usePostgres()) return new PostgresIngestsProvider();
+  return (memory.ingests ??= new InMemoryIngestsProvider());
 }
 
 function firstInvoiceNumber(): number {
@@ -224,6 +238,29 @@ export function analyzeEmailImportRpu() {
   return analyzeEmailImport({
     loadSelection: async () => selectReactor()({ includeInactive: true }),
     extract: extractEmailImportWithOpenAi,
+  });
+}
+
+export function createIngestRpu() {
+  return createIngest({
+    ingests: buildIngests(),
+    analyze: analyzeEmailImportRpu(),
+  });
+}
+
+export function listIngestsRpu() {
+  return listIngests({ ingests: buildIngests() });
+}
+
+export function updateIngestStatusRpu() {
+  return updateIngestStatus({ ingests: buildIngests() });
+}
+
+export function checkEmailIngestRpu() {
+  const imap = new ImapMailProvider();
+  return checkEmailIngest({
+    fetchUnseen: () => imap.fetchUnseen(),
+    createIngest: createIngestRpu(),
   });
 }
 

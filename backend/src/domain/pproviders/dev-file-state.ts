@@ -1,5 +1,13 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import type { AppSettings, BusinessPartner, Contact, ContactGp, Invoice, PaymentTerm } from "../model.js";
+import type {
+  AppSettings,
+  BusinessPartner,
+  Contact,
+  ContactGp,
+  IngestItem,
+  Invoice,
+  PaymentTerm,
+} from "../model.js";
 
 interface DevState {
   contacts?: Contact[];
@@ -8,6 +16,7 @@ interface DevState {
   invoices?: Invoice[];
   payment_terms?: PaymentTerm[];
   app_settings?: AppSettings;
+  ingests?: IngestItem[];
 }
 
 export function devStatePath(): string | undefined {

@@ -11,7 +11,7 @@ export interface MatchHint {
 }
 
 export type VisibleEntity =
-  | { kind: "contact"; contact: Contact; connectionCount: number; matchHint?: MatchHint }
+  | { kind: "contact"; contact: Contact; connectionCount: number; companyFallback?: string; matchHint?: MatchHint }
   | { kind: "business_partner"; businessPartner: BusinessPartner; connectionCount: number; matchHint?: MatchHint };
 
 export interface GetVisibleEntitiesResult {
@@ -59,13 +59,13 @@ function find(
   return null;
 }
 
-function matchContact(contact: Contact, term: string): FieldMatch | null {
+function matchContact(contact: Contact, term: string, companyFallback?: string): FieldMatch | null {
   const tier1 = find(
     term,
     [
       ["first_name", "Vorname", contact.data.first_name],
       ["last_name", "Nachname", contact.data.last_name],
-      ["company_text", "Firma", contact.data.company_text],
+      ["company_text", "Firma", contact.data.company_text ?? companyFallback],
     ],
     1,
   );
@@ -192,14 +192,21 @@ function sortKey(entity: VisibleEntity): string {
 function rankContacts(
   contacts: Contact[],
   connectionCounts: Map<string, number>,
+  companyFallbacks: Map<string, string>,
   term: string,
   searching: boolean,
 ): Ranked[] {
   const ranked: Ranked[] = [];
   for (const contact of contacts) {
-    const match = searching ? matchContact(contact, term) : null;
+    const companyFallback = contact.data.company_text?.trim() ? undefined : companyFallbacks.get(contact.id);
+    const match = searching ? matchContact(contact, term, companyFallback) : null;
     if (searching && !match) continue;
-    const entity: VisibleEntity = { kind: "contact", contact, connectionCount: connectionCounts.get(contact.id) ?? 0 };
+    const entity: VisibleEntity = {
+      kind: "contact",
+      contact,
+      connectionCount: connectionCounts.get(contact.id) ?? 0,
+      companyFallback,
+    };
     if (match && !isMatchVisible(entity, match)) {
       entity.matchHint = { label: match.label, snippet: truncate(match.value) };
     }
@@ -250,13 +257,18 @@ export function getVisibleEntities(deps: GetVisibleEntitiesDeps) {
     const searching = term.length > 0;
     const contactConnectionCounts = new Map<string, number>();
     const bpConnectionCounts = new Map<string, number>();
+    const companyFallbacks = new Map<string, string>();
     for (const link of selection?.contact_gps ?? []) {
       contactConnectionCounts.set(link.contact_id, (contactConnectionCounts.get(link.contact_id) ?? 0) + 1);
       bpConnectionCounts.set(link.gp_id, (bpConnectionCounts.get(link.gp_id) ?? 0) + 1);
+      if (!companyFallbacks.has(link.contact_id)) {
+        const bpName = selection?.business_partners.find((bp) => bp.id === link.gp_id)?.data.name.trim();
+        if (bpName) companyFallbacks.set(link.contact_id, bpName);
+      }
     }
 
     const visibleContacts = (selection?.contacts ?? []).filter((contact) => includeInactive || contact.active);
-    const rankedContacts = rankContacts(visibleContacts, contactConnectionCounts, term, searching);
+    const rankedContacts = rankContacts(visibleContacts, contactConnectionCounts, companyFallbacks, term, searching);
     const rankedBps = rankBusinessPartners(selection?.business_partners ?? [], bpConnectionCounts, term, searching);
 
     const taggedRanked = [
