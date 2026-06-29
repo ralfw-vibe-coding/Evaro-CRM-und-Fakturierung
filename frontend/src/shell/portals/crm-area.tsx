@@ -119,6 +119,7 @@ export function CrmArea() {
   const [closeRequestToken, setCloseRequestToken] = React.useState(0);
   const [focusCompanyContactId, setFocusCompanyContactId] = React.useState<string | null>(null);
   const [focusBusinessPartnerId, setFocusBusinessPartnerId] = React.useState<string | null>(null);
+  const [loadingInactive, setLoadingInactive] = React.useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -142,20 +143,35 @@ export function CrmArea() {
     return () => window.clearTimeout(timeout);
   }, [emailIngestMessage, checkingEmail]);
 
+  React.useEffect(() => {
+    if (!loadingInactive) return;
+    const previous = document.body.style.cursor;
+    document.body.style.cursor = "wait";
+    return () => {
+      document.body.style.cursor = previous;
+    };
+  }, [loadingInactive]);
+
   function changeScope(scope: Scope) {
     setScopeRpu(scope);
     setView(getVisibleEntitiesRpu());
   }
 
   async function changeIncludeInactive(includeInactive: boolean) {
+    if (loadingInactive || includeInactive === (view?.includeInactive ?? false)) return;
+    setLoadingInactive(true);
     setIncludeInactiveRpu(includeInactive);
-    const result = await loadSelectionRpu({ includeInactive });
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      const result = await loadSelectionRpu({ includeInactive });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setView(getVisibleEntitiesRpu());
+      setSelected(getSelectedEntityRpu());
+    } finally {
+      setLoadingInactive(false);
     }
-    setView(getVisibleEntitiesRpu());
-    setSelected(getSelectedEntityRpu());
   }
 
   function changeSearch(term: string) {
@@ -234,7 +250,11 @@ export function CrmArea() {
       <Column icon={<Filter className="size-4" />} title="Filter">
         <div className="grid gap-4">
           <SearchField value={view?.searchTerm ?? ""} onChange={changeSearch} />
-          <ActivityFilter includeInactive={view?.includeInactive ?? false} onChange={changeIncludeInactive} />
+          <ActivityFilter
+            includeInactive={view?.includeInactive ?? false}
+            loading={loadingInactive}
+            onChange={changeIncludeInactive}
+          />
           <ArtFilter scope={view?.scope ?? "both"} onChange={changeScope} />
           <TagFilter
             tags={getCrmFilterTagsRpu()}
@@ -470,11 +490,13 @@ function FilterGroup({ title, children }: { title: string; children: React.React
 function FilterChip({
   active,
   color = "neutral",
+  disabled = false,
   children,
   onClick,
 }: {
   active: boolean;
   color?: "neutral" | "contact" | "gp";
+  disabled?: boolean;
   children: React.ReactNode;
   onClick: () => void;
 }) {
@@ -487,9 +509,10 @@ function FilterChip({
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex min-w-0 items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+        "inline-flex min-w-0 items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:cursor-wait disabled:opacity-60",
         active ? activeClass : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--accent)]",
       )}
     >
@@ -500,20 +523,28 @@ function FilterChip({
 
 function ActivityFilter({
   includeInactive,
+  loading,
   onChange,
 }: {
   includeInactive: boolean;
+  loading: boolean;
   onChange: (includeInactive: boolean) => void;
 }) {
   return (
     <FilterGroup title="Aktivität">
-      <div className="flex flex-wrap gap-2">
-        <FilterChip active={!includeInactive} onClick={() => onChange(false)}>
+      <div className={cn("flex flex-wrap items-center gap-2", loading && "cursor-wait")}>
+        <FilterChip active={!includeInactive} disabled={loading} onClick={() => onChange(false)}>
           Aktiv
         </FilterChip>
-        <FilterChip active={includeInactive} onClick={() => onChange(!includeInactive)}>
+        <FilterChip active={includeInactive} disabled={loading} onClick={() => onChange(!includeInactive)}>
           + Inaktive
         </FilterChip>
+        {loading && (
+          <span className="inline-flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
+            <Loader2 className="size-3.5 animate-spin" />
+            Lade...
+          </span>
+        )}
       </div>
     </FilterGroup>
   );
