@@ -63,6 +63,7 @@ export interface BusinessPartnerData {
 
 export interface BusinessPartner {
   id: string;
+  active: boolean;
   types: string[];
   data: BusinessPartnerData;
   created_at: string;

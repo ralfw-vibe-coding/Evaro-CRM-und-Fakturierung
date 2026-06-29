@@ -268,8 +268,9 @@ export function getVisibleEntities(deps: GetVisibleEntitiesDeps) {
     }
 
     const visibleContacts = (selection?.contacts ?? []).filter((contact) => includeInactive || contact.active);
+    const visibleBps = (selection?.business_partners ?? []).filter((bp) => includeInactive || bp.active);
     const rankedContacts = rankContacts(visibleContacts, contactConnectionCounts, companyFallbacks, term, searching);
-    const rankedBps = rankBusinessPartners(selection?.business_partners ?? [], bpConnectionCounts, term, searching);
+    const rankedBps = rankBusinessPartners(visibleBps, bpConnectionCounts, term, searching);
 
     const taggedRanked = [
       ...(scope !== "gp" ? rankedContacts : []),

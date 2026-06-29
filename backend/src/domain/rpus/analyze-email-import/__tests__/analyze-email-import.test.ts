@@ -15,6 +15,7 @@ function contact(id: string, data: Partial<Contact["data"]>): Contact {
 function businessPartner(id: string, data: Partial<BusinessPartner["data"]> & { name: string }): BusinessPartner {
   return {
     id,
+    active: true,
     types: [],
     data: { channels: [], ...data },
     created_at: "",

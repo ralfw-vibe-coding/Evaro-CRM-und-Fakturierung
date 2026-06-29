@@ -12,20 +12,19 @@ export interface SelectResult {
 export interface SelectDeps {
   listActiveContacts: () => Promise<ListActiveContactsResult>;
   listAllContacts: () => Promise<ListActiveContactsResult>;
-  listBusinessPartners: () => Promise<ListBusinessPartnersResult>;
+  listBusinessPartners: (options?: { includeInactive?: boolean }) => Promise<ListBusinessPartnersResult>;
   contactGps: ContactGpsProvider;
 }
 
 /**
- * Reactor: the initial selection. Loads active contacts and all business
- * partners in one shot so the frontend has everything client-side and rarely
- * needs to refetch (see crm-briefing.md "Data Flow"). Relationships
+ * Reactor: the initial selection. Loads active entities by default and includes
+ * passive import records only when requested.
  */
 export function select(deps: SelectDeps) {
   return async function process(options: { includeInactive?: boolean } = {}): Promise<SelectResult> {
     const [contacts, bps, contactGps] = await Promise.all([
       options.includeInactive ? deps.listAllContacts() : deps.listActiveContacts(),
-      deps.listBusinessPartners(),
+      deps.listBusinessPartners({ includeInactive: options.includeInactive }),
       deps.contactGps.listAll(),
     ]);
     return {

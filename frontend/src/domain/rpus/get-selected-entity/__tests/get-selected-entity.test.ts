@@ -12,6 +12,7 @@ const CONTACT: Contact = {
 };
 const BP: BusinessPartner = {
   id: "bp1",
+  active: true,
   types: [],
   data: { name: "AOK Rheinland", channels: [] },
   created_at: "",

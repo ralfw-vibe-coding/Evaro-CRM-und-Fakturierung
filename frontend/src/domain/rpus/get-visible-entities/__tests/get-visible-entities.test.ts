@@ -13,9 +13,13 @@ function contact(overrides: Partial<Contact["data"]> & { last_name: string }): C
   };
 }
 
-function bp(overrides: Partial<BusinessPartner["data"]> & { name: string }): BusinessPartner {
+function bp(
+  overrides: Partial<BusinessPartner["data"]> & { name: string },
+  options: { active?: boolean } = {},
+): BusinessPartner {
   return {
     id: `bp-${overrides.name}`,
+    active: options.active ?? true,
     types: [],
     data: { channels: [], ...overrides },
     created_at: "",
@@ -92,6 +96,28 @@ describe("getVisibleEntities RPU — without search", () => {
     const result = getVisibleEntities({ selectionStore: store })();
     expect(result.entities).toHaveLength(1);
     expect(result.entities[0].kind).toBe("contact");
+  });
+
+  it("hides inactive business partners unless inactive records are included", () => {
+    const store = storeWith(
+      [],
+      [bp({ name: "AOK Rheinland" }), bp({ name: "Newsletter Import" }, { active: false })],
+    );
+
+    const activeOnly = getVisibleEntities({ selectionStore: store })();
+    expect(
+      activeOnly.entities.map((entity) =>
+        entity.kind === "business_partner" ? entity.businessPartner.data.name : "",
+      ),
+    ).toEqual(["AOK Rheinland"]);
+
+    store.setIncludeInactive(true);
+    const withInactive = getVisibleEntities({ selectionStore: store })();
+    expect(
+      withInactive.entities.map((entity) =>
+        entity.kind === "business_partner" ? entity.businessPartner.data.name : "",
+      ),
+    ).toEqual(["AOK Rheinland", "Newsletter Import"]);
   });
 
   it("returns an empty result before anything has been loaded", () => {

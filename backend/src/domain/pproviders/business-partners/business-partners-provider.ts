@@ -1,11 +1,13 @@
 import type { BusinessPartner, BusinessPartnerData } from "../../model.js";
 
 export interface NewBusinessPartner {
+  active?: boolean;
   types: string[];
   data: BusinessPartnerData;
 }
 
 export interface BusinessPartnerUpdate {
+  active?: boolean;
   types: string[];
   data: BusinessPartnerData;
 }
@@ -16,6 +18,9 @@ export interface BusinessPartnerUpdate {
 export interface BusinessPartnersProvider {
   /** Insert a new business partner and return the stored record. */
   insert(input: NewBusinessPartner): Promise<BusinessPartner>;
+
+  /** Active business partners for the default selection. */
+  listActive(): Promise<BusinessPartner[]>;
 
   /** All business partners (the selection sends them all; see crm-briefing.md). */
   listAll(): Promise<BusinessPartner[]>;

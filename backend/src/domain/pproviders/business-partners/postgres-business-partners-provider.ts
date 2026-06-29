@@ -9,6 +9,7 @@ import { getPool } from "../postgres/pool.js";
 
 interface BpRow {
   id: string;
+  active: boolean;
   types: string[];
   data: BusinessPartner["data"];
   created_at: Date;
@@ -18,6 +19,7 @@ interface BpRow {
 function toBp(row: BpRow): BusinessPartner {
   return {
     id: row.id,
+    active: row.active,
     types: stringList(row.types) ?? [],
     data: normalizeBusinessPartnerData(row.data),
     created_at: row.created_at.toISOString(),
@@ -78,18 +80,28 @@ export class PostgresBusinessPartnersProvider implements BusinessPartnersProvide
 
   async insert(input: NewBusinessPartner): Promise<BusinessPartner> {
     const { rows } = await this.pool.query<BpRow>(
-      `INSERT INTO business_partners (types, data)
-       VALUES ($1, $2)
-       RETURNING id, types, data, created_at, updated_at`,
-      [input.types, input.data],
+      `INSERT INTO business_partners (active, types, data)
+       VALUES ($1, $2, $3)
+       RETURNING id, active, types, data, created_at, updated_at`,
+      [input.active ?? true, input.types, input.data],
     );
     return toBp(rows[0]);
   }
 
   async listAll(): Promise<BusinessPartner[]> {
     const { rows } = await this.pool.query<BpRow>(
-      `SELECT id, types, data, created_at, updated_at
+      `SELECT id, active, types, data, created_at, updated_at
        FROM business_partners
+       ORDER BY created_at DESC`,
+    );
+    return rows.map(toBp);
+  }
+
+  async listActive(): Promise<BusinessPartner[]> {
+    const { rows } = await this.pool.query<BpRow>(
+      `SELECT id, active, types, data, created_at, updated_at
+       FROM business_partners
+       WHERE active = true
        ORDER BY created_at DESC`,
     );
     return rows.map(toBp);
@@ -97,7 +109,7 @@ export class PostgresBusinessPartnersProvider implements BusinessPartnersProvide
 
   async findById(id: string): Promise<BusinessPartner | null> {
     const { rows } = await this.pool.query<BpRow>(
-      `SELECT id, types, data, created_at, updated_at
+      `SELECT id, active, types, data, created_at, updated_at
        FROM business_partners
        WHERE id = $1`,
       [id],
@@ -108,10 +120,10 @@ export class PostgresBusinessPartnersProvider implements BusinessPartnersProvide
   async update(id: string, update: BusinessPartnerUpdate): Promise<BusinessPartner | null> {
     const { rows } = await this.pool.query<BpRow>(
       `UPDATE business_partners
-       SET types = $1, data = $2, updated_at = now()
-       WHERE id = $3
-       RETURNING id, types, data, created_at, updated_at`,
-      [update.types, update.data, id],
+       SET active = COALESCE($1, active), types = $2, data = $3, updated_at = now()
+       WHERE id = $4
+       RETURNING id, active, types, data, created_at, updated_at`,
+      [update.active ?? null, update.types, update.data, id],
     );
     return rows[0] ? toBp(rows[0]) : null;
   }

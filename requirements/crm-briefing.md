@@ -114,6 +114,10 @@ Default on CSV import: `active = false`.
 
 This is a **server-side selection**, not a client-side filter. Passive contacts are not transmitted to the browser by default.
 
+The same active/passive distinction applies to Business Partners. Business
+Partners created through bulk imports default to `active = false`; manually
+created Business Partners default to `active = true`.
+
 ---
 
 ## Data Model
@@ -191,6 +195,7 @@ updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
+| `active` | BOOLEAN | default true, indexed |
 | `types` | TEXT[] | e.g. `{customer, supplier}` |
 | `data` | JSONB | all fields below |
 | `created_at` | TIMESTAMPTZ | |

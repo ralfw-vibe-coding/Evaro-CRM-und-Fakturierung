@@ -27,12 +27,14 @@ CREATE INDEX IF NOT EXISTS idx_contacts_updated_at ON contacts (updated_at);
 -- Business Partners -----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS business_partners (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  active     BOOLEAN NOT NULL DEFAULT true,
   types      TEXT[] NOT NULL DEFAULT '{}',
   data       JSONB NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_bp_active ON business_partners (active);
 CREATE INDEX IF NOT EXISTS idx_bp_updated_at ON business_partners (updated_at);
 
 -- Contact <-> Business Partner (n:m) ------------------------------------------

@@ -39,6 +39,7 @@ export class InMemoryBusinessPartnersProvider implements BusinessPartnersProvide
     const now = new Date().toISOString();
     const bp: BusinessPartner = {
       id: randomUUID(),
+      active: input.active ?? true,
       types: [...input.types],
       data: structuredClone(input.data),
       created_at: now,
@@ -51,6 +52,11 @@ export class InMemoryBusinessPartnersProvider implements BusinessPartnersProvide
   async listAll(): Promise<BusinessPartner[]> {
     this.hydrate();
     return [...this.bps.values()].map((bp) => structuredClone(bp));
+  }
+
+  async listActive(): Promise<BusinessPartner[]> {
+    this.hydrate();
+    return [...this.bps.values()].filter((bp) => bp.active).map((bp) => structuredClone(bp));
   }
 
   async insert(input: NewBusinessPartner): Promise<BusinessPartner> {
@@ -73,6 +79,7 @@ export class InMemoryBusinessPartnersProvider implements BusinessPartnersProvide
 
     const updated: BusinessPartner = {
       ...existing,
+      active: update.active ?? existing.active,
       types: [...update.types],
       data: structuredClone(update.data),
       updated_at: new Date().toISOString(),
