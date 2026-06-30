@@ -63,10 +63,18 @@ body {
 
 @page {
   size: A4;
-  margin: 0;
+  margin: 16mm 18mm;
 }
 
 @media print {
+  html,
+  body {
+    width: auto;
+    height: auto;
+    overflow: visible;
+    background: white !important;
+  }
+
   body * {
     visibility: hidden;
   }
@@ -77,10 +85,13 @@ body {
   }
 
   .invoice-print-surface {
-    position: absolute;
-    inset: 0 auto auto 0;
-    width: 210mm;
-    min-height: 297mm;
+    position: static !important;
+    inset: auto !important;
+    width: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
     box-shadow: none !important;
   }
 

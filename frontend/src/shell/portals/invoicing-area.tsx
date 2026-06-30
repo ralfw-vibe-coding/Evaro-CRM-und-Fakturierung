@@ -1049,16 +1049,16 @@ function InvoicePrintPreview({
           </div>
         )}
 
-        <footer className="mt-12 grid break-inside-avoid grid-cols-3 gap-6 border-t border-zinc-300 pt-5 text-xs leading-5 text-zinc-600">
-          <div>
+        <footer className="mt-10 grid grid-cols-3 gap-6 border-t border-zinc-300 pt-5 text-xs leading-5 text-zinc-600 print:mt-8">
+          <div className="break-inside-avoid">
             <div className="font-bold text-zinc-800">{labels.registration}</div>
             <div className="mt-1 whitespace-pre-line">{registrationLines.join("\n")}</div>
           </div>
-          <div>
+          <div className="break-inside-avoid">
             <div className="font-bold text-zinc-800">{labels.bank}</div>
             <div className="mt-1 whitespace-pre-line">{bankLines.join("\n")}</div>
           </div>
-          <div>
+          <div className="break-inside-avoid">
             <div className="font-bold text-zinc-800">{labels.contact}</div>
             <div className="mt-1 whitespace-pre-line">
               {[seller.contact_person, seller.email, seller.phone, seller.website].filter(Boolean).join("\n")}
