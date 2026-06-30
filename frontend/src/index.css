@@ -68,11 +68,25 @@ body {
 
 @media print {
   html,
-  body {
+  body,
+  #root {
     width: auto;
     height: auto;
     overflow: visible;
     background: white !important;
+  }
+
+  #root,
+  #root > *,
+  main {
+    display: block !important;
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body:has(.invoice-print-shell) {
+    margin: 0 !important;
   }
 
   body * {
@@ -81,6 +95,28 @@ body {
 
   .invoice-print-surface,
   .invoice-print-surface * {
+    visibility: visible;
+  }
+
+  .invoice-print-shell {
+    position: static !important;
+    inset: auto !important;
+    z-index: auto !important;
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .invoice-detail-column {
+    display: block !important;
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .invoice-print-shell,
+  .invoice-print-shell * {
     visibility: visible;
   }
 
@@ -93,6 +129,11 @@ body {
     padding: 0 !important;
     overflow: visible !important;
     box-shadow: none !important;
+  }
+
+  .invoice-closing-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .no-print {

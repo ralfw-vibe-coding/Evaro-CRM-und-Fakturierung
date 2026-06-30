@@ -146,7 +146,7 @@ export function InvoicingArea() {
         </div>
       </Column>
 
-      <section className="h-full min-h-0 overflow-auto">
+      <section className="invoice-detail-column h-full min-h-0 overflow-auto">
         <InvoiceDetail
           invoice={selected}
           allInvoices={invoices}
@@ -933,9 +933,10 @@ function InvoicePrintPreview({
   const language = invoice.gp_snapshot.invoice_language ?? "de";
   const labels = invoicePrintLabels[language];
   const paymentTerms = paymentTermsText(invoice.data, invoice.invoice_date, language);
+  const printRef = React.useRef<HTMLElement | null>(null);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-auto bg-zinc-950/50 p-6">
+    <div className="invoice-print-shell fixed inset-0 z-50 overflow-auto bg-zinc-950/50 p-6">
       <div className="no-print sticky top-0 mx-auto mb-4 flex max-w-[210mm] items-center justify-end gap-2">
         <Button
           type="button"
@@ -943,7 +944,7 @@ function InvoicePrintPreview({
           className="bg-[var(--brand)] text-white hover:opacity-90"
           aria-label="Drucken"
           title="Drucken"
-          onClick={() => window.print()}
+          onClick={() => printInvoiceSurface(printRef.current, invoiceTitle(language, invoiceNumber))}
         >
           <Printer />
         </Button>
@@ -952,7 +953,7 @@ function InvoicePrintPreview({
         </Button>
       </div>
 
-      <article className="invoice-print-surface mx-auto min-h-[297mm] w-[210mm] bg-white px-[18mm] py-[16mm] text-black shadow-2xl">
+      <article ref={printRef} className="invoice-print-surface mx-auto min-h-[297mm] w-[210mm] bg-white px-[18mm] py-[16mm] text-black shadow-2xl">
         <header className="border-b border-zinc-300 pb-3">
           <div className="flex items-baseline justify-between gap-12">
             <div className="text-2xl font-bold">{sellerName}</div>
@@ -1017,54 +1018,56 @@ function InvoicePrintPreview({
           </table>
         </section>
 
-        <section className="mt-8 grid grid-cols-[1fr_70mm] gap-10">
-          <div className="grid content-start gap-6 text-sm">
-            {invoice.data.comment && (
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.comment}</div>
-                <div className="mt-2 whitespace-pre-line leading-6">{invoice.data.comment}</div>
-              </div>
-            )}
-            {paymentTerms && (
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.paymentTerms}</div>
-                <div className="mt-2 whitespace-pre-line leading-6">
-                  {paymentTerms}
+        <div className="invoice-closing-block">
+          <section className="mt-8 grid grid-cols-[1fr_70mm] gap-10">
+            <div className="grid content-start gap-6 text-sm">
+              {invoice.data.comment && (
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.comment}</div>
+                  <div className="mt-2 whitespace-pre-line leading-6">{invoice.data.comment}</div>
                 </div>
+              )}
+              {paymentTerms && (
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.paymentTerms}</div>
+                  <div className="mt-2 whitespace-pre-line leading-6">
+                    {paymentTerms}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="grid gap-2 border-t border-zinc-300 pt-3 text-sm">
+              <PrintTotal label={labels.net} value={formatMoney(totals.net)} />
+              <PrintTotal label={`${labels.vat} (${formatNumber(invoice.vat_rate)}%)`} value={formatMoney(totals.vat)} />
+              <div className="mt-2 border-t border-zinc-300 pt-3">
+                <PrintTotal label={labels.amountDue} value={formatMoney(totals.gross)} strong />
               </div>
-            )}
-          </div>
-          <div className="grid gap-2 border-t border-zinc-300 pt-3 text-sm">
-            <PrintTotal label={labels.net} value={formatMoney(totals.net)} />
-            <PrintTotal label={`${labels.vat} (${formatNumber(invoice.vat_rate)}%)`} value={formatMoney(totals.vat)} />
-            <div className="mt-2 border-t border-zinc-300 pt-3">
-              <PrintTotal label={labels.amountDue} value={formatMoney(totals.gross)} strong />
             </div>
-          </div>
-        </section>
+          </section>
 
-        {reverseCharge && (
-          <div className="mt-6 break-inside-avoid border-t border-zinc-300 pt-4 text-sm">
-            {labels.reverseCharge}
-          </div>
-        )}
-
-        <footer className="mt-10 grid grid-cols-3 gap-6 border-t border-zinc-300 pt-5 text-xs leading-5 text-zinc-600 print:mt-8">
-          <div className="break-inside-avoid">
-            <div className="font-bold text-zinc-800">{labels.registration}</div>
-            <div className="mt-1 whitespace-pre-line">{registrationLines.join("\n")}</div>
-          </div>
-          <div className="break-inside-avoid">
-            <div className="font-bold text-zinc-800">{labels.bank}</div>
-            <div className="mt-1 whitespace-pre-line">{bankLines.join("\n")}</div>
-          </div>
-          <div className="break-inside-avoid">
-            <div className="font-bold text-zinc-800">{labels.contact}</div>
-            <div className="mt-1 whitespace-pre-line">
-              {[seller.contact_person, seller.email, seller.phone, seller.website].filter(Boolean).join("\n")}
+          {reverseCharge && (
+            <div className="mt-6 break-inside-avoid border-t border-zinc-300 pt-4 text-sm print:mt-4">
+              {labels.reverseCharge}
             </div>
-          </div>
-        </footer>
+          )}
+
+          <footer className="mt-10 grid grid-cols-3 gap-6 border-t border-zinc-300 pt-5 text-xs leading-5 text-zinc-600 print:mt-6">
+            <div className="break-inside-avoid">
+              <div className="font-bold text-zinc-800">{labels.registration}</div>
+              <div className="mt-1 whitespace-pre-line">{registrationLines.join("\n")}</div>
+            </div>
+            <div className="break-inside-avoid">
+              <div className="font-bold text-zinc-800">{labels.bank}</div>
+              <div className="mt-1 whitespace-pre-line">{bankLines.join("\n")}</div>
+            </div>
+            <div className="break-inside-avoid">
+              <div className="font-bold text-zinc-800">{labels.contact}</div>
+              <div className="mt-1 whitespace-pre-line">
+                {[seller.contact_person, seller.email, seller.phone, seller.website].filter(Boolean).join("\n")}
+              </div>
+            </div>
+          </footer>
+        </div>
       </article>
     </div>
   );
@@ -1077,6 +1080,74 @@ function PrintTotal({ label, value, strong }: { label: string; value: string; st
       <span className="font-mono">{value}</span>
     </div>
   );
+}
+
+function printInvoiceSurface(surface: HTMLElement | null, title: string) {
+  if (!surface) return;
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.setAttribute("aria-hidden", "true");
+  document.body.appendChild(iframe);
+
+  const printWindow = iframe.contentWindow;
+  const printDocument = iframe.contentDocument ?? printWindow?.document;
+  if (!printWindow || !printDocument) return;
+
+  const styleTags = [...document.querySelectorAll('link[rel="stylesheet"], style')]
+    .map((node) => node.outerHTML)
+    .join("\n");
+
+  printDocument.open();
+  printDocument.write(`<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${escapeHtml(title)}</title>
+    ${styleTags}
+    <style>
+      @page { size: A4; margin: 16mm 18mm; }
+      html, body { margin: 0; background: white; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .invoice-print-surface {
+        position: static !important;
+        width: auto !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+      }
+      .invoice-closing-block {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .no-print { display: none !important; }
+    </style>
+  </head>
+  <body>${surface.outerHTML}</body>
+</html>`);
+  printDocument.close();
+  printWindow.focus();
+  printWindow.addEventListener("afterprint", () => iframe.remove(), { once: true });
+  window.setTimeout(() => {
+    printWindow.print();
+    window.setTimeout(() => {
+      if (document.body.contains(iframe)) iframe.remove();
+    }, 1000);
+  }, 250);
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 type InvoicePrintLanguage = "de" | "en";
