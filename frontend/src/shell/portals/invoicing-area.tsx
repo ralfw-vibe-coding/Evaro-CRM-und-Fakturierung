@@ -944,7 +944,7 @@ function InvoicePrintPreview({
           className="bg-[var(--brand)] text-white hover:opacity-90"
           aria-label="Drucken"
           title="Drucken"
-          onClick={() => printInvoiceSurface(printRef.current, invoiceTitle(language, invoiceNumber))}
+          onClick={() => printInvoiceSurface(printRef.current, invoicePdfFilename(invoiceNumber, invoice.gp_snapshot.name))}
         >
           <Printer />
         </Button>
@@ -1084,6 +1084,8 @@ function PrintTotal({ label, value, strong }: { label: string; value: string; st
 
 function printInvoiceSurface(surface: HTMLElement | null, title: string) {
   if (!surface) return;
+  const previousTitle = document.title;
+  document.title = title;
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.right = "0";
@@ -1096,7 +1098,10 @@ function printInvoiceSurface(surface: HTMLElement | null, title: string) {
 
   const printWindow = iframe.contentWindow;
   const printDocument = iframe.contentDocument ?? printWindow?.document;
-  if (!printWindow || !printDocument) return;
+  if (!printWindow || !printDocument) {
+    document.title = previousTitle;
+    return;
+  }
 
   const styleTags = [...document.querySelectorAll('link[rel="stylesheet"], style')]
     .map((node) => node.outerHTML)
@@ -1133,13 +1138,28 @@ function printInvoiceSurface(surface: HTMLElement | null, title: string) {
 </html>`);
   printDocument.close();
   printWindow.focus();
-  printWindow.addEventListener("afterprint", () => iframe.remove(), { once: true });
+  const cleanup = () => {
+    document.title = previousTitle;
+    iframe.remove();
+  };
+  printWindow.addEventListener("afterprint", cleanup, { once: true });
   window.setTimeout(() => {
     printWindow.print();
     window.setTimeout(() => {
-      if (document.body.contains(iframe)) iframe.remove();
-    }, 1000);
+      if (document.body.contains(iframe)) cleanup();
+    }, 2000);
   }, 250);
+}
+
+function invoicePdfFilename(invoiceNumber: string, companyName: string): string {
+  const normalizedNumber = invoiceNumber.padStart(10, "0");
+  const safeCompany = companyName
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\s/g, "-");
+  return `INV-${normalizedNumber}-${safeCompany || "Kunde"}.pdf`;
 }
 
 function escapeHtml(value: string): string {
