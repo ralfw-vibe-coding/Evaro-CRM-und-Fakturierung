@@ -1152,14 +1152,13 @@ function printInvoiceSurface(surface: HTMLElement | null, title: string) {
 }
 
 function invoicePdfFilename(invoiceNumber: string, companyName: string): string {
-  const normalizedNumber = invoiceNumber.padStart(10, "0");
+  const normalizedNumber = String(Number.parseInt(invoiceNumber, 10) || invoiceNumber);
   const safeCompany = companyName
     .trim()
     .replace(/[\\/:*?"<>|]+/g, " ")
     .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\s/g, "-");
-  return `INV-${normalizedNumber}-${safeCompany || "Kunde"}.pdf`;
+    .trim();
+  return `INV ${normalizedNumber} ${safeCompany || "Kunde"}.pdf`;
 }
 
 function escapeHtml(value: string): string {
