@@ -211,20 +211,25 @@ export class PostgresInvoicesProvider implements InvoicesProvider {
       await client.query("BEGIN");
       await client.query("SELECT pg_advisory_xact_lock(hashtext('evaro_invoice_numbers'))");
 
-      const { rows: maxRows } = await client.query<{ max_number: string | null }>(
-        `SELECT MAX(invoice_number::bigint)::text AS max_number
+      const { rows: existingRows } = await client.query<{ invoice_number: string | null }>(
+        `SELECT invoice_number
          FROM invoices
-         WHERE invoice_number ~ '^\\d{10}$'`,
+         WHERE id = $1 AND status = 'draft'
+         FOR UPDATE`,
+        [id],
       );
-      const largest = Number(maxRows[0]?.max_number ?? 0);
-      const nextNumber = Math.max(input.first_invoice_number, largest + 1);
-      const invoiceNumber = String(nextNumber).padStart(10, "0");
+      if (!existingRows[0]) {
+        await client.query("COMMIT");
+        return null;
+      }
+
+      const invoiceNumber = existingRows[0].invoice_number ?? await this.nextInvoiceNumber(client, input.first_invoice_number);
 
       const { rows } = await client.query<InvoiceRow>(
         `UPDATE invoices
          SET status = 'billed',
              invoice_number = $1,
-             invoice_date = $2,
+             invoice_date = COALESCE(invoice_date, $2),
              gp_snapshot = COALESCE($3, gp_snapshot),
              updated_at = now()
          WHERE id = $4 AND status = 'draft'
@@ -241,6 +246,16 @@ export class PostgresInvoicesProvider implements InvoicesProvider {
     } finally {
       client.release();
     }
+  }
+
+  private async nextInvoiceNumber(client: pg.PoolClient, firstInvoiceNumber: number): Promise<string> {
+    const { rows } = await client.query<{ max_number: string | null }>(
+      `SELECT MAX(invoice_number::bigint)::text AS max_number
+       FROM invoices
+       WHERE invoice_number ~ '^\\d{10}$'`,
+    );
+    const largest = Number(rows[0]?.max_number ?? 0);
+    return String(Math.max(firstInvoiceNumber, largest + 1)).padStart(10, "0");
   }
 
   async updateStatus(id: string, status: InvoiceStatus): Promise<Invoice | null> {

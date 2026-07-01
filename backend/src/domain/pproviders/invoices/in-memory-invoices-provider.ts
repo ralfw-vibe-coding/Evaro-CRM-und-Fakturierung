@@ -95,23 +95,27 @@ export class InMemoryInvoicesProvider implements InvoicesProvider {
     this.hydrate();
     const existing = this.invoices.get(id);
     if (!existing || existing.status !== "draft") return null;
-    const largest = [...this.invoices.values()]
-      .map((invoice) => invoice.invoice_number)
-      .filter((value): value is string => typeof value === "string" && /^\d{10}$/.test(value))
-      .map((value) => Number(value))
-      .reduce((max, value) => Math.max(max, value), 0);
-    const nextNumber = Math.max(input.first_invoice_number, largest + 1);
+    const nextInvoiceNumber = existing.invoice_number ?? this.nextInvoiceNumber(input.first_invoice_number);
     const updated: Invoice = {
       ...existing,
       status: "billed",
-      invoice_number: String(nextNumber).padStart(10, "0"),
-      invoice_date: input.invoice_date,
+      invoice_number: nextInvoiceNumber,
+      invoice_date: existing.invoice_date ?? input.invoice_date,
       gp_snapshot: input.gp_snapshot ? structuredClone(input.gp_snapshot) : existing.gp_snapshot,
       updated_at: new Date().toISOString(),
     };
     this.invoices.set(id, updated);
     this.persist();
     return structuredClone(updated);
+  }
+
+  private nextInvoiceNumber(firstInvoiceNumber: number): string {
+    const largest = [...this.invoices.values()]
+      .map((invoice) => invoice.invoice_number)
+      .filter((value): value is string => typeof value === "string" && /^\d{10}$/.test(value))
+      .map((value) => Number(value))
+      .reduce((max, value) => Math.max(max, value), 0);
+    return String(Math.max(firstInvoiceNumber, largest + 1)).padStart(10, "0");
   }
 
   async updateStatus(id: string, status: Invoice["status"]): Promise<Invoice | null> {

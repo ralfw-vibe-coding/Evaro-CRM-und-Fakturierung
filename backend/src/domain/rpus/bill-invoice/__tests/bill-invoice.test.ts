@@ -106,6 +106,28 @@ describe("billInvoice RPU", () => {
     });
   });
 
+  it("keeps invoice number and date when billing a draft that was billed before", async () => {
+    const invoice = await draft(env.invoices);
+    await env.invoices.billDraft(invoice.id, {
+      first_invoice_number: 1,
+      invoice_date: "2026-01-01",
+    });
+    await env.invoices.updateStatus(invoice.id, "draft");
+    const other = await draft(env.invoices);
+    await env.invoices.billDraft(other.id, {
+      first_invoice_number: 1,
+      invoice_date: "2026-02-02",
+    });
+
+    const result = await env.process({ user_id: USER, id: invoice.id });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.invoice.status).toBe("billed");
+    expect(result.invoice.invoice_number).toBe("0000000001");
+    expect(result.invoice.invoice_date).toBe("2026-01-01");
+  });
+
   it("rejects invoices that are no longer drafts", async () => {
     const invoice = await draft(env.invoices);
     await env.process({ user_id: USER, id: invoice.id });
