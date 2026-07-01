@@ -1,4 +1,5 @@
 import type { BusinessPartner, Invoice, PaymentTerm } from "../../model.js";
+import { withCurrentDraftSnapshot } from "../../invoice-snapshot.js";
 import type { BusinessPartnersProvider } from "../../pproviders/business-partners/business-partners-provider.js";
 import type { InvoicesProvider } from "../../pproviders/invoices/invoices-provider.js";
 
@@ -20,6 +21,11 @@ export function listInvoicingData(deps: ListInvoicingDataDeps) {
       deps.invoices.listPaymentTerms(),
       deps.businessPartners.listAll(),
     ]);
-    return { invoices, payment_terms, business_partners };
+    const businessPartnersById = new Map(business_partners.map((bp) => [bp.id, bp]));
+    return {
+      invoices: invoices.map((invoice) => withCurrentDraftSnapshot(invoice, businessPartnersById.get(invoice.business_partner_id))),
+      payment_terms,
+      business_partners,
+    };
   };
 }

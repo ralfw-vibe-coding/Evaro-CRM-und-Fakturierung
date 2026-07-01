@@ -11,6 +11,7 @@ import type {
 } from "../../model.js";
 import { getPool } from "../postgres/pool.js";
 import type {
+  BillInvoiceInput,
   InvoiceDraftUpdate,
   InvoicesProvider,
   NewInvoiceDraft,
@@ -183,11 +184,14 @@ export class PostgresInvoicesProvider implements InvoicesProvider {
   async updateDraft(id: string, update: InvoiceDraftUpdate): Promise<Invoice | null> {
     const { rows } = await this.pool.query<InvoiceRow>(
       `UPDATE invoices
-       SET data = $1, vat_rate = $2, updated_at = now()
-       WHERE id = $3
+       SET data = $1,
+           vat_rate = $2,
+           gp_snapshot = COALESCE($3, gp_snapshot),
+           updated_at = now()
+       WHERE id = $4
        RETURNING id, business_partner_id, status, invoice_number, invoice_date, vat_rate,
                  gp_snapshot, data, created_at, updated_at`,
-      [update.data, update.vat_rate, id],
+      [update.data, update.vat_rate, update.gp_snapshot ?? null, id],
     );
     return rows[0] ? toInvoice(rows[0]) : null;
   }
@@ -201,7 +205,7 @@ export class PostgresInvoicesProvider implements InvoicesProvider {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async billDraft(id: string, input: { first_invoice_number: number; invoice_date: string }): Promise<Invoice | null> {
+  async billDraft(id: string, input: BillInvoiceInput): Promise<Invoice | null> {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
@@ -221,11 +225,12 @@ export class PostgresInvoicesProvider implements InvoicesProvider {
          SET status = 'billed',
              invoice_number = $1,
              invoice_date = $2,
+             gp_snapshot = COALESCE($3, gp_snapshot),
              updated_at = now()
-         WHERE id = $3 AND status = 'draft'
+         WHERE id = $4 AND status = 'draft'
          RETURNING id, business_partner_id, status, invoice_number, invoice_date, vat_rate,
                    gp_snapshot, data, created_at, updated_at`,
-        [invoiceNumber, input.invoice_date, id],
+        [invoiceNumber, input.invoice_date, input.gp_snapshot ?? null, id],
       );
 
       await client.query("COMMIT");

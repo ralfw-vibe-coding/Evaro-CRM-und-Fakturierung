@@ -1,4 +1,5 @@
 import type { BusinessPartner, Invoice, InvoicingData, PaymentTerm } from "@/domain/model";
+import { withCurrentDraftSnapshot } from "@/domain/invoice-snapshot";
 import type { InvoiceStoreProvider } from "./invoice-store-provider";
 
 export class InMemoryInvoiceStoreProvider implements InvoiceStoreProvider {
@@ -19,6 +20,17 @@ export class InMemoryInvoiceStoreProvider implements InvoiceStoreProvider {
     this.data = {
       ...this.data,
       invoices: this.data.invoices.map((item) => (item.id === invoice.id ? structuredClone(invoice) : item)),
+    };
+  }
+
+  syncDraftSnapshotsForBusinessPartner(businessPartner: BusinessPartner): void {
+    if (!this.data) return;
+    this.data = {
+      ...this.data,
+      business_partners: this.data.business_partners.map((item) =>
+        item.id === businessPartner.id ? structuredClone(businessPartner) : item,
+      ),
+      invoices: this.data.invoices.map((invoice) => withCurrentDraftSnapshot(invoice, businessPartner)),
     };
   }
 

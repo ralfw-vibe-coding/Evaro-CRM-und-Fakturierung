@@ -3,6 +3,7 @@ import type { Invoice, PaymentTerm } from "../../model.js";
 import { devStatePath, readDevState, writeDevState } from "../dev-file-state.js";
 import type {
   InvoiceDraftUpdate,
+  BillInvoiceInput,
   InvoicesProvider,
   NewInvoiceDraft,
   NewPaymentTerm,
@@ -73,6 +74,7 @@ export class InMemoryInvoicesProvider implements InvoicesProvider {
       ...existing,
       data: structuredClone(update.data),
       vat_rate: update.vat_rate,
+      gp_snapshot: update.gp_snapshot ? structuredClone(update.gp_snapshot) : existing.gp_snapshot,
       updated_at: new Date().toISOString(),
     };
     this.invoices.set(id, updated);
@@ -89,7 +91,7 @@ export class InMemoryInvoicesProvider implements InvoicesProvider {
     return deleted;
   }
 
-  async billDraft(id: string, input: { first_invoice_number: number; invoice_date: string }): Promise<Invoice | null> {
+  async billDraft(id: string, input: BillInvoiceInput): Promise<Invoice | null> {
     this.hydrate();
     const existing = this.invoices.get(id);
     if (!existing || existing.status !== "draft") return null;
@@ -104,6 +106,7 @@ export class InMemoryInvoicesProvider implements InvoicesProvider {
       status: "billed",
       invoice_number: String(nextNumber).padStart(10, "0"),
       invoice_date: input.invoice_date,
+      gp_snapshot: input.gp_snapshot ? structuredClone(input.gp_snapshot) : existing.gp_snapshot,
       updated_at: new Date().toISOString(),
     };
     this.invoices.set(id, updated);

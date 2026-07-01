@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { snapshotFromBusinessPartner } from "../../invoice-snapshot.js";
 import type { Invoice, InvoiceData, InvoiceLine } from "../../model.js";
+import type { BusinessPartnersProvider } from "../../pproviders/business-partners/business-partners-provider.js";
 import type { InvoicesProvider } from "../../pproviders/invoices/invoices-provider.js";
 
 export interface UpdateInvoiceDraftCommand {
@@ -15,6 +17,7 @@ export type UpdateInvoiceDraftResult =
 
 export interface UpdateInvoiceDraftDeps {
   invoices: InvoicesProvider;
+  businessPartners: BusinessPartnersProvider;
 }
 
 function text(value: unknown): string | undefined {
@@ -91,7 +94,12 @@ export function updateInvoiceDraft(deps: UpdateInvoiceDraftDeps) {
       return { ok: false, error: "Validierung fehlgeschlagen.", fields };
     }
 
-    const invoice = await deps.invoices.updateDraft(id, { data, vat_rate });
+    const businessPartner = await deps.businessPartners.findById(existing.business_partner_id);
+    const invoice = await deps.invoices.updateDraft(id, {
+      data,
+      vat_rate,
+      gp_snapshot: businessPartner ? snapshotFromBusinessPartner(businessPartner) : undefined,
+    });
     if (!invoice) return { ok: false, error: "Rechnung nicht gefunden." };
 
     return {

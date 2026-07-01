@@ -99,6 +99,7 @@ export const updateBusinessPartnerRpu = updateBusinessPartner({
   backendApi,
   session,
   selectionStore,
+  invoiceStore,
 });
 export const deleteBusinessPartnerRpu = deleteBusinessPartner({ backendApi, session, selectionStore });
 export const linkContactGpRpu = linkContactGp({ backendApi, session, selectionStore });

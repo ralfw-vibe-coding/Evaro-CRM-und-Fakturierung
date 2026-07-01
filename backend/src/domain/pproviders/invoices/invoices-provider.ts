@@ -11,11 +11,13 @@ export interface NewInvoiceDraft {
 export interface InvoiceDraftUpdate {
   data: InvoiceData;
   vat_rate: number;
+  gp_snapshot?: InvoiceGpSnapshot;
 }
 
 export interface BillInvoiceInput {
   first_invoice_number: number;
   invoice_date: string;
+  gp_snapshot?: InvoiceGpSnapshot;
 }
 
 export interface NewPaymentTerm {

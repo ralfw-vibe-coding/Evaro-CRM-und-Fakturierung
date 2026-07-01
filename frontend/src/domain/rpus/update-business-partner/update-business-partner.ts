@@ -1,5 +1,6 @@
 import type { BusinessPartner, BusinessPartnerData } from "@/domain/model";
 import type { BackendApiProvider } from "@/domain/pproviders/backend-api/backend-api-provider";
+import type { InvoiceStoreProvider } from "@/domain/pproviders/invoice-store/invoice-store-provider";
 import type { SelectionStoreProvider } from "@/domain/pproviders/selection-store/selection-store-provider";
 import type { SessionProvider } from "@/domain/pproviders/session/session-provider";
 
@@ -17,6 +18,7 @@ export function updateBusinessPartner(deps: {
   backendApi: BackendApiProvider;
   session: SessionProvider;
   selectionStore: SelectionStoreProvider;
+  invoiceStore: InvoiceStoreProvider;
 }) {
   return async function process(
     command: UpdateBusinessPartnerCommand,
@@ -43,6 +45,7 @@ export function updateBusinessPartner(deps: {
         ),
       });
     }
+    deps.invoiceStore.syncDraftSnapshotsForBusinessPartner(result.value.business_partner);
 
     return {
       ok: true,

@@ -4,6 +4,7 @@ export interface InvoiceStoreProvider {
   get(): InvoicingData | null;
   set(data: InvoicingData): void;
   replaceInvoice(invoice: Invoice): void;
+  syncDraftSnapshotsForBusinessPartner(businessPartner: BusinessPartner): void;
   addInvoice(invoice: Invoice): void;
   removeInvoice(id: string): void;
   addPaymentTerm(paymentTerm: PaymentTerm): void;

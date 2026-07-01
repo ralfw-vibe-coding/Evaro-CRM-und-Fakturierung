@@ -314,7 +314,10 @@ export function createInvoiceDraftRpu() {
 }
 
 export function updateInvoiceDraftRpu() {
-  return updateInvoiceDraft({ invoices: buildInvoices() });
+  return updateInvoiceDraft({
+    invoices: buildInvoices(),
+    businessPartners: buildBusinessPartners(),
+  });
 }
 
 export function deleteInvoiceDraftRpu() {
@@ -327,6 +330,7 @@ export function deleteInvoiceDraftRpu() {
 export function billInvoiceRpu() {
   return billInvoice({
     invoices: buildInvoices(),
+    businessPartners: buildBusinessPartners(),
     activityLog: buildActivityLog(),
     firstInvoiceNumber: firstInvoiceNumber(),
   });

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { billInvoice } from "../bill-invoice.js";
 import { InMemoryActivityLogProvider } from "../../../pproviders/activity-log/in-memory-activity-log-provider.js";
+import { InMemoryBusinessPartnersProvider } from "../../../pproviders/business-partners/in-memory-business-partners-provider.js";
 import { InMemoryInvoicesProvider } from "../../../pproviders/invoices/in-memory-invoices-provider.js";
 
 const USER = "11111111-1111-1111-1111-111111111111";
@@ -8,9 +9,10 @@ const BP = "22222222-2222-2222-2222-222222222222";
 
 function setup(firstInvoiceNumber = 1) {
   const invoices = new InMemoryInvoicesProvider();
+  const businessPartners = new InMemoryBusinessPartnersProvider();
   const activityLog = new InMemoryActivityLogProvider();
-  const process = billInvoice({ invoices, activityLog, firstInvoiceNumber });
-  return { invoices, activityLog, process };
+  const process = billInvoice({ invoices, businessPartners, activityLog, firstInvoiceNumber });
+  return { invoices, businessPartners, activityLog, process };
 }
 
 async function draft(invoices: InMemoryInvoicesProvider) {
@@ -70,6 +72,37 @@ describe("billInvoice RPU", () => {
     expect(log[0].payload).toEqual({
       invoice_id: result.invoice.id,
       invoice_number: result.invoice.invoice_number,
+    });
+  });
+
+  it("freezes the current business-partner data when billing a draft", async () => {
+    const bp = await env.businessPartners.insert({
+      types: [],
+      data: {
+        name: "Acme Neu GmbH",
+        vat_id: "DE999",
+        address: { street: "Neu 9", zip: "20359", city: "Hamburg", country: "Deutschland" },
+        invoice_language: "en",
+        channels: [{ type: "email", address: "neu@acme.test" }],
+      },
+    });
+    const invoice = await env.invoices.insertDraft({
+      business_partner_id: bp.id,
+      gp_snapshot: { name: "Alter Name" },
+      vat_rate: 0,
+    });
+
+    const result = await env.process({ user_id: USER, id: invoice.id });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.invoice.status).toBe("billed");
+    expect(result.invoice.gp_snapshot).toEqual({
+      name: "Acme Neu GmbH",
+      vat_id: "DE999",
+      address: { street: "Neu 9", zip: "20359", city: "Hamburg", country: "Deutschland" },
+      email: "neu@acme.test",
+      invoice_language: "en",
     });
   });
 

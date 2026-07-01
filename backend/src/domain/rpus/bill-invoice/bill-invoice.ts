@@ -1,5 +1,7 @@
+import { snapshotFromBusinessPartner } from "../../invoice-snapshot.js";
 import type { Invoice } from "../../model.js";
 import type { ActivityLogProvider } from "../../pproviders/activity-log/activity-log-provider.js";
+import type { BusinessPartnersProvider } from "../../pproviders/business-partners/business-partners-provider.js";
 import type { InvoicesProvider } from "../../pproviders/invoices/invoices-provider.js";
 
 export interface BillInvoiceCommand {
@@ -13,6 +15,7 @@ export type BillInvoiceResult =
 
 export interface BillInvoiceDeps {
   invoices: InvoicesProvider;
+  businessPartners: BusinessPartnersProvider;
   activityLog: ActivityLogProvider;
   firstInvoiceNumber: number;
 }
@@ -38,9 +41,11 @@ export function billInvoice(deps: BillInvoiceDeps) {
     if (!existing) return { ok: false, error: "Rechnung nicht gefunden." };
     if (existing.status !== "draft") return { ok: false, error: "Nur Entwürfe können abgerechnet werden." };
 
+    const businessPartner = await deps.businessPartners.findById(existing.business_partner_id);
     const invoice = await deps.invoices.billDraft(id, {
       first_invoice_number: deps.firstInvoiceNumber,
       invoice_date: today(),
+      gp_snapshot: businessPartner ? snapshotFromBusinessPartner(businessPartner) : undefined,
     });
     if (!invoice) return { ok: false, error: "Rechnung nicht gefunden." };
 
