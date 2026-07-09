@@ -22,10 +22,13 @@ import {
   changeInvoiceStatusRpu,
   createInvoiceDraftRpu,
   deleteInvoiceDraftRpu,
+  getRouteRpu,
   invoiceStore,
   loadAppSettingsRpu,
   loadInvoicingDataRpu,
+  setRouteRpu,
   updateInvoiceDraftRpu,
+  watchRouteRpu,
 } from "@/composition";
 
 const NO_PASSWORD_MANAGER_PROPS = {
@@ -56,6 +59,9 @@ export function InvoicingArea() {
       setLoading(false);
       if (!result.ok) setError(result.error);
       setData(invoiceStore.get());
+      // Deep link (permalink): the URL decides which invoice is selected.
+      const route = getRouteRpu();
+      if (route.area === "invoicing") invoiceStore.setSelectedInvoiceId(route.invoiceId);
       setSelectedId(invoiceStore.getSelectedInvoiceId());
     });
     return () => {
@@ -63,9 +69,23 @@ export function InvoicingArea() {
     };
   }, []);
 
+  // Back/forward: mirror URL changes into the selection.
+  React.useEffect(
+    () =>
+      watchRouteRpu((route) => {
+        if (route.area !== "invoicing") return;
+        invoiceStore.setSelectedInvoiceId(route.invoiceId);
+        setSelectedId(route.invoiceId);
+      }),
+    [],
+  );
+
   function refresh() {
     setData(invoiceStore.get());
-    setSelectedId(invoiceStore.getSelectedInvoiceId());
+    const currentId = invoiceStore.getSelectedInvoiceId();
+    setSelectedId(currentId);
+    // e.g. after deleting a draft the selection is gone — keep the URL honest.
+    setRouteRpu({ area: "invoicing", invoiceId: currentId });
   }
 
   function changeSearch(term: string) {
@@ -76,6 +96,7 @@ export function InvoicingArea() {
   function selectInvoice(id: string) {
     invoiceStore.setSelectedInvoiceId(id);
     setSelectedId(id);
+    setRouteRpu({ area: "invoicing", invoiceId: id });
   }
 
   async function createDraft(bp: BusinessPartner) {

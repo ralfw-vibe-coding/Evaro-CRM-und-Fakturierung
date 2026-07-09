@@ -24,6 +24,9 @@ import {
   getSelectedEntityRpu,
   checkEmailIngestRpu,
   loadIngestsRpu,
+  getRouteRpu,
+  setRouteRpu,
+  watchRouteRpu,
 } from "@/composition";
 import type { Scope } from "@/domain/rpus/set-scope/set-scope";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
@@ -125,13 +128,30 @@ export function CrmArea() {
     let cancelled = false;
     loadSelectionRpu().then((result) => {
       if (cancelled) return;
-      if (result.ok) setView(getVisibleEntitiesRpu());
-      else setError(result.error);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setView(getVisibleEntitiesRpu());
+      // Deep link (permalink): open the entity referenced in the URL.
+      const route = getRouteRpu();
+      if (route.area === "crm" && route.entity) selectEntity(route.entity);
     });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // Back/forward: mirror URL changes into the selection.
+  React.useEffect(
+    () =>
+      watchRouteRpu((route) => {
+        if (route.area !== "crm") return;
+        selectEntity(route.entity);
+        if (!route.entity) setDetailOpen(false);
+      }),
+    [],
+  );
 
   React.useEffect(() => {
     refreshIngestCount();
@@ -189,6 +209,7 @@ export function CrmArea() {
     setSelected(getSelectedEntityRpu());
     setDetailDirty(false);
     if (ref) setDetailOpen(true);
+    setRouteRpu({ area: "crm", entity: ref });
   }
 
   function refreshProjection() {

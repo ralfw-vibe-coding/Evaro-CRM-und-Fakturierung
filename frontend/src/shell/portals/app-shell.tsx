@@ -4,9 +4,12 @@ import { cn } from "@/lib/utils";
 import {
   deleteApiKeyRpu,
   generateApiKeyRpu,
+  getRouteRpu,
   loadAppSettingsRpu,
+  setRouteRpu,
   updateAppSettingsRpu,
   updateProfileRpu,
+  watchRouteRpu,
 } from "@/composition";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,16 +39,24 @@ export function AppShell({
   onUserChange: (user: SessionUser) => void;
   onLogout: () => void;
 }) {
-  const [area, setArea] = React.useState<AppArea>("crm");
+  const [area, setArea] = React.useState<AppArea>(() => getRouteRpu().area);
   const [editingProfile, setEditingProfile] = React.useState(false);
   const [editingAppSettings, setEditingAppSettings] = React.useState(false);
+
+  // Keep the area in sync with the URL (permalinks, back/forward).
+  React.useEffect(() => watchRouteRpu((route) => setArea(route.area)), []);
+
+  function changeArea(nextArea: AppArea) {
+    setRouteRpu(nextArea === "crm" ? { area: "crm", entity: null } : { area: "invoicing", invoiceId: null });
+    setArea(nextArea);
+  }
 
   return (
     <div className="grid h-screen grid-rows-[auto_1fr]">
       <Header
         user={user}
         area={area}
-        onAreaChange={setArea}
+        onAreaChange={changeArea}
         onEditProfile={() => setEditingProfile(true)}
         onEditAppSettings={() => setEditingAppSettings(true)}
         onLogout={onLogout}

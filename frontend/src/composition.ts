@@ -6,6 +6,7 @@ import { httpBackendApiProvider } from "./domain/pproviders/backend-api/http-bac
 import { browserSessionProvider } from "./domain/pproviders/session/browser-session-provider.js";
 import { InMemorySelectionStoreProvider } from "./domain/pproviders/selection-store/in-memory-selection-store-provider.js";
 import { InMemoryInvoiceStoreProvider } from "./domain/pproviders/invoice-store/in-memory-invoice-store-provider.js";
+import { browserRouteStoreProvider } from "./domain/pproviders/route-store/browser-route-store-provider.js";
 
 import { requestOtp } from "./domain/rpus/request-otp/request-otp.js";
 import { verifyOtp } from "./domain/rpus/verify-otp/verify-otp.js";
@@ -46,11 +47,15 @@ import { loadIngests } from "./domain/rpus/load-ingests/load-ingests.js";
 import { createClipboardIngest } from "./domain/rpus/create-clipboard-ingest/create-clipboard-ingest.js";
 import { checkEmailIngest } from "./domain/rpus/check-email-ingest/check-email-ingest.js";
 import { updateIngestStatus } from "./domain/rpus/update-ingest-status/update-ingest-status.js";
+import { getRoute } from "./domain/rpus/get-route/get-route.js";
+import { setRoute } from "./domain/rpus/set-route/set-route.js";
+import { watchRoute } from "./domain/rpus/watch-route/watch-route.js";
 
 const backendApi = httpBackendApiProvider;
 const session = browserSessionProvider;
 const selectionStore = new InMemorySelectionStoreProvider();
 export const invoiceStore = new InMemoryInvoiceStoreProvider();
+const routeStore = browserRouteStoreProvider;
 
 export const requestOtpRpu = requestOtp({ backendApi });
 export const verifyOtpRpu = verifyOtp({ backendApi, session });
@@ -120,3 +125,6 @@ export const loadIngestsRpu = loadIngests({ backendApi, session });
 export const createClipboardIngestRpu = createClipboardIngest({ backendApi, session });
 export const checkEmailIngestRpu = checkEmailIngest({ backendApi, session });
 export const updateIngestStatusRpu = updateIngestStatus({ backendApi, session });
+export const getRouteRpu = getRoute({ routeStore });
+export const setRouteRpu = setRoute({ routeStore });
+export const watchRouteRpu = watchRoute({ routeStore });
