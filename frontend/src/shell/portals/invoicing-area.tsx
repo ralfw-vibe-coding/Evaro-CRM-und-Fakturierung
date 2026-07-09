@@ -1,7 +1,6 @@
 import * as React from "react";
 import {
   Copy,
-  FileText,
   Filter,
   Hash,
   Loader2,
@@ -30,6 +29,7 @@ import {
   updateInvoiceDraftRpu,
   watchRouteRpu,
 } from "@/composition";
+import { UnsavedCloseDialog } from "./entity-detail";
 
 const NO_PASSWORD_MANAGER_PROPS = {
   autoComplete: "new-password",
@@ -51,6 +51,7 @@ export function InvoicingArea() {
   const [createFilter, setCreateFilter] = React.useState("");
   const [busyCreate, setBusyCreate] = React.useState(false);
   const [statusFilter, setStatusFilter] = React.useState<InvoiceStatus[]>(["draft", "billed", "paid"]);
+  const [closeRequestToken, setCloseRequestToken] = React.useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -99,6 +100,12 @@ export function InvoicingArea() {
     setRouteRpu({ area: "invoicing", invoiceId: id });
   }
 
+  function closeDetail() {
+    invoiceStore.setSelectedInvoiceId(null);
+    setSelectedId(null);
+    setRouteRpu({ area: "invoicing", invoiceId: null });
+  }
+
   async function createDraft(bp: BusinessPartner) {
     if (busyCreate) return;
     setBusyCreate(true);
@@ -122,7 +129,7 @@ export function InvoicingArea() {
   return (
     <div
       className="grid h-full divide-x divide-[var(--border)]"
-      style={{ gridTemplateColumns: "260px minmax(360px,0.55fr) minmax(560px,1fr)" }}
+      style={{ gridTemplateColumns: "260px minmax(0,1fr)" }}
     >
       <Column icon={<Filter className="size-4" />} title="Filter">
         <div className="grid gap-4">
@@ -167,14 +174,42 @@ export function InvoicingArea() {
         </div>
       </Column>
 
-      <section className="invoice-detail-column h-full min-h-0 overflow-auto">
-        <InvoiceDetail
-          invoice={selected}
-          allInvoices={invoices}
-          onChanged={refresh}
-          onError={setError}
-        />
-      </section>
+      {selected && (
+        <InvoiceOverlay onClose={() => setCloseRequestToken((token) => token + 1)}>
+          {error && (
+            <div className="mx-6 mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+          <InvoiceDetail
+            invoice={selected}
+            allInvoices={invoices}
+            onChanged={refresh}
+            onError={setError}
+            onClose={closeDetail}
+            closeRequestToken={closeRequestToken}
+          />
+        </InvoiceOverlay>
+      )}
+    </div>
+  );
+}
+
+function InvoiceOverlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  React.useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  return (
+    <div className="invoice-overlay-backdrop fixed inset-0 z-50 grid place-items-center bg-black/25 p-4">
+      <div className="invoice-overlay-panel max-h-[92vh] w-full max-w-2xl overflow-auto rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-2xl">
+        {children}
+      </div>
     </div>
   );
 }
@@ -393,11 +428,15 @@ function InvoiceDetail({
   allInvoices,
   onChanged,
   onError,
+  onClose,
+  closeRequestToken = 0,
 }: {
-  invoice: Invoice | null;
+  invoice: Invoice;
   allInvoices: Invoice[];
   onChanged: () => void;
   onError: (error: string | null) => void;
+  onClose: () => void;
+  closeRequestToken?: number;
 }) {
   const [draft, setDraft] = React.useState<InvoiceData>({ lines: [] });
   const [vatRate, setVatRate] = React.useState(0);
@@ -411,7 +450,9 @@ function InvoiceDetail({
   const [savedInfo, setSavedInfo] = React.useState<string | null>(null);
   const [deleteLineId, setDeleteLineId] = React.useState<string | null>(null);
   const [focusLineId, setFocusLineId] = React.useState<string | null>(null);
+  const [confirmClose, setConfirmClose] = React.useState(false);
   const lineDateRefs = React.useRef(new Map<string, HTMLInputElement>());
+  const lastCloseRequestRef = React.useRef(closeRequestToken);
 
   React.useEffect(() => {
     setDraft(structuredClone(invoice?.data ?? { lines: [] }));
@@ -446,23 +487,27 @@ function InvoiceDetail({
     return () => document.removeEventListener("pointerdown", resetConfirmation, true);
   }, [draftResetArmed, deleteInvoiceArmed, deleteLineId]);
 
-  if (!invoice) {
-    return (
-      <div className="grid h-full place-items-center p-8 text-sm text-[var(--muted-foreground)]">
-        <div className="flex flex-col items-center gap-2">
-          <FileText className="size-8" />
-          <span>Rechnung auswählen</span>
-        </div>
-      </div>
-    );
-  }
-
   const dirty = JSON.stringify({ data: draft, vat_rate: vatRate }) !== JSON.stringify({ data: invoice.data, vat_rate: invoice.vat_rate });
   const totals = invoiceTotal({ ...invoice, data: draft, vat_rate: vatRate });
   const tagOptions = getInvoiceTagOptions(allInvoices);
   const showReverseChargeNote = draft.reverse_charge === true;
   const canDeleteInvoice = invoice.status === "draft" && !invoice.invoice_number;
   const canPrint = draft.lines.length > 0;
+
+  function requestClose() {
+    if (dirty) {
+      setConfirmClose(true);
+      return;
+    }
+    onClose();
+  }
+
+  React.useEffect(() => {
+    if (closeRequestToken === lastCloseRequestRef.current) return;
+    lastCloseRequestRef.current = closeRequestToken;
+    if (closeRequestToken === 0) return;
+    requestClose();
+  }, [closeRequestToken, dirty]);
 
   function patch(next: Partial<InvoiceData>) {
     setDraft((current) => ({ ...current, ...next }));
@@ -622,7 +667,7 @@ function InvoiceDetail({
 
   return (
     <div className="grid gap-6 p-6">
-      <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2 border-b border-[var(--border)] bg-[var(--background)] pb-4">
         <div className="flex items-center font-semibold">
           <StatusFlow
             status={invoice.status}
@@ -685,11 +730,21 @@ function InvoiceDetail({
           >
             {deleteInvoiceArmed ? <span className="font-bold">?</span> : <Trash2 />}
           </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            aria-label="Schließen"
+            title="Schließen"
+            onClick={requestClose}
+          >
+            <X />
+          </Button>
         </div>
       </div>
 
       <section className="grid gap-4">
-        <div className="grid grid-cols-[1.1fr_0.9fr] gap-4">
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
           <ReadOnlySnapshot invoice={invoice} />
           <div className="grid content-start gap-4">
             <Field label="Referenz">
@@ -741,12 +796,13 @@ function InvoiceDetail({
                   aria-label="Leistungsdatum"
                   placeholder="Leistungsdatum"
                   title="Leistungsdatum"
-                  className="col-span-2 min-w-0"
+                  className="col-span-3 min-w-0"
                   onChange={(event) => patchLine(line.id, { service_date: event.target.value })}
+                  onFocus={(event) => event.target.select()}
                   disabled={invoice.status !== "draft"}
                   {...NO_PASSWORD_MANAGER_PROPS}
                 />
-                <div className="col-span-2 min-w-0">
+                <div className="col-span-4 min-w-0">
                   <ChipInput
                     value={line.product_form ?? ""}
                     options={tagOptions.forms}
@@ -755,7 +811,7 @@ function InvoiceDetail({
                     onChange={(value) => patchLine(line.id, { product_form: value })}
                   />
                 </div>
-                <div className="col-span-3 min-w-0">
+                <div className="col-span-4 min-w-0">
                   <ChipInput
                     value={line.product_topic ?? ""}
                     options={tagOptions.topics}
@@ -764,15 +820,6 @@ function InvoiceDetail({
                     onChange={(value) => patchLine(line.id, { product_topic: value })}
                   />
                 </div>
-                <textarea
-                  value={line.text ?? ""}
-                  onChange={(event) => patchLine(line.id, { text: event.target.value })}
-                  className="col-span-4 min-h-10 w-full min-w-0 resize-y rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm leading-5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                  rows={1}
-                  aria-label="Freitext"
-                  disabled={invoice.status !== "draft"}
-                  {...NO_PASSWORD_MANAGER_PROPS}
-                />
                 <Button
                   type="button"
                   variant="ghost"
@@ -788,8 +835,18 @@ function InvoiceDetail({
                   {deleteLineId === line.id ? <span className="font-bold">?</span> : <Trash2 />}
                 </Button>
               </div>
+              <textarea
+                value={line.text ?? ""}
+                onChange={(event) => patchLine(line.id, { text: event.target.value })}
+                className="min-h-10 w-full resize-y rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm leading-5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                rows={1}
+                aria-label="Freitext"
+                placeholder="Freitext"
+                disabled={invoice.status !== "draft"}
+                {...NO_PASSWORD_MANAGER_PROPS}
+              />
               <div className="grid grid-cols-12 items-center gap-3">
-                <div className="col-span-4" />
+                <div className="col-span-3" />
                 <Input
                   type="number"
                   min="0"
@@ -797,8 +854,9 @@ function InvoiceDetail({
                   value={line.quantity}
                   aria-label="Menge"
                   placeholder="Menge"
-                  className="col-span-1 min-w-0 text-right"
+                  className="col-span-2 min-w-0 text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   onChange={(event) => patchLine(line.id, { quantity: Number(event.target.value) })}
+                  onFocus={(event) => event.target.select()}
                   disabled={invoice.status !== "draft"}
                   {...NO_PASSWORD_MANAGER_PROPS}
                 />
@@ -834,29 +892,33 @@ function InvoiceDetail({
         </div>
       </section>
 
-      <section className="grid grid-cols-[1fr_320px] gap-6 border-t border-[var(--border)] pt-5">
+      <section className="grid gap-6 border-t border-[var(--border)] pt-5 sm:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid content-start gap-3">
           <div className="grid gap-1">
             <span className="text-sm font-medium">Zahlungsbedingungen</span>
-            <div className="grid grid-cols-[9rem_1fr] items-center gap-3">
+            <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-3">
               <Input
                 type="number"
                 min="0"
+                max="999"
                 step="1"
                 value={draft.payment_due_days ?? ""}
                 onChange={(event) =>
                   patch({
-                    payment_due_days: event.target.value === "" ? undefined : Math.max(0, Number(event.target.value)),
+                    payment_due_days:
+                      event.target.value === ""
+                        ? undefined
+                        : Math.min(999, Math.max(0, Number(event.target.value))),
                     payment_terms: undefined,
                   })
                 }
-                className="text-right"
+                className="text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 aria-label="Zahlungszeitraum in Tagen"
                 placeholder="Tage"
                 disabled={invoice.status !== "draft"}
                 {...NO_PASSWORD_MANAGER_PROPS}
               />
-              <div className="text-sm text-[var(--muted-foreground)]">
+              <div className="min-w-0 break-words text-sm text-[var(--muted-foreground)]">
                 {standardPaymentTermsLine(draft.payment_due_days, invoice.invoice_date, "de")}
               </div>
             </div>
@@ -920,6 +982,21 @@ function InvoiceDetail({
           invoice={printInvoice}
           settings={printSettings}
           onClose={() => setPrintInvoice(null)}
+        />
+      )}
+      {confirmClose && (
+        <UnsavedCloseDialog
+          onCancel={() => setConfirmClose(false)}
+          onSaveAndClose={async () => {
+            const saved = await saveDraft();
+            if (!saved) return;
+            setConfirmClose(false);
+            onClose();
+          }}
+          onCloseWithoutSave={() => {
+            setConfirmClose(false);
+            onClose();
+          }}
         />
       )}
     </div>
@@ -1337,7 +1414,10 @@ function ChipInput({
           <input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            onFocus={() => setFocused(true)}
+            onFocus={(event) => {
+              setFocused(true);
+              event.target.select();
+            }}
             onBlur={() => setFocused(false)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -1424,9 +1504,12 @@ function MoneyInput({
       placeholder={placeholder}
       className="text-right font-mono"
       disabled={disabled}
-      onFocus={() => {
+      onFocus={(event) => {
+        const input = event.target;
         setFocused(true);
         setDraft(value ? String(value).replace(".", ",") : "");
+        // Select after the draft value has been rendered into the input.
+        window.setTimeout(() => input.select(), 0);
       }}
       onChange={(event) => {
         setDraft(event.target.value);
@@ -1469,14 +1552,14 @@ function StatusFlow({
   ];
 
   return (
-    <div className="ml-2 flex items-center text-xs font-semibold">
+    <div className="flex items-center text-xs font-semibold sm:ml-2">
       {steps.map((step, index) => {
         const active = step.id === status;
         const canBill = status === "draft" && step.id === "billed";
         const canPay = status === "billed" && step.id === "paid";
         const canReturnToDraft = status === "billed" && step.id === "draft";
         const className = cn(
-          "relative inline-flex h-8 min-w-[6.75rem] items-center justify-center px-4 pl-5",
+          "relative inline-flex h-8 min-w-[5.5rem] items-center justify-center px-4 pl-5 sm:min-w-[6.75rem]",
           index > 0 && "-ml-2 pl-6",
           (canBill || canPay || canReturnToDraft) && "z-10 cursor-pointer disabled:cursor-wait",
           statusTone(step.id, active),

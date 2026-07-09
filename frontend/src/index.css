@@ -108,11 +108,18 @@ body {
     background: white !important;
   }
 
-  .invoice-detail-column {
+  .invoice-overlay-backdrop,
+  .invoice-overlay-panel {
+    position: static !important;
+    inset: auto !important;
     display: block !important;
-    min-height: auto !important;
+    max-height: none !important;
     height: auto !important;
     overflow: visible !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
   }
 
   .invoice-print-shell,

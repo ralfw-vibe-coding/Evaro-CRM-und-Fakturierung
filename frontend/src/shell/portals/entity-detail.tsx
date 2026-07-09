@@ -1619,7 +1619,7 @@ function UnsavedNavigationPrompt({
   );
 }
 
-function UnsavedCloseDialog({
+export function UnsavedCloseDialog({
   onCancel,
   onSaveAndClose,
   onCloseWithoutSave,
