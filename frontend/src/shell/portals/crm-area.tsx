@@ -27,6 +27,7 @@ import {
   getRouteRpu,
   setRouteRpu,
   watchRouteRpu,
+  createInvoiceDraftRpu,
 } from "@/composition";
 import type { Scope } from "@/domain/rpus/set-scope/set-scope";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
@@ -123,6 +124,7 @@ export function CrmArea() {
   const [focusCompanyContactId, setFocusCompanyContactId] = React.useState<string | null>(null);
   const [focusBusinessPartnerId, setFocusBusinessPartnerId] = React.useState<string | null>(null);
   const [loadingInactive, setLoadingInactive] = React.useState(false);
+  const [creatingInvoiceBpId, setCreatingInvoiceBpId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -263,6 +265,21 @@ export function CrmArea() {
     setDetailOpen(false);
   }
 
+  async function createInvoiceForBp(bpId: string) {
+    if (creatingInvoiceBpId) return;
+    setCreatingInvoiceBpId(bpId);
+    const result = await createInvoiceDraftRpu(bpId);
+    setCreatingInvoiceBpId(null);
+    if (!result.ok) {
+      setEmailIngestMessage(result.error);
+      return;
+    }
+    // Zur Fakturierung springen und das Overlay des neuen Entwurfs öffnen —
+    // die Route ist der Navigationsweg (AppShell wechselt den Bereich,
+    // InvoicingArea öffnet die Rechnung aus der URL).
+    setRouteRpu({ area: "invoicing", invoiceId: result.invoice.id });
+  }
+
   return (
     <div
       className="grid h-full divide-x divide-[var(--border)]"
@@ -383,7 +400,14 @@ export function CrmArea() {
           </div>
         }
       >
-        <CardList view={view} error={error} selected={selected} onSelect={selectEntity} />
+        <CardList
+          view={view}
+          error={error}
+          selected={selected}
+          onSelect={selectEntity}
+          onCreateInvoice={createInvoiceForBp}
+          creatingInvoiceBpId={creatingInvoiceBpId}
+        />
       </Column>
       {detailOpen && selected && (
         <EntityOverlay onClose={() => setCloseRequestToken((token) => token + 1)}>
@@ -701,11 +725,15 @@ function CardList({
   error,
   selected,
   onSelect,
+  onCreateInvoice,
+  creatingInvoiceBpId,
 }: {
   view: GetVisibleEntitiesResult | null;
   error: string | null;
   selected: SelectedEntity;
   onSelect: (ref: EntityRef) => void;
+  onCreateInvoice: (bpId: string) => void;
+  creatingInvoiceBpId: string | null;
 }) {
   if (error) return <Placeholder>{error}</Placeholder>;
   if (view === null) {
@@ -738,6 +766,8 @@ function CardList({
             matchHint={entity.matchHint}
             selected={isSelected(selected, entity)}
             onClick={() => onSelect({ kind: "business_partner", id: entity.businessPartner.id })}
+            onCreateInvoice={() => onCreateInvoice(entity.businessPartner.id)}
+            creatingInvoice={creatingInvoiceBpId === entity.businessPartner.id}
           />
         ),
       )}

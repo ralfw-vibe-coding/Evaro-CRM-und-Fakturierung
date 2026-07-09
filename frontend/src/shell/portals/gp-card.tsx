@@ -1,5 +1,6 @@
-import { Building2, MapPin, MapPinned, User } from "lucide-react";
+import { Building2, Loader2, MapPin, MapPinned, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { CircleEuroSign } from "@/components/icons/circle-euro-sign";
 import { cn } from "@/lib/utils";
 import { MatchHintLine } from "./match-hint";
 import { OverviewChannelRow } from "./overview-channel-row";
@@ -28,12 +29,16 @@ export function GpCard({
   matchHint,
   selected,
   onClick,
+  onCreateInvoice,
+  creatingInvoice = false,
 }: {
   bp: BusinessPartner;
   connectionCount: number;
   matchHint?: MatchHint;
   selected?: boolean;
   onClick?: () => void;
+  onCreateInvoice?: () => void;
+  creatingInvoice?: boolean;
 }) {
   const city = bp.data.address?.city;
   const mapLink = mapsUrl(bp);
@@ -54,9 +59,30 @@ export function GpCard({
           <Building2 className="mt-0.5 size-4 shrink-0 text-[var(--gp)]" />
           <span className="truncate font-semibold leading-tight">{bp.data.name || "—"}</span>
         </div>
-        <div className="flex shrink-0 items-center gap-1 text-xs text-[var(--muted-foreground)]" title="Verbundene Kontakte">
-          <User className="size-3.5" />
-          <span>{connectionCount}</span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {onCreateInvoice && (
+            <button
+              type="button"
+              className="grid size-5 place-items-center rounded-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--brand)] disabled:cursor-wait"
+              aria-label="Neue Rechnung schreiben"
+              title="Neue Rechnung schreiben"
+              disabled={creatingInvoice}
+              onClick={(event) => {
+                event.stopPropagation();
+                onCreateInvoice();
+              }}
+            >
+              {creatingInvoice ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <CircleEuroSign className="size-3.5" />
+              )}
+            </button>
+          )}
+          <div className="flex items-center gap-1 text-xs text-[var(--muted-foreground)]" title="Verbundene Kontakte">
+            <User className="size-3.5" />
+            <span>{connectionCount}</span>
+          </div>
         </div>
       </div>
 
