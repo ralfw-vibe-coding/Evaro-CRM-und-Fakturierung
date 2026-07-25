@@ -10,8 +10,15 @@ function iconFor(type: string) {
 
 function openTarget(type: string, value: string): string | null {
   if (type === "email") return `mailto:${value}`;
+  if (type === "phone") return `tel:${value.replace(/[^\d+]/g, "")}`;
   if (type === "website") return /^https?:\/\//i.test(value) ? value : `https://${value}`;
   return null;
+}
+
+function openLabel(type: string): string {
+  if (type === "email") return "E-Mail schreiben";
+  if (type === "phone") return "Anrufen";
+  return "Website öffnen";
 }
 
 async function copyText(value: string): Promise<void> {
@@ -38,7 +45,7 @@ export function OverviewChannelRow({ channel }: { channel: Channel }) {
       <span className="min-w-0 flex-1 truncate">{channel.address}</span>
       <button
         type="button"
-        className="grid size-6 shrink-0 place-items-center rounded text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+        className="grid size-11 shrink-0 place-items-center rounded text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] sm:size-6"
         title="In die Zwischenablage kopieren"
         aria-label="In die Zwischenablage kopieren"
         onClick={(event) => {
@@ -54,14 +61,18 @@ export function OverviewChannelRow({ channel }: { channel: Channel }) {
           href={target}
           target={channel.type === "website" ? "_blank" : undefined}
           rel={channel.type === "website" ? "noreferrer" : undefined}
-          className="grid size-6 shrink-0 place-items-center rounded text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
-          title={channel.type === "email" ? "E-Mail schreiben" : "Website öffnen"}
-          aria-label={channel.type === "email" ? "E-Mail schreiben" : "Website öffnen"}
+          className="grid size-11 shrink-0 place-items-center rounded text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] sm:size-6"
+          title={openLabel(channel.type)}
+          aria-label={openLabel(channel.type)}
           onClick={(event) => {
             event.stopPropagation();
           }}
         >
-          <SquareArrowOutUpRight className="size-3.5" />
+          {channel.type === "phone" ? (
+            <Phone className="size-3.5" />
+          ) : (
+            <SquareArrowOutUpRight className="size-3.5" />
+          )}
         </a>
       )}
     </div>

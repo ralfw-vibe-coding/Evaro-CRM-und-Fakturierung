@@ -585,14 +585,16 @@ function ChannelsEditor({
   return (
     <div className="grid gap-2">
       {channels.map((channel, index) => (
-        <div key={index} className="grid grid-cols-[112px_1fr_auto] gap-2">
-          <SingleTagField
-            value={channel.type}
-            placeholder="Typ"
-            options={channelTypeOptions}
-            inputRef={index === channels.length - 1 ? lastTypeRef : undefined}
-            onChange={(value) => onChange(channels.map((c, i) => (i === index ? { ...c, type: value } : c)))}
-          />
+        <div key={index} className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[112px_1fr_auto]">
+          <div className="col-span-2 sm:col-span-1">
+            <SingleTagField
+              value={channel.type}
+              placeholder="Typ"
+              options={channelTypeOptions}
+              inputRef={index === channels.length - 1 ? lastTypeRef : undefined}
+              onChange={(value) => onChange(channels.map((c, i) => (i === index ? { ...c, type: value } : c)))}
+            />
+          </div>
           <Input
             value={channel.address}
             placeholder="Adresse"
@@ -944,16 +946,16 @@ function ContactCoreSections({
           </label>
         }
       >
-        <div className="grid grid-cols-12 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
           <Input
             value={data.first_name ?? ""}
             placeholder="Vorname"
             aria-label="Vorname"
-            className="col-span-5 h-10 text-lg font-semibold"
+            className="h-10 text-lg font-semibold sm:col-span-5"
             {...NO_PASSWORD_MANAGER_PROPS}
             onChange={(event) => onDataChange((current) => ({ ...current, first_name: event.target.value }))}
           />
-          <div className="col-span-7 grid gap-1">
+          <div className="grid gap-1 sm:col-span-7">
             <Input
               ref={lastNameInputRef}
               value={data.last_name ?? ""}
@@ -970,7 +972,7 @@ function ContactCoreSections({
             value={data.company_text ?? ""}
             placeholder="Firma"
             aria-label="Firma"
-            className="col-span-12"
+            className="sm:col-span-12"
             {...NO_PASSWORD_MANAGER_PROPS}
             onChange={(event) => onDataChange((current) => ({ ...current, company_text: event.target.value }))}
           />
@@ -983,7 +985,7 @@ function ContactCoreSections({
                 gender: (event.target.value || undefined) as ContactData["gender"],
               }))
             }
-            className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
+            className={`h-10 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm sm:col-span-4 sm:h-8 ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
           >
             <option value="">Geschlecht</option>
             {GENDER_OPTIONS.map((option) => (
@@ -1001,7 +1003,7 @@ function ContactCoreSections({
                 salutation: (event.target.value || undefined) as ContactData["salutation"],
               }))
             }
-            className={`col-span-4 h-8 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
+            className={`h-10 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm sm:col-span-4 sm:h-8 ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
           >
             <option value="">Anrede</option>
             {SALUTATION_OPTIONS.map((option) => (
@@ -1014,11 +1016,11 @@ function ContactCoreSections({
             value={data.title ?? ""}
             placeholder="Titel"
             aria-label="Titel"
-            className="col-span-4"
+            className="sm:col-span-4"
             {...NO_PASSWORD_MANAGER_PROPS}
             onChange={(event) => onDataChange((current) => ({ ...current, title: event.target.value }))}
           />
-          <div className="col-span-12">
+          <div className="sm:col-span-12">
             <TagField
               label="Kontaktquelle"
               colorCategory="contact.origin"
@@ -1058,7 +1060,7 @@ function ContactCoreSections({
       </Section>
 
       <Section title="Klassifizierungen">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TagField
             label="Rollen"
             colorCategory="contact.role"
@@ -1087,7 +1089,7 @@ function ContactCoreSections({
             options={tagOptions.contact.relationship}
             onChange={(relationship) => onDataChange((current) => ({ ...current, relationship }))}
           />
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <TagField
               label="Tags"
               colorCategory="contact.tags"
@@ -1156,7 +1158,7 @@ function BusinessPartnerCoreSections({
             onDataChange((current) => ({ ...current, address: { ...current.address, street: event.target.value } }))
           }
         />
-        <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[7.5rem_minmax(0,1fr)]">
           <Input
             value={data.address?.zip ?? ""}
             placeholder="PLZ"
@@ -1188,7 +1190,7 @@ function BusinessPartnerCoreSections({
             )}
           </div>
         </div>
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
           <SingleTagField
             value={data.address?.country ?? ""}
             placeholder="Land"
@@ -1197,7 +1199,7 @@ function BusinessPartnerCoreSections({
               onDataChange((current) => ({ ...current, address: { ...current.address, country: value } }))
             }
           />
-          <div className="flex rounded-md border border-[var(--border)] p-0.5">
+          <div className="flex w-fit rounded-md border border-[var(--border)] p-0.5 sm:w-auto">
             {(["de", "en"] as const).map((language) => {
               const active = (data.invoice_language ?? "de") === language;
               return (

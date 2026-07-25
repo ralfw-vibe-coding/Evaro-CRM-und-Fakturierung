@@ -98,15 +98,17 @@ function Header({
   onLogout: () => void;
 }) {
   return (
-    <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[var(--border)] px-6 py-3">
+    <header className="grid grid-cols-[auto_1fr_auto] items-center gap-2 border-b border-[var(--border)] px-3 py-3 sm:grid-cols-[1fr_auto_1fr] sm:gap-4 sm:px-6">
       {/* Brand + claim */}
       <div className="flex flex-col">
         <span className="text-xl font-bold leading-tight text-brand">Evaro</span>
-        <span className="text-xs text-[var(--muted-foreground)]">{CLAIM}</span>
+        <span className="hidden text-xs text-[var(--muted-foreground)] sm:inline">{CLAIM}</span>
       </div>
 
       {/* Area switcher */}
-      <AreaSwitcher area={area} onAreaChange={onAreaChange} />
+      <div className="justify-self-center">
+        <AreaSwitcher area={area} onAreaChange={onAreaChange} />
+      </div>
 
       {/* User menu */}
       <div className="flex justify-end">
@@ -140,7 +142,7 @@ function AreaSwitcher({
           type="button"
           onClick={() => onAreaChange(tab.id)}
           className={cn(
-            "rounded-sm px-4 py-1.5 text-sm font-medium transition-colors",
+            "rounded-sm px-3 py-2.5 text-sm font-medium transition-colors sm:px-4 sm:py-1.5",
             area === tab.id
               ? "bg-[var(--brand)] text-white"
               : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
@@ -170,9 +172,11 @@ function UserMenu({
         <button
           type="button"
           aria-label="Benutzermenü"
-          className="grid size-9 place-items-center rounded-full bg-[var(--brand)] text-sm font-semibold text-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          className="grid place-items-center rounded-full p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] sm:p-0"
         >
-          {user.abbr}
+          <span className="grid size-9 place-items-center rounded-full bg-[var(--brand)] text-sm font-semibold text-white">
+            {user.abbr}
+          </span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -298,7 +302,7 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
               className="w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             />
           </SettingsField>
-          <div className="grid grid-cols-3 items-start gap-3">
+          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
             <SettingsField label="USt-Nr.">
               <Input value={draft.vat_number ?? ""} onChange={(event) => patch("vat_number", event.target.value)} />
             </SettingsField>
@@ -325,7 +329,7 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
               />
             </SettingsField>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <SettingsField label="Ansprechpartner">
               <Input
                 value={draft.contact_person ?? ""}
@@ -336,7 +340,7 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
               <Input value={draft.email ?? ""} onChange={(event) => patch("email", event.target.value)} />
             </SettingsField>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <SettingsField label="Telefon">
               <Input value={draft.phone ?? ""} onChange={(event) => patch("phone", event.target.value)} />
             </SettingsField>
@@ -462,7 +466,7 @@ function ProfileDialog({
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/20 px-4">
       <form
         onSubmit={save}
-        className="grid w-full max-w-sm gap-4 rounded-md border border-[var(--border)] bg-[var(--background)] p-4 shadow-xl"
+        className="grid max-h-[90vh] w-full max-w-sm gap-4 overflow-auto rounded-md border border-[var(--border)] bg-[var(--background)] p-4 shadow-xl"
       >
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold">Profil bearbeiten</div>

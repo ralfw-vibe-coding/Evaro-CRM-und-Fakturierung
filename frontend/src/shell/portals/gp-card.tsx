@@ -63,7 +63,7 @@ export function GpCard({
           {onCreateInvoice && (
             <button
               type="button"
-              className="grid size-5 place-items-center rounded-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--brand)] disabled:cursor-wait"
+              className="grid size-11 shrink-0 place-items-center rounded-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--brand)] disabled:cursor-wait sm:size-5"
               aria-label="Neue Rechnung schreiben"
               title="Neue Rechnung schreiben"
               disabled={creatingInvoice}
@@ -89,15 +89,15 @@ export function GpCard({
       {(city || channels.length > 0) && (
         <div className="mt-3 grid gap-1 text-sm">
           {city && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex min-w-0 items-center gap-1.5">
               <MapPin className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
-              <span className="truncate">{city}</span>
+              <span className="min-w-0 flex-1 truncate">{city}</span>
               {mapLink && (
                 <a
                   href={mapLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="grid size-5 shrink-0 place-items-center rounded-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+                  className="grid size-11 shrink-0 place-items-center rounded-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] sm:size-5"
                   aria-label="Ort in Google Maps öffnen"
                   title="Ort in Google Maps öffnen"
                   onClick={(event) => event.stopPropagation()}

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Building2, ClipboardPaste, FileDown, Filter, IdCard, Inbox, Loader2, MailCheck, Plus, Search, User, X } from "lucide-react";
+import { Building2, ClipboardPaste, FileDown, Filter, IdCard, Inbox, Loader2, MailCheck, MoreVertical, PanelLeft, Plus, Search, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tagCategoryColorStyle } from "@/lib/tag-colors";
 import { Input } from "@/components/ui/input";
@@ -145,6 +145,13 @@ export function CrmArea() {
   const [focusBusinessPartnerId, setFocusBusinessPartnerId] = React.useState<string | null>(null);
   const [loadingInactive, setLoadingInactive] = React.useState(false);
   const [creatingInvoiceBpId, setCreatingInvoiceBpId] = React.useState<string | null>(null);
+  // Sichtbarkeit des Filter-Panels — ein Zustand für beide Darstellungen:
+  // auf Mobile die Drawer-Overlay, auf Desktop die Sidebar-Spalte. Start
+  // richtet sich nach der tatsächlichen Fensterbreite (Desktop offen wie
+  // bisher, Mobile geschlossen, damit die Overlay nicht ungefragt aufgeht).
+  const [filterOpen, setFilterOpen] = React.useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches,
+  );
 
   React.useEffect(() => {
     let cancelled = false;
@@ -359,34 +366,59 @@ export function CrmArea() {
     setRouteRpu({ area: "invoicing", invoiceId: result.invoice.id });
   }
 
+  const activeFilterCount =
+    (view?.selectedTags.length ?? 0) +
+    (view && view.scope !== "both" ? 1 : 0) +
+    (view?.includeInactive ? 1 : 0);
+
+  const filterControls = (
+    <FilterControls
+      view={view}
+      loadingInactive={loadingInactive}
+      onChangeIncludeInactive={changeIncludeInactive}
+      onChangeScope={changeScope}
+      onChangeSelectedTags={changeSelectedTags}
+    />
+  );
+
   return (
     <div
-      className="grid h-full divide-x divide-[var(--border)]"
-      style={{ gridTemplateColumns: "260px minmax(0,1fr)" }}
+      className={cn(
+        "grid h-full grid-cols-1 divide-[var(--border)]",
+        filterOpen ? "sm:grid-cols-[260px_minmax(0,1fr)] sm:divide-x" : "sm:grid-cols-1",
+      )}
     >
-      <Column icon={<Filter className="size-4" />} title="Filter">
+      <Column className={cn("hidden", filterOpen ? "sm:grid" : "sm:hidden")} icon={<Filter className="size-4" />} title="Filter">
         <div className="grid gap-4">
           <SearchField value={view?.searchTerm ?? ""} onChange={changeSearch} />
-          <ActivityFilter
-            includeInactive={view?.includeInactive ?? false}
-            loading={loadingInactive}
-            onChange={changeIncludeInactive}
-          />
-          <ArtFilter scope={view?.scope ?? "both"} onChange={changeScope} />
-          <TagFilter
-            tags={getCrmFilterTagsRpu()}
-            selectedTags={view?.selectedTags ?? []}
-            onChange={changeSelectedTags}
-          />
+          {filterControls}
         </div>
       </Column>
       <Column
+        leading={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="relative -ml-1.5"
+            aria-label={filterOpen ? "Filter ausblenden" : "Filter einblenden"}
+            title={filterOpen ? "Filter ausblenden" : "Filter einblenden"}
+            onClick={() => setFilterOpen((open) => !open)}
+          >
+            <PanelLeft />
+            {activeFilterCount > 0 && (
+              <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-[var(--brand)] px-1 text-[10px] leading-4 text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+        }
         icon={<IdCard className="size-4" />}
         title={`Übersicht (${view?.entities.length ?? 0})`}
         action={
           <div className="flex items-center gap-1.5">
             {emailIngestMessage && (
-              <span className="max-w-56 truncate rounded-full border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted-foreground)]">
+              <span className="hidden max-w-56 truncate rounded-full border border-[var(--border)] px-2 py-1 text-xs text-[var(--muted-foreground)] sm:inline-block">
                 {emailIngestMessage}
               </span>
             )}
@@ -414,59 +446,102 @@ export function CrmArea() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="bg-[var(--brand)] text-white hover:opacity-90"
-              aria-label="E-Mail übernehmen"
-              title="Zwischenablage übernehmen"
-              onClick={openClipboardIngest}
-            >
-              <ClipboardPaste />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="bg-[var(--brand)] text-white hover:opacity-90"
-              aria-label="Postfach prüfen"
-              title="Postfach prüfen"
-              onClick={checkEmailAndOpenInbox}
-              disabled={checkingEmail}
-            >
-              {checkingEmail ? <Loader2 className="animate-spin" /> : <MailCheck />}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="relative bg-[var(--brand)] text-white hover:opacity-90"
-              aria-label="Ingest Inbox öffnen"
-              title="Ingest Inbox öffnen"
-              onClick={openIngestInbox}
-            >
-              <Inbox />
-              {ingestPendingCount > 0 && (
-                <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-[var(--foreground)] px-1 text-[10px] leading-4 text-[var(--background)]">
-                  {ingestPendingCount}
-                </span>
-              )}
-            </Button>
+            {/* Sekundäre Aktionen: ab sm inline, darunter im Overflow-Menü. */}
+            <div className="hidden items-center gap-1.5 sm:flex">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="bg-[var(--brand)] text-white hover:opacity-90"
+                aria-label="E-Mail übernehmen"
+                title="Zwischenablage übernehmen"
+                onClick={openClipboardIngest}
+              >
+                <ClipboardPaste />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="bg-[var(--brand)] text-white hover:opacity-90"
+                aria-label="Postfach prüfen"
+                title="Postfach prüfen"
+                onClick={checkEmailAndOpenInbox}
+                disabled={checkingEmail}
+              >
+                {checkingEmail ? <Loader2 className="animate-spin" /> : <MailCheck />}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="relative bg-[var(--brand)] text-white hover:opacity-90"
+                aria-label="Ingest Inbox öffnen"
+                title="Ingest Inbox öffnen"
+                onClick={openIngestInbox}
+              >
+                <Inbox />
+                {ingestPendingCount > 0 && (
+                  <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-[var(--foreground)] px-1 text-[10px] leading-4 text-[var(--background)]">
+                    {ingestPendingCount}
+                  </span>
+                )}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="bg-[var(--brand)] text-white hover:opacity-90"
+                    aria-label="Import/Export"
+                    title="Import/Export"
+                  >
+                    <FileDown />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={() => downloadNewsletterCsv(view?.entities ?? [])}
+                    disabled={(view?.entities.length ?? 0) === 0}
+                  >
+                    <FileDown className="text-[var(--brand)]" />
+                    Newsletter export
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="bg-[var(--brand)] text-white hover:opacity-90"
-                  aria-label="Import/Export"
-                  title="Import/Export"
+                  className="relative bg-[var(--brand)] text-white hover:opacity-90 sm:hidden"
+                  aria-label="Weitere Aktionen"
+                  title="Weitere Aktionen"
                 >
-                  <FileDown />
+                  <MoreVertical />
+                  {ingestPendingCount > 0 && (
+                    <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-[var(--foreground)] px-1 text-[10px] leading-4 text-[var(--background)]">
+                      {ingestPendingCount}
+                    </span>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={openClipboardIngest}>
+                  <ClipboardPaste className="text-[var(--brand)]" />
+                  Zwischenablage übernehmen
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={checkEmailAndOpenInbox} disabled={checkingEmail}>
+                  {checkingEmail ? <Loader2 className="animate-spin text-[var(--brand)]" /> : <MailCheck className="text-[var(--brand)]" />}
+                  Postfach prüfen
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={openIngestInbox}>
+                  <Inbox className="text-[var(--brand)]" />
+                  Ingest Inbox{ingestPendingCount > 0 ? ` (${ingestPendingCount})` : ""}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => downloadNewsletterCsv(view?.entities ?? [])}
                   disabled={(view?.entities.length ?? 0) === 0}
@@ -479,6 +554,11 @@ export function CrmArea() {
           </div>
         }
       >
+        {/* Mobile: Suchfeld bleibt dauerhaft sichtbar über der Liste; der
+            Filter-Toggle in der Toolbar oben öffnet hier die Drawer. */}
+        <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-3 border-b border-[var(--border)] bg-[var(--background)] px-4 py-3 sm:hidden">
+          <SearchField value={view?.searchTerm ?? ""} onChange={changeSearch} />
+        </div>
         <CardList
           view={view}
           error={error}
@@ -488,6 +568,9 @@ export function CrmArea() {
           creatingInvoiceBpId={creatingInvoiceBpId}
         />
       </Column>
+      <FilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)}>
+        {filterControls}
+      </FilterDrawer>
       {detailOpen && selected && (
         <EntityOverlay active={draftStack.length === 0} onClose={requestCloseTopOverlay}>
           <EntityDetail
@@ -571,9 +654,95 @@ function EntityOverlay({
   }, [onClose, active]);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/25 p-4">
-      <div className="max-h-[92vh] w-full max-w-6xl overflow-auto rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-2xl">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/25 p-0 sm:p-4">
+      <div className="h-full max-h-full w-full overflow-auto rounded-none border-0 bg-[var(--background)] shadow-2xl sm:h-auto sm:max-h-[92vh] sm:max-w-6xl sm:rounded-lg sm:border sm:border-[var(--border)]">
         {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Filter-Steuerelemente (Aktivität, Art, Tags) ohne Suchfeld — das Suchfeld
+ * wird separat gerendert (Desktop: in der Filter-Spalte, Mobile: dauerhaft
+ * sichtbar über der Kartenliste). Diese Steuerelemente erscheinen auf dem
+ * Desktop in der Sidebar und auf Mobile im Filter-Drawer.
+ */
+function FilterControls({
+  view,
+  loadingInactive,
+  onChangeIncludeInactive,
+  onChangeScope,
+  onChangeSelectedTags,
+}: {
+  view: GetVisibleEntitiesResult | null;
+  loadingInactive: boolean;
+  onChangeIncludeInactive: (includeInactive: boolean) => void;
+  onChangeScope: (scope: Scope) => void;
+  onChangeSelectedTags: (tags: SelectedTagFilter[]) => void;
+}) {
+  return (
+    <div className="grid gap-4">
+      <ActivityFilter
+        includeInactive={view?.includeInactive ?? false}
+        loading={loadingInactive}
+        onChange={onChangeIncludeInactive}
+      />
+      <ArtFilter scope={view?.scope ?? "both"} onChange={onChangeScope} />
+      <TagFilter
+        tags={getCrmFilterTagsRpu()}
+        selectedTags={view?.selectedTags ?? []}
+        onChange={onChangeSelectedTags}
+      />
+    </div>
+  );
+}
+
+/**
+ * Off-Canvas-Filter-Drawer für schmale Screens (< sm). Schließbar per X-Button,
+ * Escape oder Tap auf den abgedunkelten Hintergrund. Ab sm nie sichtbar — dort
+ * steht die Filter-Spalte permanent.
+ */
+function FilterDrawer({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  React.useEffect(() => {
+    if (!open) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 sm:hidden" role="dialog" aria-modal="true" aria-label="Filter">
+      <div className="absolute inset-0 bg-black/25" onClick={onClose} />
+      <div className="absolute inset-y-0 left-0 flex w-[85%] max-w-sm flex-col border-r border-[var(--border)] bg-[var(--background)] shadow-2xl">
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-4 py-2.5 text-sm font-medium">
+          <div className="flex items-center gap-2">
+            <Filter className="size-4" />
+            Filter
+          </div>
+          <button
+            type="button"
+            className="grid size-7 place-items-center rounded-sm text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+            aria-label="Filter schließen"
+            title="Filter schließen"
+            onClick={onClose}
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto p-4">{children}</div>
       </div>
     </div>
   );
@@ -857,20 +1026,25 @@ function CardList({
 }
 
 function Column({
+  leading,
   icon,
   title,
   action,
   children,
+  className,
 }: {
+  leading?: React.ReactNode;
   icon: React.ReactNode;
   title: string;
   action?: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="grid min-h-0 grid-rows-[auto_1fr]">
+    <section className={cn("grid min-h-0 grid-rows-[auto_1fr]", className)}>
       <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-4 py-2.5 text-sm font-medium">
         <div className="flex items-center gap-2">
+          {leading}
           {icon}
           {title}
         </div>
