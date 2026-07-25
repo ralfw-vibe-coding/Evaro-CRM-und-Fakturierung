@@ -7,6 +7,7 @@ import { browserSessionProvider } from "./domain/pproviders/session/browser-sess
 import { InMemorySelectionStoreProvider } from "./domain/pproviders/selection-store/in-memory-selection-store-provider.js";
 import { InMemoryInvoiceStoreProvider } from "./domain/pproviders/invoice-store/in-memory-invoice-store-provider.js";
 import { browserRouteStoreProvider } from "./domain/pproviders/route-store/browser-route-store-provider.js";
+import { InMemoryDraftLinkStoreProvider } from "./domain/pproviders/draft-link-store/in-memory-draft-link-store-provider.js";
 
 import { requestOtp } from "./domain/rpus/request-otp/request-otp.js";
 import { verifyOtp } from "./domain/rpus/verify-otp/verify-otp.js";
@@ -50,12 +51,18 @@ import { updateIngestStatus } from "./domain/rpus/update-ingest-status/update-in
 import { getRoute } from "./domain/rpus/get-route/get-route.js";
 import { setRoute } from "./domain/rpus/set-route/set-route.js";
 import { watchRoute } from "./domain/rpus/watch-route/watch-route.js";
+import { stageLink } from "./domain/rpus/stage-link/stage-link.js";
+import { unstageLink } from "./domain/rpus/unstage-link/unstage-link.js";
+import { discardDraft } from "./domain/rpus/discard-draft/discard-draft.js";
+import { getPendingLinks } from "./domain/rpus/get-pending-links/get-pending-links.js";
+import { commitDraftLinks } from "./domain/rpus/commit-draft-links/commit-draft-links.js";
 
 const backendApi = httpBackendApiProvider;
 const session = browserSessionProvider;
 const selectionStore = new InMemorySelectionStoreProvider();
 export const invoiceStore = new InMemoryInvoiceStoreProvider();
 const routeStore = browserRouteStoreProvider;
+const draftLinks = new InMemoryDraftLinkStoreProvider();
 
 export const requestOtpRpu = requestOtp({ backendApi });
 export const verifyOtpRpu = verifyOtp({ backendApi, session });
@@ -128,3 +135,8 @@ export const updateIngestStatusRpu = updateIngestStatus({ backendApi, session })
 export const getRouteRpu = getRoute({ routeStore });
 export const setRouteRpu = setRoute({ routeStore });
 export const watchRouteRpu = watchRoute({ routeStore });
+export const stageLinkRpu = stageLink({ backendApi, session, selectionStore, draftLinks });
+export const unstageLinkRpu = unstageLink({ draftLinks });
+export const discardDraftRpu = discardDraft({ draftLinks });
+export const getPendingLinksRpu = getPendingLinks({ draftLinks, selectionStore });
+export const commitDraftLinksRpu = commitDraftLinks({ backendApi, session, selectionStore, draftLinks });

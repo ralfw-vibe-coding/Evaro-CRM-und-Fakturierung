@@ -28,16 +28,37 @@ import {
   setRouteRpu,
   watchRouteRpu,
   createInvoiceDraftRpu,
+  stageLinkRpu,
+  discardDraftRpu,
 } from "@/composition";
 import type { Scope } from "@/domain/rpus/set-scope/set-scope";
 import type { EntityRef } from "@/domain/rpus/select-entity/select-entity";
 import type { GetVisibleEntitiesResult, VisibleEntity } from "@/domain/rpus/get-visible-entities/get-visible-entities";
 import type { SelectedEntity } from "@/domain/rpus/get-selected-entity/get-selected-entity";
 import type { SelectedTagFilter } from "@/domain/pproviders/selection-store/selection-store-provider";
+import type { ContactData } from "@/domain/model";
 import { ContactCard } from "./contact-card";
 import { GpCard } from "./gp-card";
-import { CreateBusinessPartnerDetail, CreateContactDetail, EntityDetail } from "./entity-detail";
+import {
+  CreateBusinessPartnerDetail,
+  CreateContactDetail,
+  EntityDetail,
+  type OpenRelatedDraftRequest,
+} from "./entity-detail";
 import { EmailImportOverlay } from "./email-import-overlay";
+
+/**
+ * One open create-form on the overlay stack. Frames stack on top of each
+ * other (arbitrarily deep); every underlying editor stays mounted with its
+ * unsaved state and becomes visible again when the frame above is closed.
+ */
+interface DraftFrame {
+  frameId: string;
+  kind: "contact" | "business_partner";
+  contactPrefill?: ContactData;
+  businessPartnerName?: string;
+  closeToken: number;
+}
 
 function csvCell(value: string | undefined): string {
   const text = value ?? "";
@@ -113,8 +134,7 @@ export function CrmArea() {
   const [selected, setSelected] = React.useState<SelectedEntity>(null);
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [, setDetailDirty] = React.useState(false);
-  const [creatingContact, setCreatingContact] = React.useState(false);
-  const [creatingBusinessPartner, setCreatingBusinessPartner] = React.useState(false);
+  const [draftStack, setDraftStack] = React.useState<DraftFrame[]>([]);
   const [ingestOverlayMode, setIngestOverlayMode] = React.useState<"inbox" | "clipboard" | null>(null);
   const [initialIngestId, setInitialIngestId] = React.useState<string | null>(null);
   const [ingestPendingCount, setIngestPendingCount] = React.useState(0);
@@ -265,6 +285,65 @@ export function CrmArea() {
     setDetailOpen(false);
   }
 
+  function openDraft(kind: DraftFrame["kind"], prefill?: Pick<DraftFrame, "contactPrefill" | "businessPartnerName">) {
+    const frameId = crypto.randomUUID();
+    setDraftStack((stack) => [...stack, { frameId, kind, closeToken: 0, ...prefill }]);
+    return frameId;
+  }
+
+  function openRelatedDraft(request: OpenRelatedDraftRequest) {
+    const frameId = openDraft(request.kind, {
+      contactPrefill: request.contactPrefill,
+      businessPartnerName: request.businessPartnerName,
+    });
+    const draftRef = { type: "draft" as const, id: frameId };
+    const contactRef = request.kind === "contact" ? draftRef : request.from.ref;
+    const gpRef = request.kind === "business_partner" ? draftRef : request.from.ref;
+    void stageLinkRpu({
+      contact: contactRef,
+      gp: gpRef,
+      draftLabels: request.from.ref.type === "draft"
+        ? request.from.kind === "contact"
+          ? { contact: request.from.label }
+          : { gp: request.from.label }
+        : undefined,
+    });
+  }
+
+  function requestCloseTopOverlay() {
+    if (draftStack.length > 0) {
+      setDraftStack((stack) =>
+        stack.map((frame, index) =>
+          index === stack.length - 1 ? { ...frame, closeToken: frame.closeToken + 1 } : frame,
+        ),
+      );
+      return;
+    }
+    setCloseRequestToken((token) => token + 1);
+  }
+
+  function popDraft(frameId: string) {
+    setDraftStack((stack) => stack.filter((frame) => frame.frameId !== frameId));
+  }
+
+  function handleDraftSaved(frame: DraftFrame, id: string) {
+    popDraft(frame.frameId);
+    refreshProjection();
+    // Nur wenn der Entwurf zuoberst und ohne Eltern-Editor war, zum neuen
+    // Eintrag navigieren — sonst kehrt der darunterliegende Editor zurück.
+    const hasParent = draftStack.length > 1 || (detailOpen && selected !== null);
+    if (hasParent) return;
+    if (frame.kind === "contact") setFocusCompanyContactId(id);
+    else setFocusBusinessPartnerId(id);
+    setView(getVisibleEntitiesRpu());
+    selectEntity({ kind: frame.kind, id });
+  }
+
+  function handleDraftDiscarded(frame: DraftFrame) {
+    discardDraftRpu(frame.frameId);
+    popDraft(frame.frameId);
+  }
+
   async function createInvoiceForBp(bpId: string) {
     if (creatingInvoiceBpId) return;
     setCreatingInvoiceBpId(bpId);
@@ -325,11 +404,11 @@ export function CrmArea() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setCreatingContact(true)}>
+                <DropdownMenuItem onSelect={() => openDraft("contact")}>
                   <User className="text-[var(--brand)]" />
                   Kontakt
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setCreatingBusinessPartner(true)}>
+                <DropdownMenuItem onSelect={() => openDraft("business_partner")}>
                   <Building2 className="text-[var(--gp)]" />
                   Geschäftspartner
                 </DropdownMenuItem>
@@ -410,62 +489,53 @@ export function CrmArea() {
         />
       </Column>
       {detailOpen && selected && (
-        <EntityOverlay onClose={() => setCloseRequestToken((token) => token + 1)}>
+        <EntityOverlay active={draftStack.length === 0} onClose={requestCloseTopOverlay}>
           <EntityDetail
             selected={selected}
             focusCompanyContactId={focusCompanyContactId}
             focusBusinessPartnerId={focusBusinessPartnerId}
             onCompanyFocused={() => setFocusCompanyContactId(null)}
             onBusinessPartnerFocused={() => setFocusBusinessPartnerId(null)}
-            onFocusBusinessPartner={(id) => setFocusBusinessPartnerId(id)}
             onClose={closeDetails}
             onChanged={refreshProjection}
             closeRequestToken={closeRequestToken}
             onNavigate={selectEntity}
             onDirtyChange={setDetailDirty}
+            onOpenRelated={openRelatedDraft}
           />
         </EntityOverlay>
       )}
-      {creatingContact && (
-        <EntityOverlay onClose={() => setCloseRequestToken((token) => token + 1)}>
-          <CreateContactDetail
-            availableBusinessPartners={getBusinessPartnerOptionsRpu()}
-            onClose={() => setCreatingContact(false)}
-            closeRequestToken={closeRequestToken}
-            onCreated={(id) => {
-            setCreatingContact(false);
-            setFocusCompanyContactId(id);
-            setView(getVisibleEntitiesRpu());
-            selectEntity({ kind: "contact", id });
-          }}
-            onNavigate={(ref) => {
-              setCreatingContact(false);
-              selectEntity(ref);
-            }}
-            onChanged={refreshProjection}
-          />
+      {draftStack.map((frame, index) => (
+        <EntityOverlay
+          key={frame.frameId}
+          active={index === draftStack.length - 1}
+          onClose={requestCloseTopOverlay}
+        >
+          {frame.kind === "contact" ? (
+            <CreateContactDetail
+              selfDraftId={frame.frameId}
+              availableBusinessPartners={getBusinessPartnerOptionsRpu()}
+              initialData={frame.contactPrefill}
+              onClose={() => handleDraftDiscarded(frame)}
+              closeRequestToken={frame.closeToken}
+              onCreated={(id) => handleDraftSaved(frame, id)}
+              onChanged={refreshProjection}
+              onOpenRelated={openRelatedDraft}
+            />
+          ) : (
+            <CreateBusinessPartnerDetail
+              selfDraftId={frame.frameId}
+              availableContacts={getContactOptionsRpu()}
+              initialName={frame.businessPartnerName}
+              onClose={() => handleDraftDiscarded(frame)}
+              closeRequestToken={frame.closeToken}
+              onCreated={(id) => handleDraftSaved(frame, id)}
+              onChanged={refreshProjection}
+              onOpenRelated={openRelatedDraft}
+            />
+          )}
         </EntityOverlay>
-      )}
-      {creatingBusinessPartner && (
-        <EntityOverlay onClose={() => setCloseRequestToken((token) => token + 1)}>
-          <CreateBusinessPartnerDetail
-            availableContacts={getContactOptionsRpu()}
-            onClose={() => setCreatingBusinessPartner(false)}
-            closeRequestToken={closeRequestToken}
-            onCreated={(id) => {
-              setCreatingBusinessPartner(false);
-              setFocusBusinessPartnerId(id);
-              setView(getVisibleEntitiesRpu());
-              selectEntity({ kind: "business_partner", id });
-            }}
-            onNavigate={(ref) => {
-              setCreatingBusinessPartner(false);
-              selectEntity(ref);
-            }}
-            onChanged={refreshProjection}
-          />
-        </EntityOverlay>
-      )}
+      ))}
       {ingestOverlayMode && (
         <EmailImportOverlay
           initialMode={ingestOverlayMode}
@@ -479,15 +549,26 @@ export function CrmArea() {
   );
 }
 
-function EntityOverlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+function EntityOverlay({
+  children,
+  onClose,
+  active = true,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+  active?: boolean;
+}) {
+  // Overlays stapeln sich; nur das oberste reagiert auf Escape, die darunter
+  // bleiben gemountet und behalten ihren (ungespeicherten) Zustand.
   React.useEffect(() => {
+    if (!active) return;
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
     }
 
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
+  }, [onClose, active]);
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/25 p-4">
