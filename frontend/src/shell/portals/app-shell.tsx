@@ -299,7 +299,7 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
               value={draft.sender_address ?? ""}
               onChange={(event) => patch("sender_address", event.target.value)}
               rows={3}
-              className="w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              className="w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] sm:text-sm"
             />
           </SettingsField>
           <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
@@ -311,7 +311,7 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
                 value={draft.company_registration ?? ""}
                 onChange={(event) => patch("company_registration", event.target.value)}
                 rows={3}
-                className="w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                className="w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] sm:text-sm"
               />
             </SettingsField>
             <SettingsField label="Zahlungszeitraum in Tagen">
@@ -353,7 +353,7 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
               value={draft.bank_details ?? ""}
               onChange={(event) => patch("bank_details", event.target.value)}
               rows={3}
-              className="w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              className="w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] sm:text-sm"
             />
           </SettingsField>
         </section>
@@ -529,7 +529,7 @@ function ProfileDialog({
             <div className="grid gap-1.5 rounded-md border border-[var(--border)] bg-[var(--accent)] p-3">
               <Label htmlFor="profile-api-key">Nur jetzt sichtbar</Label>
               <div className="flex gap-2">
-                <Input id="profile-api-key" readOnly value={generatedKey} className="font-mono text-xs" />
+                <Input id="profile-api-key" readOnly value={generatedKey} className="font-mono text-xs sm:text-xs" />
                 <Button
                   type="button"
                   variant="outline"

@@ -951,7 +951,7 @@ function ContactCoreSections({
             value={data.first_name ?? ""}
             placeholder="Vorname"
             aria-label="Vorname"
-            className="h-10 text-lg font-semibold sm:col-span-5"
+            className="h-10 text-lg font-semibold sm:col-span-5 sm:text-lg"
             {...NO_PASSWORD_MANAGER_PROPS}
             onChange={(event) => onDataChange((current) => ({ ...current, first_name: event.target.value }))}
           />
@@ -961,7 +961,7 @@ function ContactCoreSections({
               value={data.last_name ?? ""}
               placeholder="Nachname"
               aria-label="Nachname"
-              className="h-10 text-lg font-semibold"
+              className="h-10 text-lg font-semibold sm:text-lg"
               {...NO_PASSWORD_MANAGER_PROPS}
               onChange={(event) => onDataChange((current) => ({ ...current, last_name: event.target.value }))}
             />
@@ -985,7 +985,7 @@ function ContactCoreSections({
                 gender: (event.target.value || undefined) as ContactData["gender"],
               }))
             }
-            className={`h-10 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm sm:col-span-4 sm:h-8 ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
+            className={`h-10 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-base shadow-sm sm:col-span-4 sm:h-8 sm:text-sm ${data.gender ? "" : "text-[var(--muted-foreground)]"}`}
           >
             <option value="">Geschlecht</option>
             {GENDER_OPTIONS.map((option) => (
@@ -1003,7 +1003,7 @@ function ContactCoreSections({
                 salutation: (event.target.value || undefined) as ContactData["salutation"],
               }))
             }
-            className={`h-10 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-sm shadow-sm sm:col-span-4 sm:h-8 ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
+            className={`h-10 rounded-md border border-[var(--input)] bg-transparent px-2.5 text-base shadow-sm sm:col-span-4 sm:h-8 sm:text-sm ${data.salutation ? "" : "text-[var(--muted-foreground)]"}`}
           >
             <option value="">Anrede</option>
             {SALUTATION_OPTIONS.map((option) => (
@@ -1142,7 +1142,7 @@ function BusinessPartnerCoreSections({
             value={data.name}
             placeholder="Name"
             aria-label="Name"
-            className="h-10 text-lg font-semibold"
+            className="h-10 text-lg font-semibold sm:text-lg"
             {...NO_PASSWORD_MANAGER_PROPS}
             onChange={(event) => onDataChange((current) => ({ ...current, name: event.target.value }))}
           />
