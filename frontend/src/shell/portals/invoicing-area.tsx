@@ -1,11 +1,12 @@
 import * as React from "react";
 import {
   Copy,
+  Download,
+  FileText,
   Filter,
   Hash,
   Loader2,
   Plus,
-  Printer,
   Receipt,
   Save,
   Search,
@@ -30,6 +31,14 @@ import {
   watchRouteRpu,
 } from "@/composition";
 import { UnsavedCloseDialog } from "./entity-detail";
+import {
+  formatDate,
+  formatMoney,
+  invoiceTotal,
+  lineTotal,
+  standardPaymentTermsLine,
+} from "./invoice-print-format";
+import { createInvoicePdfBlob, invoiceFilenameFor } from "./invoice-pdf";
 
 const NO_PASSWORD_MANAGER_PROPS = {
   autoComplete: "new-password",
@@ -696,11 +705,11 @@ function InvoiceDetail({
             size="icon"
             variant="ghost"
             disabled={!canPrint || loadingPrint}
-            aria-label="Rechnung drucken"
-            title="Rechnung drucken"
+            aria-label="Als PDF anzeigen"
+            title="Als PDF anzeigen"
             onClick={openPrintPreview}
           >
-            {loadingPrint ? <Loader2 className="animate-spin" /> : <Printer />}
+            {loadingPrint ? <Loader2 className="animate-spin" /> : <FileText />}
           </Button>
           <Button
             type="button"
@@ -978,7 +987,7 @@ function InvoiceDetail({
         </div>
       </section>
       {printInvoice && (
-        <InvoicePrintPreview
+        <InvoicePdfPreview
           invoice={printInvoice}
           settings={printSettings}
           onClose={() => setPrintInvoice(null)}
@@ -1003,7 +1012,7 @@ function InvoiceDetail({
   );
 }
 
-function InvoicePrintPreview({
+function InvoicePdfPreview({
   invoice,
   settings,
   onClose,
@@ -1012,316 +1021,75 @@ function InvoicePrintPreview({
   settings: AppSettings;
   onClose: () => void;
 }) {
-  const totals = invoiceTotal(invoice);
-  const seller = settings.invoicing;
-  const sellerName = seller.company_name?.trim() || "Evaro";
-  const sellerAddressLines = splitLines(seller.sender_address);
-  const bankLines = splitLines(seller.bank_details);
-  const registrationLines = splitLines(seller.company_registration);
-  const address = invoice.gp_snapshot.address;
-  const buyerLines = [
-    invoice.gp_snapshot.name,
-    address?.street,
-    [address?.zip, address?.city].filter(Boolean).join(" "),
-    address?.country,
-  ].filter((line): line is string => Boolean(line));
-  const invoiceNumber = invoice.invoice_number ?? "0000000000";
-  const invoiceDate = invoice.invoice_date ? formatDate(invoice.invoice_date) : "DD.MM.YYYY";
-  const reverseCharge = invoice.data.reverse_charge === true;
-  const language = invoice.gp_snapshot.invoice_language ?? "de";
-  const labels = invoicePrintLabels[language];
-  const paymentTerms = paymentTermsText(invoice.data, invoice.invoice_date, language);
-  const printRef = React.useRef<HTMLElement | null>(null);
+  const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
+  const [pdfError, setPdfError] = React.useState<string | null>(null);
+  const blobRef = React.useRef<Blob | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    let url: string | null = null;
+    setPdfUrl(null);
+    setPdfError(null);
+    createInvoicePdfBlob(invoice, settings)
+      .then((blob) => {
+        if (cancelled) return;
+        blobRef.current = blob;
+        url = URL.createObjectURL(blob);
+        setPdfUrl(url);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setPdfError(error instanceof Error ? error.message : "PDF konnte nicht erzeugt werden.");
+      });
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [invoice, settings]);
+
+  function downloadPdf() {
+    if (!blobRef.current) return;
+    const link = document.createElement("a");
+    link.href = pdfUrl ?? URL.createObjectURL(blobRef.current);
+    link.download = invoiceFilenameFor(invoice);
+    link.click();
+  }
 
   return (
-    <div className="invoice-print-shell fixed inset-0 z-50 overflow-auto bg-zinc-950/50 p-6">
-      <div className="no-print sticky top-0 mx-auto mb-4 flex max-w-[210mm] items-center justify-end gap-2">
+    <div className="fixed inset-0 z-50 grid grid-rows-[auto_1fr] gap-3 bg-zinc-950/50 p-6">
+      <div className="flex items-center justify-end gap-2">
+        {pdfError && (
+          <span className="max-w-56 truncate rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">
+            {pdfError}
+          </span>
+        )}
         <Button
           type="button"
           size="icon"
           className="bg-[var(--brand)] text-white hover:opacity-90"
-          aria-label="Drucken"
-          title="Drucken"
-          onClick={() => printInvoiceSurface(printRef.current, invoicePdfFilename(invoiceNumber, invoice.gp_snapshot.name))}
+          aria-label="Als PDF herunterladen"
+          title="Als PDF herunterladen"
+          disabled={!pdfUrl}
+          onClick={downloadPdf}
         >
-          <Printer />
+          <Download />
         </Button>
         <Button type="button" variant="outline" size="icon" aria-label="Schließen" title="Schließen" onClick={onClose}>
           <X />
         </Button>
       </div>
 
-      <article ref={printRef} className="invoice-print-surface mx-auto min-h-[297mm] w-[210mm] bg-white px-[18mm] py-[16mm] text-black shadow-2xl">
-        <header className="border-b border-zinc-300 pb-3">
-          <div className="flex items-baseline justify-between gap-12">
-            <div className="text-2xl font-bold">{sellerName}</div>
-            <div className="text-right text-2xl font-bold tracking-normal">{invoiceTitle(language, invoiceNumber)}</div>
+      <div className="min-h-0 rounded-md bg-zinc-100 shadow-2xl">
+        {pdfUrl ? (
+          <iframe src={pdfUrl} title="Rechnung PDF" className="size-full rounded-md border-0" />
+        ) : (
+          <div className="grid size-full place-items-center text-sm text-[var(--muted-foreground)]">
+            {pdfError ?? <Loader2 className="animate-spin" />}
           </div>
-          <div className="mt-1 text-right text-sm text-zinc-600">{invoiceDate}</div>
-        </header>
-
-        <section className="mt-8 grid grid-cols-2 gap-12">
-          <div>
-            <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.billTo}</div>
-            <div className="mt-3 whitespace-pre-line text-sm leading-6">{buyerLines.join("\n")}</div>
-            {invoice.gp_snapshot.vat_id && (
-              <div className="mt-3 text-sm text-zinc-700">{labels.buyerVatId}: {invoice.gp_snapshot.vat_id}</div>
-            )}
-            {invoice.data.reference && (
-              <div className="mt-1 text-sm text-zinc-700">{labels.customerRef}: {invoice.data.reference}</div>
-            )}
-          </div>
-          <div>
-            <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.seller}</div>
-            <div className="mt-3 grid gap-1 text-sm leading-6 text-zinc-700">
-              <div className="font-medium text-black">{sellerName}</div>
-              {sellerAddressLines.length > 0 && (
-                <div className="whitespace-pre-line">{sellerAddressLines.join("\n")}</div>
-              )}
-              {seller.vat_number && <div>{labels.sellerVatNo}: {seller.vat_number}</div>}
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-10">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-zinc-300 text-left text-xs uppercase tracking-wide text-zinc-500">
-                <th className="py-2 pr-3 font-bold">{labels.serviceDate}</th>
-                <th className="py-2 pr-3 font-bold">{labels.description}</th>
-                <th className="py-2 pr-3 text-right font-bold">{labels.qty}</th>
-                <th className="py-2 pr-3 font-bold">{labels.unit}</th>
-                <th className="py-2 pr-3 text-right font-bold">{labels.unitPrice}</th>
-                <th className="py-2 text-right font-bold">{labels.total}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoice.data.lines.map((line) => (
-                <tr key={line.id} className="break-inside-avoid border-b border-zinc-200 align-top">
-                  <td className="py-3 pr-3">{line.service_date ? formatDate(line.service_date) : ""}</td>
-                  <td className="py-3 pr-3">
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 font-medium">
-                      {line.product_form && <span>{line.product_form}</span>}
-                      {line.product_topic && <span>{line.product_topic}</span>}
-                    </div>
-                    {line.text && <div className="mt-1 whitespace-pre-line text-zinc-700">{line.text}</div>}
-                  </td>
-                  <td className="py-3 pr-3 text-right">{formatNumber(line.quantity)}</td>
-                  <td className="py-3 pr-3">{line.unit ?? ""}</td>
-                  <td className="py-3 pr-3 text-right">{formatMoney(line.unit_price)}</td>
-                  <td className="py-3 text-right font-medium">{formatMoney(lineTotal(line))}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-
-        <div className="invoice-closing-block">
-          <section className="mt-8 grid grid-cols-[1fr_70mm] gap-10">
-            <div className="grid content-start gap-6 text-sm">
-              {invoice.data.comment && (
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.comment}</div>
-                  <div className="mt-2 whitespace-pre-line leading-6">{invoice.data.comment}</div>
-                </div>
-              )}
-              {paymentTerms && (
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{labels.paymentTerms}</div>
-                  <div className="mt-2 whitespace-pre-line leading-6">
-                    {paymentTerms}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="grid gap-2 border-t border-zinc-300 pt-3 text-sm">
-              <PrintTotal label={labels.net} value={formatMoney(totals.net)} />
-              <PrintTotal label={`${labels.vat} (${formatNumber(invoice.vat_rate)}%)`} value={formatMoney(totals.vat)} />
-              <div className="mt-2 border-t border-zinc-300 pt-3">
-                <PrintTotal label={labels.amountDue} value={formatMoney(totals.gross)} strong />
-              </div>
-            </div>
-          </section>
-
-          {reverseCharge && (
-            <div className="mt-6 break-inside-avoid border-t border-zinc-300 pt-4 text-sm print:mt-4">
-              {labels.reverseCharge}
-            </div>
-          )}
-
-          <footer className="mt-10 grid grid-cols-3 gap-6 border-t border-zinc-300 pt-5 text-xs leading-5 text-zinc-600 print:mt-6">
-            <div className="break-inside-avoid">
-              <div className="font-bold text-zinc-800">{labels.registration}</div>
-              <div className="mt-1 whitespace-pre-line">{registrationLines.join("\n")}</div>
-            </div>
-            <div className="break-inside-avoid">
-              <div className="font-bold text-zinc-800">{labels.bank}</div>
-              <div className="mt-1 whitespace-pre-line">{bankLines.join("\n")}</div>
-            </div>
-            <div className="break-inside-avoid">
-              <div className="font-bold text-zinc-800">{labels.contact}</div>
-              <div className="mt-1 whitespace-pre-line">
-                {[seller.contact_person, seller.email, seller.phone, seller.website].filter(Boolean).join("\n")}
-              </div>
-            </div>
-          </footer>
-        </div>
-      </article>
+        )}
+      </div>
     </div>
   );
-}
-
-function PrintTotal({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
-  return (
-    <div className={cn("flex justify-between gap-6", strong && "text-base font-bold")}>
-      <span>{label}</span>
-      <span className="font-mono">{value}</span>
-    </div>
-  );
-}
-
-function printInvoiceSurface(surface: HTMLElement | null, title: string) {
-  if (!surface) return;
-  const previousTitle = document.title;
-  document.title = title;
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  iframe.setAttribute("aria-hidden", "true");
-  document.body.appendChild(iframe);
-
-  const printWindow = iframe.contentWindow;
-  const printDocument = iframe.contentDocument ?? printWindow?.document;
-  if (!printWindow || !printDocument) {
-    document.title = previousTitle;
-    return;
-  }
-
-  const styleTags = [...document.querySelectorAll('link[rel="stylesheet"], style')]
-    .map((node) => node.outerHTML)
-    .join("\n");
-
-  printDocument.open();
-  printDocument.write(`<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>${escapeHtml(title)}</title>
-    ${styleTags}
-    <style>
-      @page { size: A4; margin: 16mm 18mm; }
-      html, body { margin: 0; background: white; }
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .invoice-print-surface {
-        position: static !important;
-        width: auto !important;
-        min-height: auto !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        box-shadow: none !important;
-      }
-      .invoice-closing-block {
-        break-inside: avoid;
-        page-break-inside: avoid;
-      }
-      .no-print { display: none !important; }
-    </style>
-  </head>
-  <body>${surface.outerHTML}</body>
-</html>`);
-  printDocument.close();
-  printWindow.focus();
-  const cleanup = () => {
-    document.title = previousTitle;
-    iframe.remove();
-  };
-  printWindow.addEventListener("afterprint", cleanup, { once: true });
-  window.setTimeout(() => {
-    printWindow.print();
-    window.setTimeout(() => {
-      if (document.body.contains(iframe)) cleanup();
-    }, 2000);
-  }, 250);
-}
-
-function invoicePdfFilename(invoiceNumber: string, companyName: string): string {
-  const normalizedNumber = String(Number.parseInt(invoiceNumber, 10) || invoiceNumber);
-  const safeCompany = companyName
-    .trim()
-    .replace(/[\\/:*?"<>|]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return `INV ${normalizedNumber} ${safeCompany || "Kunde"}.pdf`;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-type InvoicePrintLanguage = "de" | "en";
-
-const invoicePrintLabels: Record<InvoicePrintLanguage, Record<string, string>> = {
-  de: {
-    invoiceNo: "Rechnung Nr.",
-    billTo: "Rechnung an",
-    buyerVatId: "USt-ID",
-    customerRef: "Kundenreferenz",
-    seller: "Rechnungssteller",
-    sellerVatNo: "USt-Nr.",
-    serviceDate: "Leistungsdatum",
-    description: "Beschreibung",
-    qty: "Menge",
-    unit: "Einheit",
-    unitPrice: "Einzelpreis",
-    total: "Gesamt",
-    comment: "Kommentar",
-    paymentTerms: "Zahlungsbedingungen",
-    net: "Netto",
-    vat: "USt.",
-    amountDue: "Rechnungsbetrag",
-    reverseCharge: "Steuerschuldnerschaft des Leistungsempfängers (reverse charge).",
-    registration: "Registrierung",
-    bank: "Bank",
-    contact: "Kontakt",
-    paymentDueLine: "Der Rechnungsbetrag ist ohne Abzug zahlbar bis:",
-  },
-  en: {
-    invoiceNo: "Invoice #",
-    billTo: "Bill To",
-    buyerVatId: "VAT ID",
-    customerRef: "Customer Ref.",
-    seller: "Seller",
-    sellerVatNo: "VAT No.",
-    serviceDate: "Service Date",
-    description: "Description",
-    qty: "Qty",
-    unit: "Unit",
-    unitPrice: "Unit Price",
-    total: "Total",
-    comment: "Comment",
-    paymentTerms: "Payment Terms",
-    net: "Net",
-    vat: "VAT",
-    amountDue: "Amount Due",
-    reverseCharge: "Tax liability of the recipient of the service (reverse charge).",
-    registration: "Registration",
-    bank: "Bank",
-    contact: "Contact",
-    paymentDueLine: "The invoice amount is payable without deduction by:",
-  },
-};
-
-function invoiceTitle(language: InvoicePrintLanguage, invoiceNumber: string): string {
-  return language === "en" ? `Invoice #${invoiceNumber}` : `Rechnung Nr. ${invoiceNumber}`;
 }
 
 function ReadOnlySnapshot({ invoice }: { invoice: Invoice }) {
@@ -1669,71 +1437,4 @@ function getInvoiceTagOptions(invoices: Invoice[]) {
   }
   const sort = (items: Set<string>) => [...items].sort((a, b) => a.localeCompare(b, "de"));
   return { forms: sort(forms), topics: sort(topics), units: sort(units) };
-}
-
-function lineTotal(line: InvoiceLine): number {
-  return Math.max(0, Number(line.quantity) || 0) * Math.max(0, Number(line.unit_price) || 0);
-}
-
-function invoiceTotal(invoice: Invoice) {
-  const net = invoice.data.lines.reduce((sum, line) => sum + lineTotal(line), 0);
-  const vat = net * (Math.max(0, Number(invoice.vat_rate) || 0) / 100);
-  return { net, vat, gross: net + vat };
-}
-
-function formatMoney(value: number): string {
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(value);
-}
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(Number(value) || 0);
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("de-DE").format(new Date(`${value}T00:00:00`));
-}
-
-function splitLines(value: string | undefined): string[] {
-  return (value ?? "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function standardPaymentTermsLine(
-  days: number | undefined,
-  invoiceDate: string | null,
-  language: InvoicePrintLanguage,
-): string {
-  const prefix = invoicePrintLabels[language].paymentDueLine;
-  if (days === undefined) return `${prefix} -`;
-  const base = invoiceDate ? new Date(`${invoiceDate}T00:00:00`) : new Date();
-  return `${prefix} ${formatOffsetDate(base, days)}`;
-}
-
-function paymentTermsText(data: InvoiceData, invoiceDate: string | null, language: InvoicePrintLanguage): string {
-  const parts = [
-    data.payment_due_days !== undefined ? standardPaymentTermsLine(data.payment_due_days, invoiceDate, language) : undefined,
-    data.payment_free_text?.trim(),
-  ].filter(Boolean);
-  if (parts.length > 0) return parts.join("\n");
-  return previewPaymentTerms(data.payment_terms, invoiceDate);
-}
-
-function previewPaymentTerms(template: string | undefined, invoiceDate: string | null): string {
-  const text = template?.trim();
-  if (!text) return "";
-  const base = invoiceDate ? new Date(`${invoiceDate}T00:00:00`) : new Date();
-  return text
-    .replace(/\{(\d+)\}/g, (_, days: string) => formatOffsetDate(base, Number(days)))
-    .replace(
-      /\{(?:rgdatum|rechnungsdatum|rgd|invdate)(?:\s*\+\s*(\d+))?\}/gi,
-      (_, days: string | undefined) => formatOffsetDate(base, Number(days ?? 0)),
-    );
-}
-
-function formatOffsetDate(base: Date, days: number): string {
-  const date = new Date(base);
-  date.setDate(date.getDate() + days);
-  return formatDate(date.toISOString().slice(0, 10));
 }
