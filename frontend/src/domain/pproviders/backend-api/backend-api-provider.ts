@@ -40,6 +40,7 @@ export interface CreateBusinessPartnerInput {
 
 export interface UpdateBusinessPartnerInput {
   id: string;
+  active?: boolean;
   types: string[];
   data: BusinessPartnerData;
   expected_updated_at?: string;
@@ -122,6 +123,8 @@ export interface UpdateInvoiceDraftInput {
 export interface BackendApiProvider {
   requestOtp(email: string): Promise<ApiResult<void>>;
   verifyOtp(email: string, otp: string): Promise<ApiResult<{ token: string; user: SessionUser }>>;
+  /** Tauscht ein noch gültiges Token gegen eines mit voller Restlaufzeit. */
+  refreshToken(token: string): Promise<ApiResult<{ token: string }>>;
   updateProfile(token: string, input: { abbr: string }): Promise<ApiResult<{ user: SessionUser }>>;
   generateApiKey(token: string): Promise<ApiResult<{ user: SessionUser; api_key: string }>>;
   deleteApiKey(token: string): Promise<ApiResult<{ user: SessionUser }>>;

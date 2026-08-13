@@ -10,6 +10,7 @@ import type { BusinessPartnersProvider } from "../../pproviders/business-partner
 export interface UpdateBusinessPartnerCommand {
   user_id: string;
   id: string;
+  active?: boolean;
   types?: string[];
   expected_updated_at?: string;
   data: RawBusinessPartnerData;
@@ -53,6 +54,7 @@ export function updateBusinessPartner(deps: UpdateBusinessPartnerDeps) {
     );
 
     const business_partner = await deps.businessPartners.update(id, {
+      active: command.active,
       types: normalizeTypes(command.types),
       data: validation.data,
     });

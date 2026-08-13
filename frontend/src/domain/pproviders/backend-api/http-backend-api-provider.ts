@@ -69,6 +69,13 @@ export const httpBackendApiProvider: BackendApiProvider = {
     });
   },
 
+  async refreshToken(token) {
+    return request<{ token: string }>("/auth/refresh", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+    });
+  },
+
   async updateProfile(token, input) {
     return request<{ user: SessionUser }>("/profile", {
       method: "PATCH",

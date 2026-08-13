@@ -7,6 +7,7 @@ function fakeBackendApi(overrides: Partial<BackendApiProvider> = {}): BackendApi
   return {
     requestOtp: async () => ({ ok: false, error: "not used" }),
     verifyOtp: async () => ({ ok: false, error: "not used" }),
+    refreshToken: async () => ({ ok: false, error: "not used" }),
     updateProfile: async () => ({ ok: false, error: "not used" }),
     generateApiKey: async () => ({ ok: false, error: "not used" }),
     deleteApiKey: async () => ({

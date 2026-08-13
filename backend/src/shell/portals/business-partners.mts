@@ -26,7 +26,13 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   if (req.method === "PATCH") {
-    let body: { id?: string; types?: string[]; data?: unknown; expected_updated_at?: string };
+    let body: {
+      id?: string;
+      active?: boolean;
+      types?: string[];
+      data?: unknown;
+      expected_updated_at?: string;
+    };
     try {
       body = (await req.json()) as typeof body;
     } catch {
@@ -37,6 +43,7 @@ export default async function handler(req: Request): Promise<Response> {
     const result = await updateBusinessPartnerRpu()({
       user_id: client.user_id,
       id: body.id,
+      active: body.active,
       types: body.types,
       expected_updated_at: body.expected_updated_at,
       data: (body.data ?? {}) as never,

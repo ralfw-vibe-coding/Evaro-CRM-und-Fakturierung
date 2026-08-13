@@ -1113,6 +1113,8 @@ function BusinessPartnerCoreSections({
   tagOptions,
   nameInputRef,
   mapsHref,
+  active,
+  onActiveChange,
   onDataChange,
   onTypesChange,
   onChannelsChange,
@@ -1127,6 +1129,9 @@ function BusinessPartnerCoreSections({
   tagOptions: TagOptions;
   nameInputRef?: React.Ref<HTMLInputElement>;
   mapsHref: string | null;
+  /** Optional: nur der Editor bestehender GP kann den Status umschalten. */
+  active?: boolean;
+  onActiveChange?: (active: boolean) => void;
   onDataChange: React.Dispatch<React.SetStateAction<BusinessPartnerData>>;
   onTypesChange: (types: string[]) => void;
   onChannelsChange: (channels: Channel[]) => void;
@@ -1135,7 +1140,21 @@ function BusinessPartnerCoreSections({
 }) {
   return (
     <>
-      <Section title="Geschäftspartner">
+      <Section
+        title="Geschäftspartner"
+        action={
+          onActiveChange && (
+            <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted-foreground)]">
+              <input
+                type="checkbox"
+                checked={active ?? true}
+                onChange={(event) => onActiveChange(event.target.checked)}
+              />
+              Aktiv
+            </label>
+          )
+        }
+      >
         <div className="grid gap-1">
           <Input
             ref={nameInputRef}
@@ -2120,6 +2139,7 @@ function BusinessPartnerEditor({
 }) {
   const bp = selected.businessPartner;
   const [types, setTypes] = React.useState<string[]>(bp.types);
+  const [active, setActive] = React.useState(bp.active);
   const [data, setData] = React.useState<BusinessPartnerData>(bp.data);
   const [channels, setChannels] = React.useState<Channel[]>(bp.data.channels);
   const [focusNewChannelType, setFocusNewChannelType] = React.useState(false);
@@ -2133,10 +2153,12 @@ function BusinessPartnerEditor({
   const nameInputRef = React.useRef<HTMLInputElement | null>(null);
   const lastCloseRequestRef = React.useRef(closeRequestToken);
   const currentPayload = {
+    active,
     types: normalizeTags(types) ?? [],
     data: normalizeBusinessPartnerData(data, channels),
   };
   const originalPayload = {
+    active: bp.active,
     types: normalizeTags(bp.types) ?? [],
     data: normalizeBusinessPartnerData(bp.data, bp.data.channels),
   };
@@ -2148,6 +2170,7 @@ function BusinessPartnerEditor({
 
   React.useEffect(() => {
     setTypes(bp.types);
+    setActive(bp.active);
     setData(bp.data);
     setChannels(bp.data.channels);
     setFocusNewChannelType(false);
@@ -2181,6 +2204,7 @@ function BusinessPartnerEditor({
     setErrors({});
     const result = await updateBusinessPartnerRpu({
       id: bp.id,
+      active: currentPayload.active,
       types: currentPayload.types,
       data: currentPayload.data,
     });
@@ -2300,6 +2324,8 @@ function BusinessPartnerEditor({
               setChannels([...channels, { type: "", address: "" }]);
               setFocusNewChannelType(true);
             }}
+            active={active}
+            onActiveChange={setActive}
           />
         </div>
 

@@ -6,6 +6,7 @@ import type { SessionProvider } from "@/domain/pproviders/session/session-provid
 
 export interface UpdateBusinessPartnerCommand {
   id: string;
+  active?: boolean;
   types: string[];
   data: BusinessPartnerData;
 }
@@ -31,6 +32,7 @@ export function updateBusinessPartner(deps: {
 
     const result = await deps.backendApi.updateBusinessPartner(session.token, {
       id: command.id,
+      active: command.active,
       types: command.types,
       data: command.data,
       expected_updated_at: current?.updated_at,
