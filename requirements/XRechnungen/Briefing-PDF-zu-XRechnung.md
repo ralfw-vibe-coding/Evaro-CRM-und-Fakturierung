@@ -204,7 +204,7 @@ Grundlage sind die Textbausteine aus dem PDF mit ihren Koordinaten (pdf.js). Dar
 
 Ist keiner dieser Fälle erkennbar, kommt eine Rückfrage unter „Weitere Angaben“. Bleibt der Fall offen, ist das ein roter Hinweis.
 
-**Steuernummer des Stellers:** XRechnung verlangt USt-IdNr. **oder** Steuernummer. Viele kleine Firmen haben nur die Steuernummer, deshalb werden beide unterstützt (`schemeID` `VA` bzw. `FC`).
+**Steuernummer des Stellers:** XRechnung verlangt USt-IdNr. **oder** Steuernummer. Viele kleine Firmen haben nur die Steuernummer, deshalb werden beide unterstützt (`schemeID` `VA` bzw. `FC`). Hat der Steller **nur eine Steuernummer**, steht sie zusätzlich als Verkäuferkennung (BT-29) in der XML. Regel BR-CO-26 verlangt eine Kennung, eine Registernummer oder eine USt-IdNr., und die Steuernummer allein (BT-32) reicht dafür nicht. Das hat der KoSIT-Validator gezeigt.
 
 **Positionen:**
 - Negative Positionen wie „abzgl. Rabatt“ sind erlaubt.

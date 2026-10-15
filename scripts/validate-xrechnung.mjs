@@ -149,9 +149,14 @@ async function main() {
   let errors = 0;
   let warnings = 0;
 
+  // Der Validator kodiert Dateinamen im Berichtsnamen ("INV%20753…", Umlaute
+  // zerlegt). Deshalb über den dekodierten Namen zuordnen.
+  const berichtsname = (name) => decodeURIComponent(name).normalize("NFC");
+  const berichte = new Map((await readdir(REPORTS)).map((name) => [berichtsname(name), join(REPORTS, name)]));
+
   for (const file of files) {
-    const report = join(REPORTS, `${basename(file).replace(/\.xml$/i, "")}-report.xml`);
-    if (!(await exists(report))) {
+    const report = berichte.get(`${basename(file).replace(/\.xml$/i, "")}-report.xml`.normalize("NFC"));
+    if (!report) {
       console.log(`✗ ${basename(file)} — kein Bericht erzeugt`);
       errors += 1;
       continue;

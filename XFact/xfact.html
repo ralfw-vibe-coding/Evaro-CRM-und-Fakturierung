@@ -266,6 +266,31 @@ main {
 .hinweis.ok { color: var(--farbe-ok); }
 .hinweis.ok::before { content: "✓ "; }
 
+.abschluss {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--abstand);
+  padding: var(--abstand) 0;
+  border-top: 1px solid var(--farbe-linie);
+  margin-bottom: var(--abstand);
+}
+.abschluss ul { margin: 4px 0 0; padding-left: 20px; color: var(--farbe-fehlt); }
+.abschluss .bereit { color: var(--farbe-ok); }
+.knopf:disabled { opacity: 0.45; cursor: not-allowed; }
+a.knopf { text-decoration: none; }
+
+.fertig .erledigt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--farbe-ok);
+}
+.fertig .knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin: var(--abstand) 0 8px; }
+
 .gelesen summary { cursor: pointer; color: var(--farbe-text-leise); margin-bottom: 8px; }
 
 .rohtext {
@@ -317,6 +342,10 @@ main {
       <div class="parteien" id="parteien"></div>
       <div class="positionen" id="positionen"></div>
       <dl class="kopfdaten" id="kopfdaten"></dl>
+      <div class="abschluss">
+        <div id="xml-fehlt"></div>
+        <button class="knopf haupt" id="knopf-xml" data-text="xmlErzeugen"></button>
+      </div>
       <details class="gelesen">
         <summary data-text="gelesenerText"></summary>
         <pre class="rohtext" id="rohtext"></pre>
@@ -324,8 +353,22 @@ main {
     </div>
   </section>
 
-  <!-- Schritt 3: Fertig (folgt) -->
-  <section class="schritt" id="schritt-fertig" hidden></section>
+  <!-- Schritt 3: Fertig -->
+  <section class="schritt" id="schritt-fertig" hidden>
+    <div class="karte fertig">
+      <div class="erledigt">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <span id="fertig-text"></span>
+      </div>
+      <div class="knoepfe">
+        <button class="knopf" id="knopf-erneut" data-text="erneutHerunterladen"></button>
+        <a class="knopf" id="link-pruefen" target="_blank" rel="noopener" data-text="onlinePruefen"></a>
+        <button class="knopf haupt" id="knopf-naechste" data-text="naechsteRechnung"></button>
+      </div>
+      <p class="leise" data-text="onlinePruefenHinweis"></p>
+      <p data-text="versandHinweis"></p>
+    </div>
+  </section>
 </main>
 
 <footer class="fuss" data-text="fusszeile"></footer>
@@ -395,6 +438,50 @@ const TEXTE = {
   summePositionen: "Summe der Positionen",
   positionenGleichNetto: "entspricht dem Netto",
   positionenUngleichNetto: (netto) => `weicht vom Netto ab (${netto})`,
+
+  // Steuerfälle: Hinweistexte, falls auf der Rechnung keiner zu finden ist
+  steuerfallText: {
+    reverse_charge: "Steuerschuldnerschaft des Leistungsempfängers",
+    kleinunternehmer: "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.",
+  },
+  // Text der Zahlungsbedingungen in der XML
+  zahlbarBis: (datum) => `Zahlbar bis ${datum}`,
+  // Ersatzwert für die Käuferreferenz (BT-10), wenn nichts bekannt ist
+  keineKaeuferreferenz: "keine Angabe",
+
+  // Was für eine gültige XRechnung noch fehlt
+  xmlFehlt: "Für die XRechnung fehlt noch:",
+  xmlErzeugen: "XML erzeugen",
+  xmlBereit: "Alle Pflichtangaben für die XRechnung sind vorhanden.",
+
+  // Schritt 3: Fertig
+  heruntergeladen: (name) => `„${name}“ wurde heruntergeladen.`,
+  erneutHerunterladen: "Erneut herunterladen",
+  onlinePruefen: "Online prüfen",
+  onlinePruefenHinweis: "Dort laden Sie die XML auf eine fremde Website hoch.",
+  pruefdienst: "https://www.rechnungsapi.de/xrechnung-validator-online-kostenlos",
+  naechsteRechnung: "Nächste Rechnung",
+  versandHinweis: "Verschicken Sie XML und PDF als zwei Anhänge einer E-Mail. Bewahren Sie die XML auf – sie ist die maßgebliche Rechnung.",
+  pflicht: {
+    nummer: "Rechnungsnummer",
+    datum: "Rechnungsdatum",
+    faellig: "Fälligkeit (zahlbar bis)",
+    iban: "IBAN",
+    positionen: "mindestens eine Position",
+    absender: {
+      name: "Name des Rechnungsstellers", plz: "PLZ des Rechnungsstellers", ort: "Ort des Rechnungsstellers",
+      ustId: "USt-IdNr. oder Steuernummer des Rechnungsstellers", email: "E-Mail des Rechnungsstellers",
+      telefon: "Telefon des Rechnungsstellers", kontakt: "Ansprechpartner beim Rechnungssteller",
+    },
+    empfaenger: {
+      name: "Name des Empfängers", plz: "PLZ des Empfängers", ort: "Ort des Empfängers",
+      email: "E-Mail des Empfängers für Rechnungen",
+      ustId: "USt-IdNr. des Empfängers (nötig bei Steuerschuldnerschaft des Leistungsempfängers)",
+    },
+    einheit: (nr, einheit) => `Position ${nr}: Einheit „${einheit || "?"}“ zuordnen`,
+    leistungsdatum: (nr) => `Position ${nr}: Leistungsdatum`,
+    steuersatz: (nr) => `Position ${nr}: USt-Satz`,
+  },
 };
 
 // === ERKENNUNGSREGELN =========================================================
@@ -418,6 +505,25 @@ const ERKENNUNGSREGELN = {
     absender: ["Rechnungssteller", "Rechnungsaussteller", "Absender", "Lieferant", "Auftragnehmer", "Von"],
     telefon: ["Telefon", "Tel.", "Tel", "Fon", "Mobil", "Handy", "Phone"],
     steuernummer: ["Steuernummer", "Steuer-Nr.", "St.-Nr.", "St-Nr.", "StNr."],
+    ansprechpartner: ["Ansprechpartner", "Ansprechpartnerin", "Ihr Ansprechpartner", "Ihre Ansprechpartnerin",
+      "Kontakt", "Ihr Kontakt", "Bearbeiter", "Bearbeiterin", "Sachbearbeiter", "Sachbearbeiterin"],
+  },
+
+  // Woran die Steuerfälle erkannt werden (Hinweistext auf der Rechnung)
+  steuerfaelle: {
+    reverse_charge: ["Steuerschuldnerschaft des Leistungsempfängers", "reverse charge", "§ 13b", "§13b"],
+    kleinunternehmer: ["§ 19 UStG", "§19 UStG", "§ 19 Abs", "Kleinunternehmer"],
+  },
+
+  // Einheiten auf der Rechnung und ihr Code in der XRechnung (UN/ECE Rec. 20).
+  // Schreibweise klein, ohne Punkt am Ende.
+  einheiten: {
+    std: "HUR", stunde: "HUR", stunden: "HUR", h: "HUR",
+    tag: "DAY", tage: "DAY", tg: "DAY", pt: "DAY", personentag: "DAY", personentage: "DAY",
+    pauschale: "LS", pausch: "LS", pauschal: "LS", psch: "LS", pschl: "LS",
+    km: "KMT", stk: "C62", "stück": "C62", st: "C62", x: "C62",
+    monat: "MON", monate: "MON", woche: "WEE", wochen: "WEE", min: "MIN", minute: "MIN", minuten: "MIN",
+    m: "MTR", "m²": "MTK", qm: "MTK", "m³": "MTQ", kg: "KGM", l: "LTR", liter: "LTR",
   },
 
   // Spaltenüberschriften der Positionstabelle. Ein Tabellenkopf braucht
@@ -567,8 +673,237 @@ const KI = {
 };
 
 // === XML-ERZEUGUNG ============================================================
-// Wie aus den Rechnungsdaten die XRechnung entsteht. (Folgt.)
+// Wie aus den Rechnungsdaten die XRechnung entsteht: XRechnung 3.0 in der
+// CII-Syntax (dieselbe wie bei ZUGFeRD). Die Reihenfolge der Elemente ist
+// fest vorgegeben – wer hier etwas umstellt, bekommt eine ungültige Datei.
+// Die Nummern wie BT-1 verweisen auf die Felder der Norm EN 16931.
 // =============================================================================
+
+const XRECHNUNG = {
+  profil: "urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0",
+  prozess: "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0",
+  rechnungsart: "380",          // Rechnung
+  zahlungsart: "58",            // SEPA-Überweisung
+  befreiungscode: { AE: "VATEX-EU-AE" },
+};
+
+/** Erzeugt die XRechnung als Text. Vorher mit pruefeRechnung() prüfen. */
+function erzeugeXml(r) {
+  const gruppen = steuergruppen(r.positionen);
+  const netto = runde(gruppen.reduce((s, g) => s + g.basis, 0));
+  const steuer = runde(gruppen.reduce((s, g) => s + g.betrag, 0));
+  const brutto = runde(netto + steuer);
+  const zeitraum = leistungszeitraumGesamt(r.positionen);
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rsm:CrossIndustryInvoice
+    xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+    xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
+    xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100"
+    xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
+  <rsm:ExchangedDocumentContext>
+    <ram:BusinessProcessSpecifiedDocumentContextParameter>
+      <ram:ID>${XRECHNUNG.prozess}</ram:ID>
+    </ram:BusinessProcessSpecifiedDocumentContextParameter>
+    <ram:GuidelineSpecifiedDocumentContextParameter>
+      <ram:ID>${XRECHNUNG.profil}</ram:ID>
+    </ram:GuidelineSpecifiedDocumentContextParameter>
+  </rsm:ExchangedDocumentContext>
+  <rsm:ExchangedDocument>
+    <ram:ID>${x(r.nummer)}</ram:ID>
+    <ram:TypeCode>${XRECHNUNG.rechnungsart}</ram:TypeCode>
+    <ram:IssueDateTime>${datum102(r.datum)}</ram:IssueDateTime>
+  </rsm:ExchangedDocument>
+  <rsm:SupplyChainTradeTransaction>
+${r.positionen.map(positionXml).join("")}    <ram:ApplicableHeaderTradeAgreement>
+      <ram:BuyerReference>${x(r.kaeuferreferenz)}</ram:BuyerReference>
+${verkaeuferXml(r.absender)}${kaeuferXml(r.empfaenger)}${r.bestellreferenz ? `      <ram:BuyerOrderReferencedDocument>
+        <ram:IssuerAssignedID>${x(r.bestellreferenz)}</ram:IssuerAssignedID>
+      </ram:BuyerOrderReferencedDocument>
+` : ""}    </ram:ApplicableHeaderTradeAgreement>
+${zeitraum.einTag ? `    <ram:ApplicableHeaderTradeDelivery>
+      <ram:ActualDeliverySupplyChainEvent>
+        <ram:OccurrenceDateTime>${datum102(zeitraum.von)}</ram:OccurrenceDateTime>
+      </ram:ActualDeliverySupplyChainEvent>
+    </ram:ApplicableHeaderTradeDelivery>
+` : `    <ram:ApplicableHeaderTradeDelivery/>
+`}    <ram:ApplicableHeaderTradeSettlement>
+      <ram:PaymentReference>${x(r.nummer)}</ram:PaymentReference>
+      <ram:InvoiceCurrencyCode>${r.waehrung}</ram:InvoiceCurrencyCode>
+      <ram:SpecifiedTradeSettlementPaymentMeans>
+        <ram:TypeCode>${XRECHNUNG.zahlungsart}</ram:TypeCode>
+        <ram:PayeePartyCreditorFinancialAccount>
+          <ram:IBANID>${x(r.bank.iban)}</ram:IBANID>
+          <ram:AccountName>${x(r.absender.name)}</ram:AccountName>
+        </ram:PayeePartyCreditorFinancialAccount>
+${r.bank.bic ? `        <ram:PayeeSpecifiedCreditorFinancialInstitution>
+          <ram:BICID>${x(r.bank.bic)}</ram:BICID>
+        </ram:PayeeSpecifiedCreditorFinancialInstitution>
+` : ""}      </ram:SpecifiedTradeSettlementPaymentMeans>
+${gruppen.map((g) => steuerXml(g, r.steuerfall)).join("")}${zeitraum.einTag || !zeitraum.von ? "" : `      <ram:BillingSpecifiedPeriod>
+        <ram:StartDateTime>${datum102(zeitraum.von)}</ram:StartDateTime>
+        <ram:EndDateTime>${datum102(zeitraum.bis)}</ram:EndDateTime>
+      </ram:BillingSpecifiedPeriod>
+`}      <ram:SpecifiedTradePaymentTerms>
+        <ram:Description>${x(TEXTE.zahlbarBis(alsDatum(r.faellig)))}</ram:Description>
+        <ram:DueDateDateTime>${datum102(r.faellig)}</ram:DueDateDateTime>
+      </ram:SpecifiedTradePaymentTerms>
+      <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+        <ram:LineTotalAmount>${betrag(netto)}</ram:LineTotalAmount>
+        <ram:TaxBasisTotalAmount>${betrag(netto)}</ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount currencyID="${r.waehrung}">${betrag(steuer)}</ram:TaxTotalAmount>
+        <ram:GrandTotalAmount>${betrag(brutto)}</ram:GrandTotalAmount>
+        <ram:DuePayableAmount>${betrag(brutto)}</ram:DuePayableAmount>
+      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+    </ram:ApplicableHeaderTradeSettlement>
+  </rsm:SupplyChainTradeTransaction>
+</rsm:CrossIndustryInvoice>
+`;
+}
+
+function positionXml(p) {
+  return `    <ram:IncludedSupplyChainTradeLineItem>
+      <ram:AssociatedDocumentLineDocument>
+        <ram:LineID>${p.nr}</ram:LineID>
+      </ram:AssociatedDocumentLineDocument>
+      <ram:SpecifiedTradeProduct>
+        <ram:Name>${x(p.name)}</ram:Name>
+${p.beschreibung ? `        <ram:Description>${x(p.beschreibung)}</ram:Description>
+` : ""}      </ram:SpecifiedTradeProduct>
+      <ram:SpecifiedLineTradeAgreement>
+        <ram:NetPriceProductTradePrice>
+          <ram:ChargeAmount>${preis(p.einzelpreis)}</ram:ChargeAmount>
+        </ram:NetPriceProductTradePrice>
+      </ram:SpecifiedLineTradeAgreement>
+      <ram:SpecifiedLineTradeDelivery>
+        <ram:BilledQuantity unitCode="${x(p.einheitCode)}">${menge(p.menge)}</ram:BilledQuantity>
+      </ram:SpecifiedLineTradeDelivery>
+      <ram:SpecifiedLineTradeSettlement>
+        <ram:ApplicableTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>${p.kategorie}</ram:CategoryCode>
+          <ram:RateApplicablePercent>${menge(p.satz)}</ram:RateApplicablePercent>
+        </ram:ApplicableTradeTax>
+        <ram:BillingSpecifiedPeriod>
+          <ram:StartDateTime>${datum102(p.von)}</ram:StartDateTime>
+          <ram:EndDateTime>${datum102(p.bis)}</ram:EndDateTime>
+        </ram:BillingSpecifiedPeriod>
+        <ram:SpecifiedTradeSettlementLineMonetarySummation>
+          <ram:LineTotalAmount>${betrag(p.gesamt)}</ram:LineTotalAmount>
+        </ram:SpecifiedTradeSettlementLineMonetarySummation>
+      </ram:SpecifiedLineTradeSettlement>
+    </ram:IncludedSupplyChainTradeLineItem>
+`;
+}
+
+function anschriftXml(p, einrueckung) {
+  // Bei mehreren Anschriftzeilen steht die letzte (meist die Straße) in LineOne
+  const [zeileEins, ...weitere] = [...p.adresse].reverse();
+  const e = einrueckung;
+  return `${e}<ram:PostalTradeAddress>
+${e}  <ram:PostcodeCode>${x(p.plz)}</ram:PostcodeCode>
+${zeileEins ? `${e}  <ram:LineOne>${x(zeileEins)}</ram:LineOne>
+` : ""}${weitere.length ? `${e}  <ram:LineTwo>${x(weitere.reverse().join(", "))}</ram:LineTwo>
+` : ""}${e}  <ram:CityName>${x(p.ort)}</ram:CityName>
+${e}  <ram:CountryID>${x(p.land)}</ram:CountryID>
+${e}</ram:PostalTradeAddress>
+`;
+}
+
+function verkaeuferXml(p) {
+  // Regel BR-CO-26: Der Verkäufer braucht eine Kennung (BT-29), eine Register-
+  // nummer (BT-30) oder eine USt-IdNr. (BT-31). Wer nur eine Steuernummer hat,
+  // bekommt sie zusätzlich als Kennung.
+  const kennung = !p.ustId && p.steuernummer ? `        <ram:ID>${x(p.steuernummer)}</ram:ID>
+` : "";
+  return `      <ram:SellerTradeParty>
+${kennung}        <ram:Name>${x(p.name)}</ram:Name>
+        <ram:DefinedTradeContact>
+          <ram:PersonName>${x(p.kontakt)}</ram:PersonName>
+          <ram:TelephoneUniversalCommunication>
+            <ram:CompleteNumber>${x(p.telefon)}</ram:CompleteNumber>
+          </ram:TelephoneUniversalCommunication>
+          <ram:EmailURIUniversalCommunication>
+            <ram:URIID>${x(p.email)}</ram:URIID>
+          </ram:EmailURIUniversalCommunication>
+        </ram:DefinedTradeContact>
+${anschriftXml(p, "        ")}        <ram:URIUniversalCommunication>
+          <ram:URIID schemeID="EM">${x(p.email)}</ram:URIID>
+        </ram:URIUniversalCommunication>
+${p.steuernummer ? `        <ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="FC">${x(p.steuernummer)}</ram:ID>
+        </ram:SpecifiedTaxRegistration>
+` : ""}${p.ustId ? `        <ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="VA">${x(p.ustId)}</ram:ID>
+        </ram:SpecifiedTaxRegistration>
+` : ""}      </ram:SellerTradeParty>
+`;
+}
+
+function kaeuferXml(p) {
+  return `      <ram:BuyerTradeParty>
+        <ram:Name>${x(p.name)}</ram:Name>
+${anschriftXml(p, "        ")}        <ram:URIUniversalCommunication>
+          <ram:URIID schemeID="EM">${x(p.email)}</ram:URIID>
+        </ram:URIUniversalCommunication>
+${p.ustId ? `        <ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="VA">${x(p.ustId)}</ram:ID>
+        </ram:SpecifiedTaxRegistration>
+` : ""}      </ram:BuyerTradeParty>
+`;
+}
+
+function steuerXml(g, steuerfall) {
+  const befreit = g.kategorie !== "S";
+  const code = XRECHNUNG.befreiungscode[g.kategorie];
+  return `      <ram:ApplicableTradeTax>
+        <ram:CalculatedAmount>${betrag(g.betrag)}</ram:CalculatedAmount>
+        <ram:TypeCode>VAT</ram:TypeCode>
+${befreit ? `        <ram:ExemptionReason>${x(steuerfall.text)}</ram:ExemptionReason>
+` : ""}        <ram:BasisAmount>${betrag(g.basis)}</ram:BasisAmount>
+        <ram:CategoryCode>${g.kategorie}</ram:CategoryCode>
+${code ? `        <ram:ExemptionReasonCode>${code}</ram:ExemptionReasonCode>
+` : ""}        <ram:RateApplicablePercent>${menge(g.satz)}</ram:RateApplicablePercent>
+      </ram:ApplicableTradeTax>
+`;
+}
+
+/** Ein Steuerblock je Kategorie und Satz; Steuer = Basis × Satz, gerundet (Regel BR-CO-17). */
+function steuergruppen(positionen) {
+  const gruppen = [];
+  for (const p of positionen) {
+    let g = gruppen.find((gr) => gr.kategorie === p.kategorie && gr.satz === p.satz);
+    if (!g) gruppen.push(g = { kategorie: p.kategorie, satz: p.satz, basis: 0 });
+    g.basis = runde(g.basis + p.gesamt);
+  }
+  for (const g of gruppen) g.betrag = runde(g.basis * g.satz / 100);
+  return gruppen;
+}
+
+/** Ein einziger Leistungstag für alle Positionen, oder der Zeitraum vom ersten bis zum letzten Tag. */
+function leistungszeitraumGesamt(positionen) {
+  const von = positionen.map((p) => p.von).filter(Boolean).sort()[0] || null;
+  const bis = positionen.map((p) => p.bis).filter(Boolean).sort().at(-1) || null;
+  return { von, bis, einTag: Boolean(von) && von === bis };
+}
+
+/** Text für XML maskieren */
+function x(text) {
+  return String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+const datum102 = (iso) => `<udt:DateTimeString format="102">${iso.replace(/-/g, "")}</udt:DateTimeString>`;
+const betrag = (wert) => runde(wert).toFixed(2);
+/** Einzelpreis mit mindestens 2, höchstens 4 Nachkommastellen: 0.30, 0.125 */
+const preis = (wert) => {
+  const gerundet = Math.round(wert * 10000) / 10000;
+  return Number.isInteger(Math.round(gerundet * 10000) / 100) ? gerundet.toFixed(2) : String(gerundet);
+};
+const menge = (wert) => String(Math.round(wert * 10000) / 10000);
+
+/** Dateiname der XML: wie das PDF, nur mit .xml */
+function xmlDateiname(pdfName) {
+  return pdfName.replace(/\.pdf$/i, "") + ".xml";
+}
 
 // === PDF LESEN ================================================================
 // Holt den Text aus dem PDF und setzt ihn zu Zeilen zusammen. Jede Zeile kennt
@@ -679,6 +1014,17 @@ function hatText(pdf) {
 //   { wert, seite, zeile, unsicher? }
 // "unsicher" enthält den Grund, wenn der Fund geprüft werden sollte.
 // =============================================================================
+
+/** Alle Erkennungen auf einmal: { kopf, parteien, positionen, steuerfall } */
+function erkenneRechnung(pdf) {
+  const kopf = erkenneKopfdaten(pdf);
+  return {
+    kopf,
+    parteien: erkenneParteien(pdf, kopf),
+    positionen: erkennePositionen(pdf),
+    steuerfall: erkenneSteuerfall(pdf),
+  };
+}
 
 /** Erkennt die Kopfdaten einer Rechnung. */
 function erkenneKopfdaten(pdf) {
@@ -1102,6 +1448,103 @@ function leistungszeitraum(text) {
   return { von: null, bis: null };
 }
 
+// --- Steuerfall ------------------------------------------------------------------
+
+/**
+ * Normal besteuert, Steuerschuldnerschaft des Leistungsempfängers (§13b) oder
+ * Kleinunternehmer (§19)? Ergebnis: { art, text } – text ist der Hinweis von
+ * der Rechnung, der in die XRechnung übernommen wird.
+ */
+function erkenneSteuerfall(pdf) {
+  for (const zeile of alleZeilen(pdf)) {
+    for (const [art, merkmale] of Object.entries(ERKENNUNGSREGELN.steuerfaelle)) {
+      if (merkmale.some((m) => zeile.text.toLowerCase().includes(m.toLowerCase()))) {
+        return { ...fund(art, zeile), art, text: zeile.text.trim() };
+      }
+    }
+  }
+  return { art: "standard", text: null };
+}
+
+// --- Rechnung zusammensetzen -------------------------------------------------------
+
+/**
+ * Setzt aus allem Erkannten die Rechnung zusammen, wie sie in die XRechnung
+ * geht. "ergaenzungen" enthält, was nicht im PDF steht oder korrigiert wurde:
+ *   { absender: { email, telefon, kontakt }, empfaenger: { email, ustId },
+ *     kaeuferreferenz, leitwegId, leistungsdatum, faellig, einheiten: { "std": "HUR" } }
+ * Alle Werte sind hier schlichte Werte, keine Funde mehr.
+ */
+function baueRechnung({ kopf, parteien, positionen, steuerfall }, ergaenzungen = {}) {
+  const w = (fund) => (fund ? fund.wert : null);
+  const partei = (p, extra = {}) => ({
+    name: w(p.name), adresse: p.adresse.map(w), plz: w(p.plz), ort: w(p.ort), land: w(p.land) || "DE",
+    ustId: w(p.ustId), steuernummer: w(p.steuernummer), email: w(p.email), telefon: w(p.telefon),
+    kontakt: w(p.kontakt), ...ohneLeere(extra),
+  });
+  const kategorie = { standard: "S", reverse_charge: "AE", kleinunternehmer: "E" }[steuerfall.art];
+  const einSatz = kopf.umsatzsteuer.length === 1 ? kopf.umsatzsteuer[0].satz : null;
+  const leistungsdatum = ergaenzungen.leistungsdatum || null;
+
+  return {
+    nummer: w(kopf.rechnungsnummer),
+    datum: w(kopf.rechnungsdatum),
+    faellig: ergaenzungen.faellig || w(kopf.faellig),
+    waehrung: "EUR",
+    kaeuferreferenz: ergaenzungen.leitwegId || ergaenzungen.kaeuferreferenz || TEXTE.keineKaeuferreferenz,
+    bestellreferenz: ergaenzungen.leitwegId ? ergaenzungen.kaeuferreferenz || null : null,
+    steuerfall: { art: steuerfall.art, kategorie, text: steuerfall.text || TEXTE.steuerfallText[steuerfall.art] || null },
+    absender: partei(parteien.absender, ergaenzungen.absender),
+    empfaenger: partei(parteien.empfaenger, ergaenzungen.empfaenger),
+    bank: { iban: w(kopf.iban), bic: w(kopf.bic) },
+    positionen: positionen.map((p) => ({
+      nr: p.nr, name: p.name, beschreibung: p.beschreibung || null,
+      menge: p.menge, einheit: p.einheit, einheitCode: einheitCode(p.einheit, ergaenzungen.einheiten),
+      einzelpreis: p.einzelpreis, gesamt: p.gesamt,
+      kategorie,
+      satz: kategorie === "S" ? (p.steuersatz ?? einSatz) : 0,
+      von: p.datumVon || leistungsdatum, bis: p.datumBis || leistungsdatum,
+    })),
+  };
+}
+
+function ohneLeere(objekt) {
+  return Object.fromEntries(Object.entries(objekt || {}).filter(([, wert]) => wert));
+}
+
+/** Code einer Einheit: zuerst die Zuordnung des Nutzers, dann die Erkennungsregeln. */
+function einheitCode(einheit, eigene = {}) {
+  if (!einheit) return null;
+  const schluessel = einheit.trim().toLowerCase().replace(/\.$/, "");
+  return eigene[schluessel] || ERKENNUNGSREGELN.einheiten[schluessel] || null;
+}
+
+/**
+ * Was fehlt noch für eine gültige XRechnung? Liste von { feld, text }.
+ * Ist sie leer, kann die XML erzeugt werden.
+ */
+function pruefeRechnung(r) {
+  const fehlt = [];
+  const p = TEXTE.pflicht;
+  const pflicht = (feld, wert, text) => { if (!wert) fehlt.push({ feld, text }); };
+  pflicht("rechnungsnummer", r.nummer, p.nummer);
+  pflicht("rechnungsdatum", r.datum, p.datum);
+  pflicht("faellig", r.faellig, p.faellig);
+  pflicht("iban", r.bank.iban, p.iban);
+  for (const feld of ["name", "plz", "ort"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
+  pflicht("absender.ustId", r.absender.ustId || r.absender.steuernummer, p.absender.ustId);
+  for (const feld of ["kontakt", "telefon", "email"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
+  for (const feld of ["name", "plz", "ort", "email"]) pflicht(`empfaenger.${feld}`, r.empfaenger[feld], p.empfaenger[feld]);
+  if (r.steuerfall.art === "reverse_charge") pflicht("empfaenger.ustId", r.empfaenger.ustId, p.empfaenger.ustId);
+  pflicht("positionen", r.positionen.length, p.positionen);
+  for (const pos of r.positionen) {
+    pflicht(`position.${pos.nr}.einheit`, pos.einheitCode, p.einheit(pos.nr, pos.einheit));
+    pflicht(`position.${pos.nr}.datum`, pos.von, p.leistungsdatum(pos.nr));
+    pflicht(`position.${pos.nr}.steuersatz`, pos.kategorie !== "S" || pos.satz > 0, p.steuersatz(pos.nr));
+  }
+  return fehlt;
+}
+
 // --- Absender und Empfänger ---------------------------------------------------
 
 // "65203 Wiesbaden", "D-20095 Hamburg", "2777 Dobrinishte"
@@ -1148,6 +1591,8 @@ function erkenneParteien(pdf, kopf) {
   absender.email = findeEmails(zeilen).find(nichtBeimEmpfaenger) || null;
   const telefon = findeNachBeschriftung(zeilen, regeln.telefon, telefonIn) || findeTelefonOhneBeschriftung(zeilen);
   absender.telefon = nichtBeimEmpfaenger(telefon) ? telefon : null;
+  const kontakt = findeNachBeschriftung(zeilen, regeln.ansprechpartner, personIn);
+  absender.kontakt = nichtBeimEmpfaenger(kontakt) ? kontakt : null;
 
   return { absender, empfaenger };
 }
@@ -1192,7 +1637,7 @@ function findeAdressbloecke(zeilen) {
 
 function parteiAus(block) {
   const leer = { name: null, adresse: [], plz: null, ort: null, land: null,
-    ustId: null, steuernummer: null, email: null, telefon: null };
+    ustId: null, steuernummer: null, email: null, telefon: null, kontakt: null };
   if (!block) return leer;
   const zellen = block.zellen.filter((z, i) => !(i === 0 && passtGenau(z.text, ERKENNUNGSREGELN.anrede)));
   const [name, ...adresse] = zellen;
@@ -1279,6 +1724,12 @@ function steuernummerIn(text) {
   return treffer ? { wert: treffer[1] } : null;
 }
 
+/** Name einer Person: "Andrea Kaden", "Frau Dr. Müller-Lüdenscheidt" */
+function personIn(text) {
+  const treffer = /^[\s:]*((?:(?:Frau|Herr|Dr\.|Prof\.)\s+)*\p{Lu}[\p{Ll}\p{M}]+(?:[ -]\p{Lu}[\p{Ll}\p{M}]+)+)/u.exec(text);
+  return treffer ? { wert: treffer[1] } : null;
+}
+
 function telefonIn(text) {
   const treffer = /^[\s:.]*(\+?\d[\d \/\-()]{5,}\d)/.exec(text);
   return treffer ? { wert: treffer[1].trim() } : null;
@@ -1318,7 +1769,7 @@ window.XFact = {
   TEXTE, ERKENNUNGSREGELN, PRUEFUNGEN, KI,
   lesePdf, zuZeilen, alsLayoutText, hatText,
   erkenneKopfdaten, pruefeKopfdaten, erkenneParteien, pruefeParteien, erkennePositionen, pruefePositionen,
-  leistungszeitraum,
+  leistungszeitraum, erkenneSteuerfall, erkenneRechnung, baueRechnung, pruefeRechnung, erzeugeXml, xmlDateiname, einheitCode,
   betraege, datumsangaben, ibanPruefzifferOk,
   alsBetrag, alsDatum,
 };
@@ -1329,8 +1780,14 @@ window.XFact = {
 // Die drei Schritte und die Bedienung der Seite.
 // =============================================================================
 
-const { TEXTE, lesePdf, alsLayoutText, hatText, erkenneKopfdaten, pruefeKopfdaten,
-  erkenneParteien, pruefeParteien, erkennePositionen, pruefePositionen, alsBetrag, alsDatum } = window.XFact;
+const { TEXTE, lesePdf, alsLayoutText, hatText, erkenneRechnung, pruefeKopfdaten, pruefeParteien,
+  pruefePositionen, baueRechnung, pruefeRechnung, erzeugeXml, xmlDateiname, alsBetrag, alsDatum } = window.XFact;
+
+/**
+ * Die Rechnung, die gerade bearbeitet wird: Dateiname, alles Erkannte und
+ * die Ergänzungen des Nutzers (siehe baueRechnung).
+ */
+const zustand = { dateiname: null, erkannt: null, ergaenzungen: {}, xml: null };
 
 const $ = (id) => document.getElementById(id);
 
@@ -1365,14 +1822,60 @@ async function dateiGewaehlt(datei) {
   const zeilen = pdf.seiten.reduce((summe, seite) => summe + seite.zeilen.length, 0);
   $("pruefen-dateiname").textContent = datei.name;
   $("pruefen-info").textContent = TEXTE.seitenUndZeilen(pdf.seiten.length, zeilen);
-  const kopf = erkenneKopfdaten(pdf);
-  const parteien = erkenneParteien(pdf, kopf);
+  const erkannt = erkenneRechnung(pdf);
+  Object.assign(zustand, { dateiname: datei.name, erkannt, ergaenzungen: {}, xml: null });
+  const { kopf, parteien, positionen } = erkannt;
   zeigeParteien(parteien, pruefeParteien(parteien));
-  const positionen = erkennePositionen(pdf);
   zeigePositionen(positionen, pruefePositionen(positionen, kopf));
   zeigeKopfdaten(kopf, pruefeKopfdaten(kopf));
+  zeigePflichtangaben();
   $("rohtext").textContent = alsLayoutText(pdf);
   zeigeSchritt("pruefen");
+}
+
+/** Zeigt, was für die XRechnung noch fehlt, und gibt den Knopf frei, wenn nichts fehlt. */
+function zeigePflichtangaben() {
+  const fehlt = pruefeRechnung(baueRechnung(zustand.erkannt, zustand.ergaenzungen));
+  const bereich = $("xml-fehlt");
+  bereich.replaceChildren();
+  if (fehlt.length) {
+    const titel = document.createElement("div");
+    titel.textContent = TEXTE.xmlFehlt;
+    const liste = document.createElement("ul");
+    for (const f of fehlt) {
+      const punkt = document.createElement("li");
+      punkt.textContent = f.text;
+      liste.append(punkt);
+    }
+    bereich.append(titel, liste);
+  } else {
+    const bereit = document.createElement("div");
+    bereit.className = "bereit";
+    bereit.textContent = TEXTE.xmlBereit;
+    bereich.append(bereit);
+  }
+  $("knopf-xml").disabled = fehlt.length > 0;
+}
+
+/** Erzeugt die XML, lädt sie herunter und zeigt Schritt 3. */
+function xmlErzeugen() {
+  const rechnung = baueRechnung(zustand.erkannt, zustand.ergaenzungen);
+  if (pruefeRechnung(rechnung).length) return;
+  zustand.xml = erzeugeXml(rechnung);
+  herunterladen();
+  $("fertig-text").textContent = TEXTE.heruntergeladen(xmlDateiname(zustand.dateiname));
+  zeigeSchritt("fertig");
+}
+
+function herunterladen() {
+  const adresse = URL.createObjectURL(new Blob([zustand.xml], { type: "application/xml" }));
+  const link = document.createElement("a");
+  link.href = adresse;
+  link.download = xmlDateiname(zustand.dateiname);
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(adresse), 1000);
 }
 
 /** Zeigt die erkannten Kopfdaten als Liste mit Markierungen. */
@@ -1562,11 +2065,16 @@ function richteSeiteEin() {
   });
 
   $("knopf-andere-datei").addEventListener("click", () => zeigeSchritt("hochladen"));
+  $("knopf-xml").addEventListener("click", xmlErzeugen);
+  $("knopf-erneut").addEventListener("click", herunterladen);
+  $("knopf-naechste").addEventListener("click", () => zeigeSchritt("hochladen"));
+  $("link-pruefen").href = TEXTE.pruefdienst;
   zeigeSchritt("hochladen");
 }
 
 richteSeiteEin();
-window.XFact.dateiGewaehlt = dateiGewaehlt;
+// Für Tests und Neugierige
+Object.assign(window.XFact, { dateiGewaehlt, zustand, zeigePflichtangaben });
 </script>
 
 <!-- === BIBLIOTHEKEN: ANFANG =================================================
