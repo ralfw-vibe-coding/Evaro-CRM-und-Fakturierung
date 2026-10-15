@@ -192,6 +192,33 @@ main {
 }
 .knopf-symbol:hover { background: var(--farbe-linie); }
 
+.parteien {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--abstand);
+  margin-bottom: calc(var(--abstand) * 1.5);
+}
+@media (max-width: 640px) { .parteien { grid-template-columns: 1fr; } }
+.partei h3 {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--farbe-text-leise);
+}
+.partei .zeile { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.partei .zeile.name { font-weight: 600; }
+.partei dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+}
+.partei dt { color: var(--farbe-text-leise); }
+.partei dd { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+
 .kopfdaten {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -259,7 +286,8 @@ main {
         </div>
         <button class="knopf" id="knopf-andere-datei" data-text="andereDatei"></button>
       </div>
-      <!-- Vorläufig: die erkannten Kopfdaten. Die neutrale Rechnungsansicht folgt. -->
+      <!-- Vorläufig: die erkannten Angaben. Die neutrale Rechnungsansicht folgt. -->
+      <div class="parteien" id="parteien"></div>
       <dl class="kopfdaten" id="kopfdaten"></dl>
       <details class="gelesen">
         <summary data-text="gelesenerText"></summary>
@@ -303,7 +331,6 @@ const TEXTE = {
     gesamt: "Gesamtbetrag",
     iban: "IBAN",
     bic: "BIC",
-    ustIds: "USt-IdNr.",
   },
   umsatzsteuerZeile: (satz) => `USt ${satz} %`,
 
@@ -314,6 +341,20 @@ const TEXTE = {
   summenOk: "Summen stimmen",
   summenDifferenz: (differenz) => `Netto + USt ergibt nicht den Gesamtbetrag (Differenz ${differenz})`,
   steuerRechnung: (satz, soll) => `${satz} % vom Netto wären ${soll}`,
+
+  // Absender und Empfänger
+  parteien: { absender: "Von", empfaenger: "An" },
+  parteiFelder: {
+    name: "Name",
+    anschrift: "Anschrift",
+    ustId: "USt-IdNr.",
+    steuernummer: "Steuernummer",
+    email: "E-Mail",
+    telefon: "Telefon",
+  },
+  ustOderSteuernummer: "USt-IdNr. oder Steuernummer fehlt",
+  nichtDeutschland: "XFact ist für Rechnungen innerhalb Deutschlands gedacht",
+  landAngenommen: "Deutschland (angenommen)",
 };
 
 // === ERKENNUNGSREGELN =========================================================
@@ -332,6 +373,25 @@ const ERKENNUNGSREGELN = {
     gesamt: ["Rechnungsbetrag", "Gesamtbetrag", "Gesamtsumme", "Endbetrag", "Summe brutto",
       "Bruttobetrag", "Brutto", "Zahlbetrag", "Zu zahlen", "Gesamt"],
     bic: ["BIC", "SWIFT"],
+    // Überschriften über den Anschriften
+    empfaenger: ["Rechnungsempfänger", "Rechnung an", "Rechnungsadresse", "Empfänger", "Kunde", "An"],
+    absender: ["Rechnungssteller", "Rechnungsaussteller", "Absender", "Lieferant", "Auftragnehmer", "Von"],
+    telefon: ["Telefon", "Tel.", "Tel", "Fon", "Mobil", "Handy", "Phone"],
+    steuernummer: ["Steuernummer", "Steuer-Nr.", "St.-Nr.", "St-Nr.", "StNr."],
+  },
+
+  // Erste Zeile einer Anschrift, die nicht zum Namen gehört
+  anrede: ["Firma", "Herrn", "Herr", "Frau"],
+
+  // Kleine Absenderzeile über dem Anschriftfeld: "Muster GmbH · Hauptstr. 1 · 20095 Hamburg"
+  absenderzeileTrenner: /\s*[·•|]\s*|\s+[–-]\s+/,
+
+  // Ländernamen in Anschriften und ihr Code
+  laender: {
+    deutschland: "DE", germany: "DE", "österreich": "AT", austria: "AT", schweiz: "CH", switzerland: "CH",
+    bulgarien: "BG", bulgaria: "BG", niederlande: "NL", netherlands: "NL", belgien: "BE", belgium: "BE",
+    luxemburg: "LU", luxembourg: "LU", frankreich: "FR", france: "FR", italien: "IT", italy: "IT",
+    spanien: "ES", spain: "ES", polen: "PL", poland: "PL", "dänemark": "DK", denmark: "DK",
   },
 
   // In Zeilen mit diesen Wörtern steht kein Rechnungsdatum (sondern z.B. das Leistungsdatum).
@@ -396,6 +456,23 @@ function pruefeKopfdaten(kopf) {
         hinweise.push({ feld: "umsatzsteuer", stufe: "unsicher", text: TEXTE.steuerRechnung(satz, alsBetrag(soll)) });
       }
     }
+  }
+  return hinweise;
+}
+
+/** Prüft Absender und Empfänger. Felder heißen z.B. "absender.name". */
+function pruefeParteien({ absender, empfaenger }) {
+  const hinweise = [];
+  for (const [rolle, partei] of Object.entries({ absender, empfaenger })) {
+    for (const feld of ["name", "plz", "ort"]) {
+      if (!partei[feld]) hinweise.push({ feld: `${rolle}.${feld}`, stufe: "fehlt", text: TEXTE.fehlt });
+    }
+    if (partei.land && partei.land.wert !== "DE") {
+      hinweise.push({ feld: `${rolle}.land`, stufe: "unsicher", text: TEXTE.nichtDeutschland });
+    }
+  }
+  if (!absender.ustId && !absender.steuernummer) {
+    hinweise.push({ feld: "absender.ustId", stufe: "fehlt", text: TEXTE.ustOderSteuernummer });
   }
   return hinweise;
 }
@@ -639,7 +716,7 @@ function textLinksVon(zeile, x) {
 }
 
 function fund(wert, zeile, unsicher) {
-  const ergebnis = { wert, seite: zeile.seite, zeile: zeile.nr };
+  const ergebnis = { wert, seite: zeile.seite, zeile: zeile.nr, y: zeile.y };
   if (unsicher) ergebnis.unsicher = unsicher;
   return ergebnis;
 }
@@ -768,10 +845,208 @@ function findeUstIds(zeilen, iban) {
       if (!passend) continue;
       const nummer = land + passend;
       if (iban && iban.wert.includes(nummer)) continue;
-      if (!ergebnis.some((u) => u.wert === nummer)) ergebnis.push(fund(nummer, zeile));
+      if (ergebnis.some((u) => u.wert === nummer)) continue;
+      // x der Spalte merken, damit die Nummer einer Anschrift zugeordnet werden kann
+      ergebnis.push({ ...fund(nummer, zeile), x: zelleAnStelle(zeile, t.index).x });
     }
   }
   return ergebnis;
+}
+
+// --- Absender und Empfänger ---------------------------------------------------
+
+// "65203 Wiesbaden", "D-20095 Hamburg", "2777 Dobrinishte"
+const PLZ_ORT = /^(?:D-|DE-)?(\d{5}|\d{4})\s+(\p{Lu}[\p{L}\p{M} .\-\/()]*)$/u;
+
+/**
+ * Erkennt Absender (Rechnungssteller) und Empfänger.
+ * Ergebnis: { absender, empfaenger }, jede Partei mit
+ *   name, adresse (Liste der Zeilen zwischen Name und PLZ), plz, ort, land,
+ *   ustId, steuernummer, email, telefon – jeweils als Fund oder null.
+ */
+function erkenneParteien(pdf, kopf) {
+  const zeilen = alleZeilen(pdf);
+  const regeln = ERKENNUNGSREGELN.beschriftungen;
+  const bloecke = findeAdressbloecke(zeilen);
+  const mitBeschriftung = (liste) => bloecke.find((b) => b.beschriftung && passtGenau(b.beschriftung, liste));
+
+  let empfaengerBlock = mitBeschriftung(regeln.empfaenger);
+  let absenderBlock = mitBeschriftung(regeln.absender);
+  if (!empfaengerBlock) {
+    // Ohne Überschrift: das Anschriftfeld oben links auf der ersten Seite
+    const halbe = pdf.seiten[0].breite / 2;
+    empfaengerBlock = bloecke
+      .filter((b) => b !== absenderBlock && b.seite === 1)
+      .sort((a, b) => (a.x < halbe ? 0 : 1) - (b.x < halbe ? 0 : 1) || a.y - b.y)[0];
+  }
+  const empfaenger = parteiAus(empfaengerBlock);
+  const absender = absenderBlock ? parteiAus(absenderBlock)
+    : absenderAusAbsenderzeile(zeilen, empfaengerBlock)
+      || parteiAus(bloecke.find((b) => b !== empfaengerBlock));
+
+  // USt-IdNrn.: die in der Spalte einer Anschrift gehört zu ihr, die übrigen zum Absender
+  const bei = (f, block) => block && f.seite === block.seite && Math.abs(f.x - block.x) <= 4
+    && f.y >= block.y - 1 && f.y <= block.yUnten + 5 * block.groesse;
+  for (const ustId of kopf.ustIds) {
+    if (!empfaenger.ustId && bei(ustId, empfaengerBlock)) empfaenger.ustId = ustId;
+    else if (!absender.ustId && (bei(ustId, absenderBlock) || !bei(ustId, empfaengerBlock))) absender.ustId = ustId;
+  }
+
+  // Steuernummer, E-Mail und Telefon stehen fast immer beim Absender (Briefkopf, Fußzeile)
+  absender.steuernummer = findeNachBeschriftung(zeilen, regeln.steuernummer, steuernummerIn);
+  const nichtBeimEmpfaenger = (f) => f && !(empfaengerBlock && f.seite === empfaengerBlock.seite
+    && f.y >= empfaengerBlock.y - 1 && f.y <= empfaengerBlock.yUnten);
+  absender.email = findeEmails(zeilen).find(nichtBeimEmpfaenger) || null;
+  const telefon = findeNachBeschriftung(zeilen, regeln.telefon, telefonIn) || findeTelefonOhneBeschriftung(zeilen);
+  absender.telefon = nichtBeimEmpfaenger(telefon) ? telefon : null;
+
+  return { absender, empfaenger };
+}
+
+/**
+ * Sucht Anschriften: eine Zeile "PLZ Ort" und darüber, in derselben Spalte,
+ * Name und Straße. Steht darüber eine Überschrift wie "Rechnung an", wird sie
+ * gemerkt. Darunter darf ein Land stehen.
+ */
+function findeAdressbloecke(zeilen) {
+  const bloecke = [];
+  const ueberschriften = [...ERKENNUNGSREGELN.beschriftungen.empfaenger, ...ERKENNUNGSREGELN.beschriftungen.absender];
+  for (let i = 0; i < zeilen.length; i++) {
+    for (const zelle of zellenDerZeile(zeilen[i])) {
+      const treffer = PLZ_ORT.exec(zelle.text);
+      if (!treffer) continue;
+      const block = {
+        seite: zelle.seite, x: zelle.x, y: zelle.y, yUnten: zelle.y, groesse: zelle.groesse,
+        beschriftung: null, zellen: [], plzZelle: zelle, plz: treffer[1], ort: treffer[2].trim(), land: null,
+      };
+      // nach oben: Name, Straße, Zusätze – bis zur Überschrift oder Lücke
+      let oben = zelle;
+      for (let j = i - 1; j >= 0 && j >= i - 6; j--) {
+        const darueber = zelleBei(zeilen[j], zelle.x);
+        if (!darueber || darueber.seite !== zelle.seite || oben.y - darueber.y > 2.6 * zelle.groesse) break;
+        if (passtGenau(darueber.text, ueberschriften)) { block.beschriftung = darueber.text; break; }
+        if (istAbsenderzeile(darueber.text)) break;
+        block.zellen.unshift(darueber);
+        oben = darueber;
+      }
+      if (!block.zellen.length) continue;
+      block.y = oben.y;
+      // nach unten: Land
+      const darunter = zeilen[i + 1] && zelleBei(zeilen[i + 1], zelle.x);
+      const land = darunter && ERKENNUNGSREGELN.laender[darunter.text.trim().toLowerCase()];
+      if (land) { block.land = { ...fundAusZelle(land, darunter), text: darunter.text }; block.yUnten = darunter.y; }
+      bloecke.push(block);
+    }
+  }
+  return bloecke;
+}
+
+function parteiAus(block) {
+  const leer = { name: null, adresse: [], plz: null, ort: null, land: null,
+    ustId: null, steuernummer: null, email: null, telefon: null };
+  if (!block) return leer;
+  const zellen = block.zellen.filter((z, i) => !(i === 0 && passtGenau(z.text, ERKENNUNGSREGELN.anrede)));
+  const [name, ...adresse] = zellen;
+  return {
+    ...leer,
+    name: name ? fundAusZelle(name.text, name) : null,
+    adresse: adresse.map((z) => fundAusZelle(z.text, z)),
+    plz: fundAusZelle(block.plz, block.plzZelle),
+    ort: fundAusZelle(block.ort, block.plzZelle),
+    land: block.land || { ...fundAusZelle("DE", block.plzZelle), angenommen: true },
+  };
+}
+
+/** "Muster Handwerk GmbH · Hauptstr. 1 · 20095 Hamburg" über dem Anschriftfeld */
+function absenderAusAbsenderzeile(zeilen, empfaengerBlock) {
+  for (const zeile of zeilen) {
+    if (zeile.seite !== 1) continue;
+    if (empfaengerBlock && zeile.y >= empfaengerBlock.y) break;
+    for (const zelle of zellenDerZeile(zeile)) {
+      if (!istAbsenderzeile(zelle.text)) continue;
+      const teile = zelle.text.split(ERKENNUNGSREGELN.absenderzeileTrenner).map((t) => t.trim()).filter(Boolean);
+      const stelle = teile.findIndex((t) => PLZ_ORT.test(t));
+      const [, plz, ort] = PLZ_ORT.exec(teile[stelle]);
+      const block = { seite: zelle.seite, x: zelle.x, y: zelle.y, yUnten: zelle.y, groesse: zelle.groesse,
+        zellen: teile.slice(0, stelle).map((text) => ({ ...zelle, text })), plzZelle: zelle, plz, ort: ort.trim() };
+      return parteiAus(block);
+    }
+  }
+  return null;
+}
+
+function istAbsenderzeile(text) {
+  const teile = text.split(ERKENNUNGSREGELN.absenderzeileTrenner);
+  return teile.length >= 3 && teile.some((t) => PLZ_ORT.test(t.trim()));
+}
+
+/** Passt der Text genau zu einer der Beschriftungen? (ohne Doppelpunkt, Groß/klein egal) */
+function passtGenau(text, liste) {
+  const rein = text.replace(/[:\s]+$/, "").trim().toLowerCase();
+  return liste.some((b) => b.toLowerCase() === rein);
+}
+
+/**
+ * Teilt eine Zeile in Zellen: Textstücke, zwischen denen kaum Abstand ist,
+ * gehören zusammen. Jede Zelle hat x, x2, y, text, groesse, seite, zeile.
+ */
+function zellenDerZeile(zeile) {
+  const zellen = [];
+  for (const stueck of zeile.stuecke) {
+    const letzte = zellen.at(-1);
+    if (letzte && stueck.x - letzte.x2 < 1.5 * stueck.groesse) {
+      letzte.text += (stueck.x - letzte.x2 > 0.15 * stueck.groesse ? " " : "") + stueck.text.trim();
+      letzte.x2 = stueck.x2;
+      letzte.stuecke.push(stueck);
+    } else {
+      zellen.push({ text: stueck.text.trim(), x: stueck.x, x2: stueck.x2, y: zeile.y, groesse: stueck.groesse,
+        seite: zeile.seite, zeile: zeile.nr, stuecke: [stueck] });
+    }
+  }
+  return zellen;
+}
+
+function zelleBei(zeile, x) {
+  return zellenDerZeile(zeile).find((z) => Math.abs(z.x - x) <= 4) || null;
+}
+
+/** Die Zelle, in der das Zeichen an dieser Stelle des Zeilentexts steht. */
+function zelleAnStelle(zeile, stelle) {
+  let laenge = 0;
+  let stueck = zeile.stuecke.at(-1);
+  for (const s of zeile.stuecke) {
+    laenge += s.text.trim().length + 1;
+    if (stelle < laenge) { stueck = s; break; }
+  }
+  return zellenDerZeile(zeile).find((z) => z.stuecke.includes(stueck));
+}
+
+function fundAusZelle(wert, zelle) {
+  return { wert, seite: zelle.seite, zeile: zelle.zeile, y: zelle.y };
+}
+
+function steuernummerIn(text) {
+  const treffer = /^[\s:.]*(\d{2,3}\/\d{3,4}\/\d{4,5}|\d{10,13})(?!\d)/.exec(text);
+  return treffer ? { wert: treffer[1] } : null;
+}
+
+function telefonIn(text) {
+  const treffer = /^[\s:.]*(\+?\d[\d \/\-()]{5,}\d)/.exec(text);
+  return treffer ? { wert: treffer[1].trim() } : null;
+}
+
+/** Telefonnummer ohne Beschriftung: nur in internationaler Schreibweise (+49 …). */
+function findeTelefonOhneBeschriftung(zeilen) {
+  for (const zeile of zeilen) {
+    const treffer = /(?<![\w])(\+\d{2}[\d \/\-()]{6,}\d)/.exec(zeile.text);
+    if (treffer) return fund(treffer[1].trim(), zeile);
+  }
+  return null;
+}
+
+function findeEmails(zeilen) {
+  return zeilen.flatMap((zeile) =>
+    [...zeile.text.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map((t) => fund(t[0], zeile)));
 }
 
 // --- Darstellung -------------------------------------------------------------
@@ -793,7 +1068,8 @@ function alsDatum(iso) {
 window.XFact = {
   TEXTE, ERKENNUNGSREGELN, PRUEFUNGEN, KI,
   lesePdf, zuZeilen, alsLayoutText, hatText,
-  erkenneKopfdaten, pruefeKopfdaten, betraege, datumsangaben, ibanPruefzifferOk,
+  erkenneKopfdaten, pruefeKopfdaten, erkenneParteien, pruefeParteien,
+  betraege, datumsangaben, ibanPruefzifferOk,
   alsBetrag, alsDatum,
 };
 </script>
@@ -803,7 +1079,8 @@ window.XFact = {
 // Die drei Schritte und die Bedienung der Seite.
 // =============================================================================
 
-const { TEXTE, lesePdf, alsLayoutText, hatText, erkenneKopfdaten, pruefeKopfdaten, alsBetrag, alsDatum } = window.XFact;
+const { TEXTE, lesePdf, alsLayoutText, hatText, erkenneKopfdaten, pruefeKopfdaten,
+  erkenneParteien, pruefeParteien, alsBetrag, alsDatum } = window.XFact;
 
 const $ = (id) => document.getElementById(id);
 
@@ -839,6 +1116,8 @@ async function dateiGewaehlt(datei) {
   $("pruefen-dateiname").textContent = datei.name;
   $("pruefen-info").textContent = TEXTE.seitenUndZeilen(pdf.seiten.length, zeilen);
   const kopf = erkenneKopfdaten(pdf);
+  const parteien = erkenneParteien(pdf, kopf);
+  zeigeParteien(parteien, pruefeParteien(parteien));
   zeigeKopfdaten(kopf, pruefeKopfdaten(kopf));
   $("rohtext").textContent = alsLayoutText(pdf);
   zeigeSchritt("pruefen");
@@ -858,7 +1137,6 @@ function zeigeKopfdaten(kopf, hinweise) {
     ["gesamt", f.gesamt, kopf.gesamt && alsBetrag(kopf.gesamt.wert)],
     ["iban", f.iban, kopf.iban && kopf.iban.wert.replace(/(.{4})/g, "$1 ").trim()],
     ["bic", f.bic, kopf.bic?.wert],
-    ["ustIds", f.ustIds, kopf.ustIds.map((u) => u.wert).join(", ")],
   ];
 
   const liste = $("kopfdaten");
@@ -873,15 +1151,70 @@ function zeigeKopfdaten(kopf, hinweise) {
     wertSpan.textContent = wert || "–";
     dd.append(wertSpan);
     if (!gezeigt.has(feld)) {
-      for (const hinweis of hinweise.filter((h) => h.feld === feld)) {
-        const marke = document.createElement("span");
-        marke.className = `hinweis ${hinweis.stufe}`;
-        marke.textContent = hinweis.text;
-        dd.append(marke);
-      }
+      dd.append(...hinweisMarken(hinweise, feld));
       gezeigt.add(feld);
     }
     liste.append(dt, dd);
+  }
+}
+
+/** Die Hinweise zu einem oder mehreren Feldern als farbige Marken. */
+function hinweisMarken(hinweise, ...felder) {
+  return hinweise.filter((h) => felder.includes(h.feld)).map((hinweis) => {
+    const marke = document.createElement("span");
+    marke.className = `hinweis ${hinweis.stufe}`;
+    marke.textContent = hinweis.text;
+    return marke;
+  });
+}
+
+/** Zeigt Absender ("Von") und Empfänger ("An") nebeneinander. */
+function zeigeParteien(parteien, hinweise) {
+  const bereich = $("parteien");
+  bereich.replaceChildren();
+  for (const rolle of ["absender", "empfaenger"]) {
+    const p = parteien[rolle];
+    const feld = (name) => `${rolle}.${name}`;
+    const kasten = document.createElement("div");
+    kasten.className = "partei";
+    const titel = document.createElement("h3");
+    titel.textContent = TEXTE.parteien[rolle];
+    kasten.append(titel);
+
+    const zeile = (text, klasse, ...felder) => {
+      const marken = hinweisMarken(hinweise, ...felder.map(feld));
+      if (!text && !marken.length) return;
+      const div = document.createElement("div");
+      div.className = `zeile ${klasse || ""}`;
+      const span = document.createElement("span");
+      span.textContent = text || "–";
+      div.append(span, ...marken);
+      kasten.append(div);
+    };
+    zeile(p.name?.wert, "name", "name");
+    for (const adresse of p.adresse) zeile(adresse.wert);
+    zeile([p.plz?.wert, p.ort?.wert].filter(Boolean).join(" "), "", "plz", "ort");
+    zeile(p.land && !p.land.angenommen ? p.land.text : null, "", "land");
+
+    const details = document.createElement("dl");
+    const eintrag = (bezeichnung, wert, name) => {
+      const marken = hinweisMarken(hinweise, feld(name));
+      if (!wert && !marken.length) return;
+      const dt = document.createElement("dt");
+      dt.textContent = bezeichnung;
+      const dd = document.createElement("dd");
+      const span = document.createElement("span");
+      span.textContent = wert || "–";
+      dd.append(span, ...marken);
+      details.append(dt, dd);
+    };
+    const pf = TEXTE.parteiFelder;
+    eintrag(pf.ustId, p.ustId?.wert, "ustId");
+    eintrag(pf.steuernummer, p.steuernummer?.wert, "steuernummer");
+    eintrag(pf.email, p.email?.wert, "email");
+    eintrag(pf.telefon, p.telefon?.wert, "telefon");
+    if (details.children.length) kasten.append(details);
+    bereich.append(kasten);
   }
 }
 

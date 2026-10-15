@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
-import { ladeFachlogik } from "./fachlogik";
+import { ladeFachlogik, pdfAus as pdfAusZeilen } from "./fachlogik";
 
 /**
  * Erkennung der Kopfdaten: Rechnungsnummer, Datum, Fälligkeit, Summen, IBAN, BIC, USt-IdNr.
@@ -19,14 +19,7 @@ async function lies(datei: string) {
   return XFact.lesePdf(daten, pdfjs);
 }
 
-/** Baut ein "gelesenes PDF" aus Textzeilen; jede Zeile darf mehrere Stücke [x, text] haben. */
-function pdfAus(...zeilen: (string | [number, string][])[]) {
-  const stuecke = zeilen.flatMap((zeile, i) => {
-    const teile = typeof zeile === "string" ? [[50, zeile] as [number, string]] : zeile;
-    return teile.map(([x, text]) => ({ text, x, x2: x + text.length * 5, y: 40 + i * 14, groesse: 10 }));
-  });
-  return { seiten: [{ breite: 595, hoehe: 842, zeilen: XFact.zuZeilen(stuecke) }] };
-}
+const pdfAus = (...zeilen: (string | [number, string][])[]) => pdfAusZeilen(XFact, ...zeilen);
 
 const werte = (kopf: any) => ({
   rechnungsnummer: kopf.rechnungsnummer?.wert,

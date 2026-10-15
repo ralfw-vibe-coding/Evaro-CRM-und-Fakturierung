@@ -20,3 +20,16 @@ export function ladeFachlogik(): any {
   runInContext(treffer[1], umgebung, { filename: "xfact.html#xfact-fachlogik" });
   return umgebung.XFact;
 }
+
+/**
+ * Baut ein "gelesenes PDF" aus Textzeilen, wie es lesePdf() liefert.
+ * Jede Zeile ist ein Text (bei x = 50) oder eine Liste von Stücken [x, text].
+ * Die Zeilen liegen 14 pt auseinander, die Schrift ist 10 pt groß.
+ */
+export function pdfAus(XFact: any, ...zeilen: (string | [number, string][])[]) {
+  const stuecke = zeilen.flatMap((zeile, i) => {
+    const teile = typeof zeile === "string" ? [[50, zeile] as [number, string]] : zeile;
+    return teile.map(([x, text]) => ({ text, x, x2: x + text.length * 5, y: 40 + i * 14, groesse: 10 }));
+  });
+  return { seiten: [{ breite: 595, hoehe: 842, zeilen: XFact.zuZeilen(stuecke) }] };
+}
