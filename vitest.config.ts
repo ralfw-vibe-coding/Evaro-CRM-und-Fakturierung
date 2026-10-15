@@ -8,7 +8,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["backend/src/**/*.test.ts", "frontend/src/**/*.test.{ts,tsx}"],
+    include: ["backend/src/**/*.test.ts", "frontend/src/**/*.test.{ts,tsx}", "XFact/tests/**/*.test.ts"],
     coverage: {
       provider: "v8",
       // Coverage requirement applies to the domain logic (RPUs) and the

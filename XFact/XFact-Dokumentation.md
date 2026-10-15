@@ -229,6 +229,7 @@ Am Anfang der Datei steht eine Übersicht. Darunter folgen deutlich markierte Ab
 | **KI** | Voreinstellungen für Anbieter und Modell, die Anweisung an die KI |
 | **XML-ERZEUGUNG** | wie aus den Rechnungsdaten die XRechnung entsteht |
 | **PDF LESEN** | wie der Text aus dem PDF geholt und zu Zeilen zusammengesetzt wird |
+| **ERKENNUNG** | wie die Erkennungsregeln angewendet werden, z.B. wo nach einem Wert gesucht wird |
 | **ABLAUF** | die drei Schritte und was bei einem Klick passiert |
 | **BIBLIOTHEKEN** | eingebettete Fremdbibliotheken, z.B. zum Lesen von PDFs. **Nicht ändern.** |
 

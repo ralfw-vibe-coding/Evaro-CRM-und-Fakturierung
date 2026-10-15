@@ -300,6 +300,7 @@ Begründung: Aus React- und Tailwind-Code entsteht beim Bauen eine Datei, die ma
   - **KI**
   - **XML-ERZEUGUNG**
   - **PDF LESEN**
+  - **ERKENNUNG**
   - **ABLAUF**
   - **BIBLIOTHEKEN**
 - Code und Kommentare sind deutsch benannt bzw. kommentiert, wo das dem Verständnis dient.
@@ -310,7 +311,8 @@ Begründung: Aus React- und Tailwind-Code entsteht beim Bauen eine Datei, die ma
 **Hosting:** Der Evaro-Build kopiert `XFact/xfact.html` nach `frontend/dist/xfact/index.html`. Bei der Umsetzung ist zu prüfen, dass Anmeldung und SPA-Weiterleitung von Evaro diesen Pfad nicht abfangen.
 
 **Tests:**
-- vitest mit einer DOM-Umgebung lädt `xfact.html` und prüft die Fachfunktionen. Sie sind dafür unter `window.XFact` erreichbar: Zahlen- und Datumserkennung, Positionserkennung, Rechenkontrolle, XML-Erzeugung.
+- Der Code ist in zwei Skriptteile getrennt: **Fachlogik** (`<script id="xfact-fachlogik">`, ohne Zugriff auf die Seite) und **Ablauf** (Bedienung). Die Fachlogik stellt ihre Funktionen unter `window.XFact` bereit.
+- vitest lädt den Fachlogik-Teil direkt aus `xfact.html` (`XFact/tests/fachlogik.ts`) und liest die Beispiel-PDFs mit pdf.js aus `node_modules`. Getestet wird also genau der ausgelieferte Code, ohne Browser-Umgebung.
 - Ein Testskript prüft die erzeugten XMLs mit dem KoSIT-Validator. Das vorhandene `scripts/validate-xrechnung.mjs` wird wiederverwendet. Es ist nur ein Werkzeug für die Entwicklung (Java) und wird nicht ausgeliefert.
 
 ## 12. Abnahme
