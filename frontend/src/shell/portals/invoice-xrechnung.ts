@@ -1,6 +1,12 @@
 import type { AppSettings, Invoice, InvoiceLine } from "@/domain/model";
 import { invoiceUnitCode } from "@/domain/invoice-units";
-import { invoiceTotal, lineTotal, offsetIsoDate, paymentTermsText } from "./invoice-print-format";
+import {
+  invoiceFileStem,
+  invoiceTotal,
+  lineTotal,
+  offsetIsoDate,
+  paymentTermsText,
+} from "./invoice-print-format";
 
 /**
  * XRechnung 3.0 in CII-Syntax (UN/CEFACT D16B) — dieselbe Syntax wie ZUGFeRD,
@@ -174,10 +180,24 @@ function taxBlock(invoice: Invoice, language: "de" | "en"): TaxBlock {
 // ── Prüfungen ────────────────────────────────────────────────────────────────
 
 /**
+ * Prüfung vor dem Abrechnen: alles ausser Rechnungsnummer und -datum, die
+ * das Abrechnen selbst erst vergibt. Schlägt sie an, wird der Statuswechsel
+ * abgelehnt — eine Rechnung, zu der es keine gültige XRechnung geben kann,
+ * soll gar nicht erst entstehen.
+ */
+export function checkXRechnungBeforeBilling(invoice: Invoice, settings: AppSettings): string[] {
+  return collectIssues(invoice, settings, { billed: false });
+}
+
+/**
  * Alles, was einer gültigen XRechnung im Weg steht — als Liste, damit die
  * Oberfläche sie gesammelt zeigen kann statt eine nach der anderen.
  */
 export function checkXRechnung(invoice: Invoice, settings: AppSettings): string[] {
+  return collectIssues(invoice, settings, { billed: true });
+}
+
+function collectIssues(invoice: Invoice, settings: AppSettings, scope: { billed: boolean }): string[] {
   const issues: string[] = [];
   const seller = settings.invoicing;
   const buyer = invoice.gp_snapshot;
@@ -237,8 +257,14 @@ export function checkXRechnung(invoice: Invoice, settings: AppSettings): string[
   });
 
   if (!(invoiceTotal(invoice).gross > 0)) issues.push("Der Rechnungsbetrag muss grösser als 0 sein.");
-  if (!invoice.invoice_date) issues.push("Das Rechnungsdatum fehlt — die Rechnung ist noch nicht abgerechnet.");
-  if (dueDate(invoice) === undefined) issues.push("Zahlungsbedingungen: Zahlungszeitraum in Tagen fehlt.");
+  if (invoice.data.payment_due_days === undefined) {
+    issues.push("Zahlungsbedingungen: Zahlungszeitraum in Tagen fehlt.");
+  }
+
+  // Nummer und Datum vergibt das Abrechnen — vorher wäre ihr Fehlen kein Mangel.
+  if (scope.billed && !invoice.invoice_date) {
+    issues.push("Das Rechnungsdatum fehlt — die Rechnung ist noch nicht abgerechnet.");
+  }
 
   return issues;
 }
@@ -415,7 +441,7 @@ export function buildInvoiceXml(invoice: Invoice, settings: AppSettings): string
   return body.join("\n");
 }
 
-/** Dateiname laut Anforderung: Rechnungsnummer mit führenden Nullen. */
+/** Gleicher Stamm wie das PDF, damit beide Dateien zusammen bleiben. */
 export function invoiceXmlFilename(invoice: Invoice): string {
-  return `Rechnung-${invoice.invoice_number ?? "0000000000"}.xml`;
+  return `${invoiceFileStem(invoice.invoice_number ?? "0000000000", invoice.gp_snapshot.name)}.xml`;
 }

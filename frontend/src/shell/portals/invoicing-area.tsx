@@ -41,7 +41,12 @@ import {
 } from "./invoice-print-format";
 import { createInvoicePdfBlob, invoiceFilenameFor } from "./invoice-pdf";
 import { INVOICE_UNIT_LABELS } from "@/domain/invoice-units";
-import { buildInvoiceXml, checkXRechnung, invoiceXmlFilename } from "./invoice-xrechnung";
+import {
+  buildInvoiceXml,
+  checkXRechnung,
+  checkXRechnungBeforeBilling,
+  invoiceXmlFilename,
+} from "./invoice-xrechnung";
 
 const NO_PASSWORD_MANAGER_PROPS = {
   autoComplete: "new-password",
@@ -460,6 +465,7 @@ function InvoiceDetail({
   const [printInvoice, setPrintInvoice] = React.useState<Invoice | null>(null);
   const [printSettings, setPrintSettings] = React.useState<AppSettings>(EMPTY_APP_SETTINGS);
   const [savedInfo, setSavedInfo] = React.useState<string | null>(null);
+  const [billIssues, setBillIssues] = React.useState<string[]>([]);
   const [deleteLineId, setDeleteLineId] = React.useState<string | null>(null);
   const [focusLineId, setFocusLineId] = React.useState<string | null>(null);
   const [confirmClose, setConfirmClose] = React.useState(false);
@@ -600,6 +606,24 @@ function InvoiceDetail({
       setBilling(false);
       return;
     }
+
+    // Zu jeder abgerechneten Rechnung muss sich eine gültige XRechnung erzeugen
+    // lassen. Fehlt etwas, bleibt sie Entwurf — später nachbessern hiesse, sie
+    // in den Entwurf zurückzuholen und die Rechnungsnummer zu verbrennen.
+    const settingsResult = await loadAppSettingsRpu();
+    if (!settingsResult.ok) {
+      setBilling(false);
+      onError(settingsResult.error);
+      return;
+    }
+    const issues = checkXRechnungBeforeBilling(savedInvoice, settingsResult.settings);
+    if (issues.length > 0) {
+      setBilling(false);
+      setBillIssues(issues);
+      return;
+    }
+    setBillIssues([]);
+
     const result = await billInvoiceRpu(savedInvoice.id);
     setBilling(false);
     if (!result.ok) {
@@ -679,6 +703,18 @@ function InvoiceDetail({
 
   return (
     <div className="grid gap-6 p-6">
+      {billIssues.length > 0 && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          <div className="font-semibold">
+            Noch nicht abrechenbar — dazu liesse sich keine gültige XRechnung erzeugen:
+          </div>
+          <ul className="mt-1 list-disc pl-4">
+            {billIssues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2 border-b border-[var(--border)] bg-[var(--background)] pb-4">
         <div className="flex items-center font-semibold">
           <StatusFlow

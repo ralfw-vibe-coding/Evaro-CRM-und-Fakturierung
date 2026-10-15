@@ -65,7 +65,11 @@ export function invoiceTitle(language: InvoicePrintLanguage, invoiceNumber: stri
   return language === "en" ? `Invoice #${invoiceNumber}` : `Rechnung Nr. ${invoiceNumber}`;
 }
 
-export function invoicePdfFilename(invoiceNumber: string, companyName: string): string {
+/**
+ * Gemeinsamer Dateiname-Stamm für PDF und XRechnung — beide gehören zur selben
+ * Rechnung und sollen im Dateisystem nebeneinander stehen.
+ */
+export function invoiceFileStem(invoiceNumber: string, companyName: string): string {
   const parsedNumber = Number.parseInt(invoiceNumber, 10);
   const normalizedNumber = Number.isNaN(parsedNumber) ? invoiceNumber : String(parsedNumber);
   const safeCompany = companyName
@@ -74,8 +78,14 @@ export function invoicePdfFilename(invoiceNumber: string, companyName: string): 
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 25)
-    .trim();
-  return `INV ${normalizedNumber} ${safeCompany || "Kunde"}.pdf`;
+    // Abschliessende Punkte würden vor der Endung doppelt stehen ("Co..pdf")
+    // und sind in Windows-Dateinamen ohnehin unzulässig.
+    .replace(/[.\s]+$/, "");
+  return `INV ${normalizedNumber} ${safeCompany || "Kunde"}`;
+}
+
+export function invoicePdfFilename(invoiceNumber: string, companyName: string): string {
+  return `${invoiceFileStem(invoiceNumber, companyName)}.pdf`;
 }
 
 /** Kaufmännisch auf zwei Stellen. */
