@@ -308,7 +308,7 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
             />
           </SettingsField>
           <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
-            <SettingsField label="USt-Nr.">
+            <SettingsField label="USt-IdNr.">
               <Input value={draft.vat_number ?? ""} onChange={(event) => patch("vat_number", event.target.value)} />
             </SettingsField>
             <SettingsField label="Firmenregistrierung">
