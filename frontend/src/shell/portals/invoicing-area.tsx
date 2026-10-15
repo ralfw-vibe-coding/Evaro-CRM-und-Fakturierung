@@ -39,6 +39,7 @@ import {
   standardPaymentTermsLine,
 } from "./invoice-print-format";
 import { createInvoicePdfBlob, invoiceFilenameFor } from "./invoice-pdf";
+import { INVOICE_UNIT_LABELS } from "@/domain/invoice-units";
 
 const NO_PASSWORD_MANAGER_PROPS = {
   autoComplete: "new-password",
@@ -804,8 +805,16 @@ function InvoiceDetail({
                   value={line.service_date ?? ""}
                   aria-label="Leistungsdatum"
                   placeholder="Leistungsdatum"
-                  title="Leistungsdatum"
-                  className="col-span-3 min-w-0"
+                  title={
+                    line.service_date
+                      ? "Leistungsdatum"
+                      : "Leistungsdatum fehlt — ohne sie lässt sich keine XRechnung erzeugen"
+                  }
+                  className={cn(
+                    "col-span-3 min-w-0",
+                    // Die XRechnung verlangt je Position einen Leistungszeitpunkt.
+                    invoice.status === "draft" && !line.service_date && "border-[var(--destructive)]",
+                  )}
                   onChange={(event) => patchLine(line.id, { service_date: event.target.value })}
                   onFocus={(event) => event.target.select()}
                   disabled={invoice.status !== "draft"}
@@ -1427,14 +1436,14 @@ function filterInvoices(
 function getInvoiceTagOptions(invoices: Invoice[]) {
   const forms = new Set<string>();
   const topics = new Set<string>();
-  const units = new Set<string>();
   for (const invoice of invoices) {
     for (const line of invoice.data.lines) {
       if (line.product_form) forms.add(line.product_form);
       if (line.product_topic) topics.add(line.product_topic);
-      if (line.unit) units.add(line.unit);
     }
   }
   const sort = (items: Set<string>) => [...items].sort((a, b) => a.localeCompare(b, "de"));
-  return { forms: sort(forms), topics: sort(topics), units: sort(units) };
+  // Einheiten kommen aus der festen Liste statt aus den Bestandsdaten: nur für
+  // sie gibt es einen Code, und ohne Code lässt sich keine XRechnung erzeugen.
+  return { forms: sort(forms), topics: sort(topics), units: INVOICE_UNIT_LABELS };
 }
