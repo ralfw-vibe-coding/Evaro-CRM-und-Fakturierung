@@ -4,14 +4,34 @@
     {
       "name": "evaro",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 8888
     },
     {
       "name": "evaro-memory",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:memory"],
+      "runtimeArgs": [
+        "run",
+        "dev:memory"
+      ],
       "port": 8888
+    },
+    {
+      "name": "xfact",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "/Users/ralfw/Repositories/08 Vibe Coding/Evaro CRM und Fakturierung"
+      ],
+      "port": 8765
     }
   ]
 }

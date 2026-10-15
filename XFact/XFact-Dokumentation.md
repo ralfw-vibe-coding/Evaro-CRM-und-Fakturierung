@@ -2,7 +2,7 @@
 
 **Aus Ihrer PDF-Rechnung wird eine XRechnung.** Sie müssen dafür Ihr Rechnungsprogramm nicht umbauen.
 
-Stand: Version 1 (Sollstand laut [Briefing](Briefing-PDF-zu-XRechnung.md)) · Lizenz: MIT
+Version 1 · Lizenz: MIT
 
 ---
 
@@ -24,6 +24,7 @@ Diese XML-Datei verschicken Sie zusammen mit Ihrem gewohnten PDF an Ihren Kunden
 - Eine **XRechnung 3.0** erzeugen, die den offiziellen Prüfregeln entspricht.
 - Mit oder ohne KI arbeiten. KI ist optional und Ihre Entscheidung.
 - Ohne Internet laufen, mit der Offline-Version.
+- **Von Ihnen angepasst werden.** Farben, Layout, Texte, Regeln: Mit einem KI-Assistenten geht das auch ohne Programmierkenntnisse (Abschnitt 14).
 
 **XFact kann nicht:**
 - Gescannte Rechnungen (Bilder ohne Text) lesen.
@@ -149,7 +150,7 @@ Ohne KI erkennt XFact die Daten nach festen Regeln. Mit KI ist die Erkennung gen
 2. In XFact: **Menü → KI**, „KI verwenden“ einschalten, Schlüssel eintragen.
 3. **Verbindung testen** klicken.
 
-Voreingestellt ist das Modell `anthropic/claude-sonnet-5.5`. Im Test war es fehlerfrei und schnell, bei rund 1–2 Cent pro Rechnung. Günstiger und im Test ebenso genau sind `anthropic/claude-haiku-5.5` und `openai/gpt-6-luna`. Sie können jedes Modell eintragen, das OpenRouter anbietet.
+Voreingestellt ist das Modell `anthropic/claude-sonnet-5.5`. In unseren Tests war es fehlerfrei und schnell, bei rund 1–2 Cent pro Rechnung. Günstiger und in unseren Tests ebenso genau sind `anthropic/claude-haiku-5.5` und `openai/gpt-6-luna`. Sie können jedes Modell eintragen, das OpenRouter anbietet.
 
 ### Mit einer KI auf Ihrem Rechner (z.B. LM Studio)
 
@@ -201,8 +202,110 @@ In Deutschland gilt für Rechnungen zwischen Unternehmen: ab 2027 bei mehr als 8
 
 XFact ist Open Source unter der **MIT-Lizenz**. Sie dürfen es nutzen, verändern und weitergeben. Es wird **ohne Gewähr** bereitgestellt. Die Verantwortung für Ihre Rechnungen und deren Inhalt bleibt bei Ihnen.
 
-## 14. Für Entwickler
+Wer XFact verändert und weitergibt, passt bitte diese Dokumentation mit an.
 
-- Die vollständige Anforderung, mit Abläufen, Erkennung, Steuerfällen, Datenhaltung, Abnahme und Modelltest, steht im [Briefing](Briefing-PDF-zu-XRechnung.md).
-- Das Feld-Mapping zur XRechnung (CII-Syntax) steht in [Anforderung-XRechnung.md](Anforderung-XRechnung.md).
-- Diese Dokumentation beschreibt den **Sollstand von Version 1**. Wer XFact weiterentwickelt, passt sie bitte mit an.
+## 14. XFact anpassen
+
+**Ausdrücklich erwünscht.** XFact gehört Ihnen. Gefallen Ihnen die Farben nicht, passt das Layout nicht zu Ihren Rechnungen oder soll eine Regel anders funktionieren, dann ändern Sie es. Programmieren müssen Sie dafür nicht können. Ein KI-Assistent übernimmt das, Sie sagen ihm in normaler Sprache, was Sie wollen.
+
+### Was Sie brauchen
+
+- **Die Offline-Version** `xfact.html` (Menü → Offline-Version). Sie ist die ganze App in einer Datei, und ihr Programmcode ist lesbar und kommentiert.
+- **Diese Dokumentation** als `XFact-Dokumentation.md`
+- **Einen KI-Assistenten, der Dateien bearbeiten kann**, zum Beispiel Claude Code. Andere Assistenten wie Cursor, Codex oder Gemini CLI funktionieren ähnlich.
+
+### So ist xfact.html aufgebaut
+
+Am Anfang der Datei steht eine Übersicht. Darunter folgen deutlich markierte Abschnitte:
+
+| Abschnitt | Was darin steht |
+|---|---|
+| **FARBEN UND SCHRIFTEN** | alle Farben, Schriften und Abstände an einer Stelle |
+| **LAYOUT** | Aussehen der Bausteine: Karten, Knöpfe, Ablagefläche |
+| **SEITE** | Aufbau der Oberfläche: Kopfzeile, die drei Schritte, Fußzeile |
+| **TEXTE** | Hinweise beim Start, Meldungen, Beschriftungen |
+| **ERKENNUNGSREGELN** | Beschriftungen, nach denen gesucht wird (z.B. „Rechnungsnummer“, „Rg.-Nr.“), Einheiten, Hinweistexte der Steuerfälle |
+| **PRÜFUNGEN** | was rot oder gelb markiert wird |
+| **KI** | Voreinstellungen für Anbieter und Modell, die Anweisung an die KI |
+| **XML-ERZEUGUNG** | wie aus den Rechnungsdaten die XRechnung entsteht |
+| **PDF LESEN** | wie der Text aus dem PDF geholt und zu Zeilen zusammengesetzt wird |
+| **ABLAUF** | die drei Schritte und was bei einem Klick passiert |
+| **BIBLIOTHEKEN** | eingebettete Fremdbibliotheken, z.B. zum Lesen von PDFs. **Nicht ändern.** |
+
+### Los geht's
+
+1. Legen Sie einen neuen Ordner an, zum Beispiel `XFact anpassen`, und kopieren Sie beide Dateien hinein.
+2. **Sichern Sie die Originaldatei**, z.B. als `xfact-original.html`. Dann können Sie jederzeit zurück.
+3. **Exportieren Sie Ihre gemerkten Angaben** (Menü → Daten exportieren). Eine geänderte Datei sieht unter Umständen die bisher gemerkten Angaben nicht. Dann importieren Sie sie einfach.
+4. Starten Sie den KI-Assistenten in diesem Ordner. Bei Claude Code geht das im Terminal mit `claude` oder in der Claude-App, indem Sie den Ordner auswählen.
+
+### Der erste Auftrag: kennenlernen, noch nichts ändern
+
+```text
+In diesem Ordner liegt XFact: xfact.html ist eine Web-App, die PDF-Rechnungen
+in XRechnungen umwandelt, XFact-Dokumentation.md beschreibt, was sie kann.
+
+Lies zuerst die Dokumentation. Verschaffe dir dann einen Überblick über
+xfact.html: Wo stehen Farben und Layout, wo die Erkennungsregeln, wo die
+Prüfungen, wo die XML-Erzeugung? Den Abschnitt BIBLIOTHEKEN musst du nicht lesen.
+
+Ändere noch nichts. Fasse mir den Aufbau in ein paar Sätzen zusammen.
+Ich bin kein Programmierer, erkläre es bitte einfach.
+```
+
+Danach kennt der Assistent die App, und Sie können Änderungen in Auftrag geben.
+
+### Beispiele für Änderungen
+
+**Farben**
+```text
+Die Akzentfarbe soll unser Firmengrün #2F6F4F sein statt Blau.
+Ändere nur die Farbdefinitionen. Sag mir danach, was du geändert hast.
+```
+
+**Layout**
+```text
+In der Prüfansicht ist die Spalte „Beschreibung“ zu schmal, meine Positionstexte
+sind lang. Mach sie breiter und lass die Zahlenspalten dafür schmaler werden.
+```
+
+**Texte**
+```text
+Formuliere die Hinweise beim ersten Start kürzer und per Du statt per Sie.
+Zeig mir den neuen Text, bevor du ihn einbaust.
+```
+
+**Eine Erkennungsregel**
+```text
+Auf meinen Rechnungen heißt die Rechnungsnummer „Vorgang“ und das Leistungsdatum
+„ausgeführt am“. Ergänze beides bei den Erkennungsregeln.
+```
+
+**Eine Prüfregel**
+```text
+Bei uns ist das Zahlungsziel immer 14 Tage. Steht auf der Rechnung kein
+Fälligkeitsdatum, soll XFact Rechnungsdatum + 14 Tage vorschlagen und das
+Feld gelb markieren, damit ich es sehe.
+```
+
+**Voreinstellung der KI**
+```text
+Stelle als KI-Modell openai/gpt-6-luna voreingestellt ein statt Sonnet.
+```
+
+**Nach jeder Änderung**
+```text
+Passe die Dokumentation an die Änderung an, damit sie wieder stimmt.
+```
+
+### Tipps
+
+- **Eine Änderung pro Auftrag.** Kleine Schritte sind leichter zu prüfen und bei Bedarf zurückzunehmen.
+- **Sofort ausprobieren:** `xfact.html` im Browser öffnen bzw. neu laden und eine Ihrer Rechnungen durchspielen.
+- **Bei Änderungen an Erkennung, Prüfungen oder XML-Erzeugung:** Erzeugen Sie danach eine XML und lassen Sie sie mit „Online prüfen“ kontrollieren. Die XRechnung hat strenge Regeln, bis hin zur Reihenfolge der Elemente in der Datei. Sagen Sie dem Assistenten ausdrücklich, dass die erzeugte XML gültig bleiben muss.
+- **Fragen statt raten:** „Was müsste ich ändern, damit …?“ ist ein guter Auftrag. Der Assistent erklärt, und Sie entscheiden.
+- **Klappt etwas nicht**, sagen Sie dem Assistenten, was Sie sehen: „Nach der Änderung bleibt die Seite leer.“ Oder Sie kehren zu `xfact-original.html` zurück.
+
+### Weitergeben
+
+Ihre angepasste Version dürfen Sie weitergeben (MIT-Lizenz). Geben Sie `xfact.html` und `XFact-Dokumentation.md` immer gemeinsam weiter, und lassen Sie die Dokumentation vorher an Ihre Änderungen anpassen.

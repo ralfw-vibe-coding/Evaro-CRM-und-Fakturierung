@@ -8,7 +8,7 @@ Stand: 15.10.2026 · Status: Entwurf, Antworten zu den offenen Punkten eingearbe
 
 Es ist ein **Experiment**, Open Source unter der MIT-Lizenz: Jeder darf es nutzen, verändern und weitergeben.
 
-Was XFact aus Nutzersicht kann, beschreibt die [Dokumentation](XFact-Dokumentation.md). Sie gehört zum Lieferumfang und wird bei jeder Änderung am Verhalten mit angepasst.
+Was XFact aus Nutzersicht kann, beschreibt die [Dokumentation](../../XFact/XFact-Dokumentation.md). Sie gehört zum Lieferumfang und wird bei jeder Änderung am Verhalten mit angepasst. Ausgeliefert werden **nur die HTML-Datei und die Dokumentation**. Beide müssen ohne dieses Briefing verständlich sein, die Dokumentation verweist deshalb nicht hierher.
 
 **Für wen:** Deutsche Unternehmen, die Rechnungen an deutsche Empfänger schreiben und ihr Rechnungsprogramm nicht umbauen können oder wollen. Das sind typischerweise Rechnungen aus Word, Excel oder einfachen Programmen.
 
@@ -33,6 +33,7 @@ Was XFact aus Nutzersicht kann, beschreibt die [Dokumentation](XFact-Dokumentati
 3. **Die Verantwortung liegt beim Nutzer.** Das Tool sagt klar, was es tut und was nicht. Danach lässt es dem Nutzer freie Hand. Es blockiert nur, was eine **ungültige XML** ergäbe. Alles andere sind Hinweise.
 4. **Total einfach.** Drei Schritte, keine Einrichtung vorab. Die eigenen Firmendaten liest das Tool aus der ersten Rechnung.
 5. **Oberfläche:** klar, sachlich, modern, schlicht. Funktional auf den Punkt, keine Dekoration.
+6. **Anpassen ist erwünscht.** Nutzer sollen XFact selbst verändern, auch ohne Programmierkenntnisse mit einem KI-Assistenten. Deshalb ist die ausgelieferte HTML-Datei **zugleich der Quellcode**: lesbar, kommentiert, klar gegliedert. Die Dokumentation erklärt in Abschnitt 14, wie man vorgeht, mit Beispiel-Aufträgen.
 
 ## 3. Auslieferung
 
@@ -40,8 +41,8 @@ Aus demselben Quellcode entstehen beide Varianten:
 
 | Variante | Beschreibung |
 |---|---|
-| **Gehostet** | Statische Seite auf der Netlify-Site von Evaro, unter einem eigenen Pfad (Vorschlag: `/xfact/`), **ohne Anmeldung** und ohne Backend. Sie wird nicht beworben und nur per Link weitergegeben. Deshalb gibt es kein Impressum und keine Datenschutzerklärung. |
-| **Offline** | **Eine einzige HTML-Datei**, in der alles enthalten ist, auch die PDF-Bibliothek. Herunterladen, doppelklicken, läuft ohne Internet (außer bei eingeschalteter KI). |
+| **Gehostet** | Dieselbe Datei `xfact.html` als statische Seite auf der Netlify-Site von Evaro, unter einem eigenen Pfad (Vorschlag: `/xfact/`), **ohne Anmeldung** und ohne Backend. Sie wird nicht beworben und nur per Link weitergegeben. Deshalb gibt es kein Impressum und keine Datenschutzerklärung. |
+| **Offline** | **Eine einzige HTML-Datei** `xfact.html`, in der alles enthalten ist, auch die PDF-Bibliothek. Herunterladen, doppelklicken, läuft ohne Internet (außer bei eingeschalteter KI). |
 
 Die Seite hat in beiden Varianten einen Link „Offline-Version herunterladen“.
 
@@ -271,15 +272,46 @@ Es gibt nur **eine Seite** mit den drei Schritten. Oben rechts ist ein Menü:
 
 Firmen, Kunden und Einheiten sind einfache Listen, in denen man bearbeiten und löschen kann.
 
-## 11. Technik (Vorschlag)
+## 11. Technik
 
-- **Ort:** im Evaro-Repository, in einem eigenen Ordner (Vorschlag: `xfact/`) mit eigener Vite-Konfiguration. Es gibt keine Abhängigkeit zum Evaro-Code. Der Build legt die gehostete Variante nach `frontend/dist/xfact/`, damit Netlify sie mit ausliefert. Dort liegt auch `LICENSE` (MIT). Die Offline-Datei enthält einen Lizenzhinweis.
-- **Programmierung:** TypeScript, React, Vite, shadcn/ui, Lucide, wie im Tech-Stack von Evaro, aber ohne Backend
-- **PDF:** pdf.js
-- **Offline-Datei:** `vite-plugin-singlefile`. Der pdf.js-Worker wird eingebettet.
-- **Tests:**
-  - vitest für Zahlen-/Datumserkennung, Positionserkennung, Rechenkontrolle und Generator
-  - Ein Testskript prüft die erzeugten XMLs mit dem KoSIT-Validator. Das vorhandene `scripts/validate-xrechnung.mjs` wird wiederverwendet. Es ist nur ein Werkzeug für die Entwicklung (Java) und wird nicht ausgeliefert.
+**Ort:** Verzeichnis `XFact/` im Evaro-Repository, auf derselben Ebene wie `frontend/` und `backend/`. Es gibt keine Abhängigkeit zum Evaro-Code.
+
+```
+XFact/
+  xfact.html               die App, ausgeliefert und zugleich Quellcode
+  XFact-Dokumentation.md   die Dokumentation, ausgeliefert
+  LICENSE                  MIT
+  tests/                   Tests, nur für die Entwicklung
+```
+
+**Kein Build-Schritt für den App-Code.** `xfact.html` wird direkt bearbeitet, auch von Nutzern. Deshalb gibt es eine bewusste **Abweichung vom Evaro-Tech-Stack**: kein React, kein shadcn, kein TypeScript-Build, sondern HTML, CSS und modernes JavaScript (ES-Module im `<script type="module">`).
+
+Begründung: Aus React- und Tailwind-Code entsteht beim Bauen eine Datei, die man nicht mehr sinnvoll bearbeiten kann, und Änderungen daran fließen nicht in den Quellcode zurück.
+
+**Gliederung von `xfact.html`:**
+- Am Anfang steht ein Kommentar mit Name, Lizenzhinweis und einer Übersicht der Abschnitte.
+- Die Abschnitte sind mit gut sichtbaren Kommentaren markiert, genau wie in der Dokumentation (Abschnitt 14) beschrieben:
+  - **FARBEN UND SCHRIFTEN** (CSS-Variablen)
+  - **LAYOUT**
+  - **SEITE**
+  - **TEXTE**
+  - **ERKENNUNGSREGELN** (Synonymlisten, Einheiten, Steuerhinweise als Daten, nicht im Code verstreut)
+  - **PRÜFUNGEN**
+  - **KI**
+  - **XML-ERZEUGUNG**
+  - **PDF LESEN**
+  - **ABLAUF**
+  - **BIBLIOTHEKEN**
+- Code und Kommentare sind deutsch benannt bzw. kommentiert, wo das dem Verständnis dient.
+- **pdf.js läuft ohne Hintergrund-Worker** im Hauptprogramm. Unter `file://` erlauben Browser keinen Worker aus eingebettetem Code (in Chrome geprüft).
+- **Bibliotheken:** pdf.js samt Worker steht eingebettet am **Ende** der Datei, im Abschnitt BIBLIOTHEKEN, minifiziert und mit dem Vermerk „nicht ändern“. Ein kleines Skript in `scripts/` setzt diesen Block bei einem Update von pdf.js neu ein.
+- Die Oberfläche ist schlicht und nutzt eigene CSS-Variablen. Die Symbole sind eingebettete SVGs, z.B. im Stil von Lucide, wenige und inline.
+
+**Hosting:** Der Evaro-Build kopiert `XFact/xfact.html` nach `frontend/dist/xfact/index.html`. Bei der Umsetzung ist zu prüfen, dass Anmeldung und SPA-Weiterleitung von Evaro diesen Pfad nicht abfangen.
+
+**Tests:**
+- vitest mit einer DOM-Umgebung lädt `xfact.html` und prüft die Fachfunktionen. Sie sind dafür unter `window.XFact` erreichbar: Zahlen- und Datumserkennung, Positionserkennung, Rechenkontrolle, XML-Erzeugung.
+- Ein Testskript prüft die erzeugten XMLs mit dem KoSIT-Validator. Das vorhandene `scripts/validate-xrechnung.mjs` wird wiederverwendet. Es ist nur ein Werkzeug für die Entwicklung (Java) und wird nicht ausgeliefert.
 
 ## 12. Abnahme
 
@@ -290,7 +322,8 @@ Firmen, Kunden und Einheiten sind einfache Listen, in denen man bearbeiten und l
 5. **Wiedererkennung:** Bei der **zweiten** Rechnung desselben Kunden kommen keine Rückfragen mehr zu Angaben, die bei der ersten gemerkt wurden.
 6. **Offline-Datei:** Die HTML-Datei läuft ohne Internetverbindung in Chrome, Firefox und Safari. Prüfen: Bleiben gemerkte Angaben bei `file://` erhalten? Wenn nicht, muss das in den Hinweisen stehen.
 7. **Daten sichern:** Export, „Alle Daten löschen“ und Import stellen den vorherigen Zustand vollständig wieder her.
-8. **Dokumentation:** [XFact-Dokumentation.md](XFact-Dokumentation.md) stimmt mit dem tatsächlichen Verhalten überein und ist in der App unter „Hilfe“ erreichbar.
+8. **Dokumentation:** [XFact-Dokumentation.md](../../XFact/XFact-Dokumentation.md) stimmt mit dem tatsächlichen Verhalten überein und ist in der App unter „Hilfe“ erreichbar.
+9. **Anpassbarkeit:** In einer frischen Claude-Code-Sitzung, die nur `xfact.html` und die Dokumentation kennt, führen drei Beispiel-Aufträge aus Abschnitt 14 der Dokumentation (Farbe, Erkennungsregel, Prüfregel) zu einer funktionierenden App. Erzeugte XMLs bleiben gültig.
 
 ## 13. Entscheidungen
 
@@ -302,6 +335,7 @@ Firmen, Kunden und Einheiten sind einfache Listen, in denen man bearbeiten und l
 | Lizenz | Open Source, MIT |
 | Repository | bleibt im Evaro-Repo, weil es ein Experiment ist |
 | Steuerfälle Version 1 | 19 %, 7 % (auch gemischt), §13b und §19 (Abschnitt 7) |
+| Ort im Repo | `XFact/` neben `frontend/` und `backend/` |
 
 ## 14. Offene Punkte
 
