@@ -2,13 +2,19 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
-import { ladeFachlogik, pdfAus as pdfAusZeilen } from "./fachlogik";
+import { ladeFachlogik, musterErkannt, musterRechnung, pdfAus as pdfAusZeilen } from "./fachlogik";
 
 /** Erkennung der Positionen (Tabelle mit Leistungen und Beträgen). */
 
 const XFact = ladeFachlogik();
 const BEISPIELE = join(__dirname, "../../requirements/XRechnungen/Beispiel-PDFs");
 const pdfAus = (...zeilen: (string | [number, string][])[]) => pdfAusZeilen(XFact, ...zeilen);
+
+/** Hinweise zur unveränderten, erkannten Rechnung */
+function hinweise(pdf: any) {
+  const erkannt = XFact.erkenneRechnung(pdf);
+  return XFact.hinweiseZurRechnung(XFact.baueRechnung(erkannt, {}), erkannt);
+}
 
 /** Position kompakt: [von, bis, name, beschreibung, menge, einheit, preis, gesamt] */
 const kurz = (p: any) => [p.datumVon, p.datumBis, p.name, p.beschreibung, p.menge, p.einheit, p.einzelpreis, p.gesamt];
@@ -48,11 +54,11 @@ describe("Beispielrechnungen", () => {
       const positionen = XFact.erkennePositionen(pdf);
       expect(positionen.map(kurz)).toEqual(erwartet);
 
-      const hinweise = XFact.pruefePositionen(positionen, XFact.erkenneKopfdaten(pdf));
-      expect(hinweise).toContainEqual({ feld: "positionen", stufe: "ok", text: XFact.TEXTE.positionenGleichNetto });
+      const h = hinweise(pdf);
+      expect(h.filter((x: any) => x.feld.startsWith("summe.") && x.stufe === "unsicher")).toEqual([]);
       // Ohne Positionsdatum ist das Leistungsdatum rot
-      const ohneDatum = positionen.filter((p: any) => !p.datumVon).map((p: any) => `position.${p.nr}`);
-      expect(hinweise.filter((h: any) => h.stufe === "fehlt").map((h: any) => h.feld)).toEqual(ohneDatum);
+      const ohneDatum = positionen.filter((p: any) => !p.datumVon).map((p: any) => `position.${p.nr}.datum`);
+      expect(h.filter((x: any) => x.stufe === "fehlt" && x.feld.startsWith("position.")).map((x: any) => x.feld)).toEqual(ohneDatum);
     });
   }
 });
@@ -77,9 +83,10 @@ describe("Tabelle mit Pos.-Nummer, USt-Spalte und Silbentrennung", () => {
   });
 
   it("Summe der Positionen = Netto, aber kein Leistungsdatum", () => {
-    const p = pdf();
-    const hinweise = XFact.pruefePositionen(XFact.erkennePositionen(p), XFact.erkenneKopfdaten(p));
-    expect(hinweise.map((h: any) => `${h.feld}:${h.stufe}`)).toEqual(["position.1:fehlt", "position.2:fehlt", "positionen:ok"]);
+    const h = hinweise(pdf());
+    expect(h.filter((x: any) => x.feld.startsWith("position.")).map((x: any) => `${x.feld}:${x.stufe}`))
+      .toEqual(["position.1.datum:fehlt", "position.2.datum:fehlt"]);
+    expect(h.filter((x: any) => x.feld.startsWith("summe.") && x.stufe === "unsicher")).toEqual([]);
   });
 });
 
@@ -96,30 +103,31 @@ describe("Tabelle ohne Einheiten-Spalte, mit Pauschale ohne Menge", () => {
       ["2026-09-07", "2026-09-07", "Beratung", "", 2.5, "Std.", 80, 200],
       ["2026-09-01", "2026-09-05", "Pauschale Projektleitung", "", 1, null, 150, 150],
     ]);
-    const hinweise = XFact.pruefePositionen(positionen, { netto: null });
-    expect(hinweise).toEqual([{ feld: "position.2", stufe: "unsicher", text: XFact.TEXTE.mengeAngenommen }]);
+    expect(hinweise(pdf())).toContainEqual({ feld: "position.2.menge", stufe: "unsicher", text: XFact.TEXTE.mengeAngenommen });
   });
 });
 
 describe("Prüfungen der Positionen", () => {
-  const position = (aenderung: object = {}) => ({
-    nr: 1, datumVon: "2026-09-07", datumBis: "2026-09-07", name: "X", beschreibung: "",
-    menge: 2, einheit: "Std", einzelpreis: 50, gesamt: 100, ...aenderung,
-  });
+  const position = musterRechnung().positionen[0];
 
   it("ohne Positionen: rot", () => {
-    expect(XFact.pruefePositionen([], { netto: null }))
-      .toEqual([{ feld: "positionen", stufe: "fehlt", text: XFact.TEXTE.keinePositionen }]);
+    expect(XFact.pruefeRechnung(musterRechnung({ positionen: [] })).map((f: any) => f.feld)).toEqual(["positionen"]);
   });
 
   it("Menge × Preis passt nicht zum Gesamt: gelb", () => {
-    expect(XFact.pruefePositionen([position({ gesamt: 110 })], { netto: null }))
-      .toContainEqual(expect.objectContaining({ feld: "position.1", stufe: "unsicher" }));
+    const r = musterRechnung({ positionen: [{ ...position, gesamt: 110 }] });
+    expect(XFact.hinweiseZurRechnung(r, musterErkannt()))
+      .toContainEqual(expect.objectContaining({ feld: "position.1.gesamt", stufe: "unsicher" }));
   });
 
-  it("Summe weicht vom Netto ab: gelb", () => {
-    expect(XFact.pruefePositionen([position()], { netto: { wert: 120 } }))
-      .toContainEqual(expect.objectContaining({ feld: "positionen", stufe: "unsicher" }));
+  it("Summe weicht vom Netto auf der Rechnung ab: gelb", () => {
+    expect(XFact.hinweiseZurRechnung(musterRechnung(), musterErkannt({ netto: { wert: 120 } })))
+      .toContainEqual(expect.objectContaining({ feld: "summe.netto", stufe: "unsicher" }));
+  });
+
+  it("Einheit ohne Code und fehlendes Datum: rot", () => {
+    const r = musterRechnung({ positionen: [{ ...position, einheit: "Fahrt", einheitCode: null, von: null, bis: null }] });
+    expect(XFact.pruefeRechnung(r).map((f: any) => f.feld)).toEqual(["position.1.einheit", "position.1.datum"]);
   });
 });
 

@@ -33,3 +33,25 @@ export function pdfAus(XFact: any, ...zeilen: (string | [number, string][])[]) {
   });
   return { seiten: [{ breite: 595, hoehe: 842, zeilen: XFact.zuZeilen(stuecke) }] };
 }
+
+/** Eine vollständige, gültige Rechnung (wie baueRechnung sie liefert), für Prüfungstests. */
+export function musterRechnung(aenderung: object = {}) {
+  return {
+    nummer: "2026-0153", datum: "2026-09-12", faellig: "2026-09-26", waehrung: "EUR",
+    referenz: null, leitwegId: null, leistungsdatum: null, kaeuferreferenz: "keine Angabe", bestellreferenz: null,
+    steuerfall: { art: "standard", kategorie: "S", text: null },
+    absender: { name: "Muster GmbH", adresse: ["Hauptstr. 1"], plz: "20095", ort: "Hamburg", land: "DE",
+      ustId: "DE123456789", steuernummer: null, email: "info@muster.example", telefon: "040 123456", kontakt: "Max Muster" },
+    empfaenger: { name: "Berg GmbH", adresse: ["Alte Ziegelei 21"], plz: "51491", ort: "Overath", land: "DE",
+      ustId: null, steuernummer: null, email: "rechnung@berg.example", telefon: null, kontakt: null },
+    bank: { iban: "DE89370400440532013000", bic: null },
+    positionen: [{ nr: 1, name: "Montage", beschreibung: null, menge: 2, einheit: "Std", einheitCode: "HUR",
+      einzelpreis: 50, gesamt: 100, kategorie: "S", satz: 19, von: "2026-09-07", bis: "2026-09-07" }],
+    ...aenderung,
+  };
+}
+
+/** Das Erkannte zu musterRechnung(): nur, was hinweiseZurRechnung braucht. */
+export function musterErkannt(kopf: object = {}, positionen: object[] = []) {
+  return { kopf: { umsatzsteuer: [], ...kopf }, positionen };
+}

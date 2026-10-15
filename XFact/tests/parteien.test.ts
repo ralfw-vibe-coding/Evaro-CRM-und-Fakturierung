@@ -10,10 +10,14 @@ const XFact = ladeFachlogik();
 const BEISPIELE = join(__dirname, "../../requirements/XRechnungen/Beispiel-PDFs");
 const pdfAus = (...zeilen: (string | [number, string][])[]) => pdfAusZeilen(XFact, ...zeilen);
 
+/** Erkannte Parteien und die Hinweise, die Absender oder Empfänger betreffen. */
 function erkenne(pdf: any) {
-  const parteien = XFact.erkenneParteien(pdf, XFact.erkenneKopfdaten(pdf));
-  return { parteien, hinweise: XFact.pruefeParteien(parteien) };
+  const erkannt = XFact.erkenneRechnung(pdf);
+  const hinweise = XFact.hinweiseZurRechnung(XFact.baueRechnung(erkannt, {}), erkannt)
+    .filter((h: any) => /^(absender|empfaenger)\./.test(h.feld));
+  return { parteien: erkannt.parteien, hinweise };
 }
+const fehlt = (feld: string) => ({ feld, stufe: "fehlt", text: XFact.TEXTE.fehlt });
 
 const werte = (p: any) => ({
   name: p.name?.wert,
@@ -52,8 +56,9 @@ describe("Beispielrechnungen: Anschriften nebeneinander, mit Überschrift", () =
       const { parteien, hinweise } = erkenne(pdf);
       expect(werte(parteien.empfaenger)).toEqual({ ...ohneKontakt, ...empfaenger });
       expect(werte(parteien.absender)).toEqual(absender);
-      // Der Steller sitzt in Bulgarien: gelber Hinweis, sonst nichts
-      expect(hinweise).toEqual([{ feld: "absender.land", stufe: "unsicher", text: XFact.TEXTE.nichtDeutschland }]);
+      // Der Steller sitzt in Bulgarien: gelb. Die E-Mail des Kunden steht nie im PDF: rot.
+      expect(hinweise).toEqual([fehlt("empfaenger.email"),
+        { feld: "absender.land", stufe: "unsicher", text: XFact.TEXTE.nichtDeutschland }]);
     });
   }
 });
@@ -87,7 +92,8 @@ describe("typischer deutscher Briefbogen ohne Überschriften", () => {
       name: "Muster Handwerk GmbH", adresse: ["Hauptstr. 1"], plz: "20095", ort: "Hamburg", land: "DE",
       ustId: undefined, steuernummer: "12/345/67890", email: "info@muster-handwerk.de", telefon: "040 123456",
     });
-    expect(hinweise).toEqual([]);
+    // Ansprechpartner steht nicht auf dieser Rechnung, die E-Mail des Kunden nie
+    expect(hinweise).toEqual([fehlt("absender.kontakt"), fehlt("empfaenger.email")]);
   });
 
   it("ohne USt-IdNr. und Steuernummer fehlt beim Absender eine Pflichtangabe", () => {
@@ -98,15 +104,15 @@ describe("typischer deutscher Briefbogen ohne Überschriften", () => {
       "51491 Overath",
     );
     const { hinweise } = erkenne(ohne);
-    expect(hinweise).toEqual([{ feld: "absender.ustId", stufe: "fehlt", text: XFact.TEXTE.ustOderSteuernummer }]);
+    expect(hinweise).toContainEqual(fehlt("absender.ustId"));
   });
 
   it("ohne erkennbare Anschrift fehlen Name, PLZ und Ort", () => {
     const { hinweise } = erkenne(pdfAus("Rechnung 2026-0153", "Gesamtbetrag 924,63 €"));
     expect(hinweise.filter((h: any) => h.stufe === "fehlt").map((h: any) => h.feld)).toEqual([
-      "absender.name", "absender.plz", "absender.ort",
-      "empfaenger.name", "empfaenger.plz", "empfaenger.ort",
-      "absender.ustId",
+      "absender.name", "absender.plz", "absender.ort", "absender.ustId",
+      "absender.kontakt", "absender.telefon", "absender.email",
+      "empfaenger.name", "empfaenger.plz", "empfaenger.ort", "empfaenger.email",
     ]);
   });
 });

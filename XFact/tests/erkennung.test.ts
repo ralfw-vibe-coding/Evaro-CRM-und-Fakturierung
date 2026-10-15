@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
-import { ladeFachlogik, pdfAus as pdfAusZeilen } from "./fachlogik";
+import { ladeFachlogik, musterErkannt, musterRechnung, pdfAus as pdfAusZeilen } from "./fachlogik";
 
 /**
  * Erkennung der Kopfdaten: Rechnungsnummer, Datum, Fälligkeit, Summen, IBAN, BIC, USt-IdNr.
@@ -64,14 +64,16 @@ describe("Beispielrechnungen", () => {
 
   for (const [datei, erwartet] of Object.entries(soll)) {
     it(datei, async () => {
-      const kopf = XFact.erkenneKopfdaten(await lies(datei));
+      const pdf = await lies(datei);
+      const kopf = XFact.erkenneKopfdaten(pdf);
       expect(werte(kopf)).toEqual({ ...gemeinsam, ...erwartet });
 
       // Das Datum steht ohne Beschriftung neben der Rechnungsnummer: gelb
       expect(kopf.rechnungsdatum.unsicher).toBeTruthy();
-      const hinweise = XFact.pruefeKopfdaten(kopf);
-      expect(hinweise.filter((h: any) => h.stufe === "fehlt")).toEqual([]);
-      expect(hinweise).toContainEqual({ feld: "gesamt", stufe: "ok", text: "Summen stimmen" });
+      const erkannt = XFact.erkenneRechnung(pdf);
+      const hinweise = XFact.hinweiseZurRechnung(XFact.baueRechnung(erkannt, {}), erkannt);
+      expect(hinweise).toContainEqual(expect.objectContaining({ feld: "datum", stufe: "unsicher" }));
+      expect(hinweise).toContainEqual({ feld: "summe.brutto", stufe: "ok", text: XFact.TEXTE.summenWieAufRechnung });
     });
   }
 });
@@ -105,10 +107,8 @@ describe("typische deutsche Rechnung mit 19 % und 7 %", () => {
     });
   });
 
-  it("Rechnungsdatum mit Beschriftung ist sicher, Summen stimmen", () => {
-    const k = kopf();
-    expect(k.rechnungsdatum.unsicher).toBeUndefined();
-    expect(XFact.pruefeKopfdaten(k)).toEqual([{ feld: "gesamt", stufe: "ok", text: "Summen stimmen" }]);
+  it("Rechnungsdatum mit Beschriftung ist sicher", () => {
+    expect(kopf().rechnungsdatum.unsicher).toBeUndefined();
   });
 });
 
@@ -124,31 +124,39 @@ describe("Werte im Tabellenkopf: Beschriftung oben, Wert darunter", () => {
 });
 
 describe("Prüfungen", () => {
-  const basis = (aenderung: object = {}) => ({
-    rechnungsnummer: { wert: "1" }, rechnungsdatum: { wert: "2026-09-12" }, faellig: null,
-    netto: { wert: 100 }, umsatzsteuer: [{ satz: 19, betrag: 19 }], gesamt: { wert: 119 },
-    iban: { wert: "DE89370400440532013000" }, bic: null, ustIds: [], ...aenderung,
+  it("fehlende Pflichtangaben sind rot", () => {
+    const fehlt = XFact.pruefeRechnung(musterRechnung({ nummer: null, bank: { iban: null, bic: null } }));
+    expect(fehlt.map((f: any) => f.feld)).toEqual(["nummer", "iban"]);
+    expect(XFact.pruefeRechnung(musterRechnung())).toEqual([]);
   });
 
-  it("meldet fehlende Pflichtangaben rot", () => {
-    const hinweise = XFact.pruefeKopfdaten(basis({ iban: null, rechnungsnummer: null }));
-    expect(hinweise.filter((h: any) => h.stufe === "fehlt").map((h: any) => h.feld))
-      .toEqual(["rechnungsnummer", "iban"]);
+  it("weicht der Gesamtbetrag von der Rechnung ab: gelb", () => {
+    const hinweise = XFact.hinweiseZurRechnung(musterRechnung(), musterErkannt({ gesamt: { wert: 120 } }));
+    expect(hinweise).toContainEqual(expect.objectContaining({ feld: "summe.brutto", stufe: "unsicher" }));
   });
 
-  it("meldet eine Differenz in den Summen gelb", () => {
-    const hinweise = XFact.pruefeKopfdaten(basis({ gesamt: { wert: 120 } }));
-    expect(hinweise).toContainEqual(expect.objectContaining({ feld: "gesamt", stufe: "unsicher" }));
+  it("weicht der Steuerbetrag von der Rechnung ab: gelb", () => {
+    const hinweise = XFact.hinweiseZurRechnung(musterRechnung(),
+      musterErkannt({ umsatzsteuer: [{ satz: 19, betrag: 18 }], gesamt: { wert: 119 } }));
+    expect(hinweise).toContainEqual(expect.objectContaining({ feld: "summe.steuer.19", stufe: "unsicher" }));
   });
 
-  it("meldet einen Steuerbetrag, der nicht zum Satz passt", () => {
-    const hinweise = XFact.pruefeKopfdaten(basis({ umsatzsteuer: [{ satz: 19, betrag: 18 }], gesamt: { wert: 118 } }));
-    expect(hinweise).toContainEqual(expect.objectContaining({ feld: "umsatzsteuer", stufe: "unsicher" }));
+  it("stimmen die Summen: ok", () => {
+    const hinweise = XFact.hinweiseZurRechnung(musterRechnung(), musterErkannt({ gesamt: { wert: 119 } }));
+    expect(hinweise).toEqual([{ feld: "summe.brutto", stufe: "ok", text: XFact.TEXTE.summenWieAufRechnung }]);
+  });
+
+  it("bestätigte Felder sind nicht mehr gelb", () => {
+    const erkannt = musterErkannt({ rechnungsdatum: { wert: "2026-09-12", unsicher: "bitte prüfen" } });
+    expect(XFact.hinweiseZurRechnung(musterRechnung(), erkannt)).toContainEqual(expect.objectContaining({ feld: "datum" }));
+    expect(XFact.hinweiseZurRechnung(musterRechnung(), erkannt, new Set(["datum"]))).toEqual([]);
   });
 
   it("erkennt eine IBAN mit falscher Prüfziffer als unsicher", () => {
     const kopf = XFact.erkenneKopfdaten(pdfAus("IBAN: DE89 3704 0044 0532 0130 01"));
     expect(kopf.iban.unsicher).toBeTruthy();
+    const hinweise = XFact.hinweiseZurRechnung(musterRechnung({ bank: { iban: "DE89370400440532013001", bic: null } }), musterErkannt());
+    expect(hinweise).toContainEqual(expect.objectContaining({ feld: "iban", stufe: "unsicher" }));
   });
 });
 

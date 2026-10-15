@@ -220,14 +220,6 @@ main {
 .partei dd { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
 
 .positionen { margin-bottom: calc(var(--abstand) * 1.5); overflow-x: auto; }
-.positionen h3 {
-  margin: 0 0 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--farbe-text-leise);
-}
 .positionen table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 .positionen th {
   text-align: left;
@@ -246,15 +238,75 @@ main {
 .positionen tfoot td { border-bottom: 0; font-weight: 600; }
 .positionen .rechts { text-align: right; }
 
-.kopfdaten {
+.rechnung-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--abstand);
+  margin-bottom: calc(var(--abstand) * 1.5);
+}
+.rechnung-kopf .titel { font-size: 1.15rem; font-weight: 600; }
+
+.feld { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.bearbeitbar {
+  border-bottom: 1px dashed transparent;
+  border-radius: 3px;
+  cursor: text;
+}
+.bearbeitbar:hover, .bearbeitbar:focus {
+  border-bottom-color: var(--farbe-akzent);
+  background: var(--farbe-hintergrund);
+  outline: none;
+}
+.bearbeitbar.leer { color: var(--farbe-text-leise); font-style: italic; }
+.eingabe {
+  padding: 3px 6px;
+  border: 1px solid var(--farbe-linie);
+  border-radius: 6px;
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  font: inherit;
+}
+.eingabe:focus { outline: 2px solid var(--farbe-akzent); outline-offset: -1px; }
+.eingabe.fehlt { border-color: var(--farbe-fehlt); background: var(--farbe-fehlt-flaeche); }
+
+/* Summen als Raster: Bezeichnung | Betrag | Hinweis */
+.summen {
   display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 6px 24px;
+  grid-template-columns: max-content max-content minmax(0, 16em);
+  justify-content: end;
+  align-items: baseline;
+  gap: 4px 20px;
   margin: 0 0 var(--abstand);
 }
-.kopfdaten dt { color: var(--farbe-text-leise); }
-.kopfdaten dd { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
-.kopfdaten .wert { font-family: var(--schrift-zahlen); }
+.summe { display: contents; }
+.summe .zahl { font-family: var(--schrift-zahlen); text-align: right; }
+.summe.gesamt > span { font-weight: 700; border-top: 1px solid var(--farbe-linie); padding-top: 4px; }
+.summe.gesamt > span:last-child { border-top: 0; font-weight: 400; }
+
+.zahlung {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: var(--abstand) 0;
+  border-top: 1px solid var(--farbe-linie);
+}
+
+.weitere { padding: var(--abstand) 0; border-top: 1px solid var(--farbe-linie); }
+.weitere h3, .positionen h3 {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--farbe-text-leise);
+}
+.weitere .angabe { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 10px; }
+.weitere .angabe > .leise { min-width: 15em; }
+.wahlen { display: grid; gap: 4px; }
+.wahl { display: inline-flex; align-items: center; gap: 6px; }
+.knopf.klein { padding: 3px 10px; font-size: 0.85rem; }
 
 .hinweis {
   padding: 1px 8px;
@@ -338,10 +390,8 @@ a.knopf { text-decoration: none; }
         </div>
         <button class="knopf" id="knopf-andere-datei" data-text="andereDatei"></button>
       </div>
-      <!-- Vorläufig: die erkannten Angaben. Die neutrale Rechnungsansicht folgt. -->
-      <div class="parteien" id="parteien"></div>
-      <div class="positionen" id="positionen"></div>
-      <dl class="kopfdaten" id="kopfdaten"></dl>
+      <!-- Die erkannte Rechnung, neutral dargestellt; jeder Wert ist änderbar -->
+      <div class="rechnung" id="rechnung"></div>
       <div class="abschluss">
         <div id="xml-fehlt"></div>
         <button class="knopf haupt" id="knopf-xml" data-text="xmlErzeugen"></button>
@@ -392,26 +442,10 @@ const TEXTE = {
   seitenUndZeilen: (seiten, zeilen) => `${seiten} ${seiten === 1 ? "Seite" : "Seiten"} · ${zeilen} Textzeilen`,
   gelesenerText: "Gelesener Text",
 
-  // Bezeichnungen der erkannten Angaben
-  felder: {
-    rechnungsnummer: "Rechnungsnummer",
-    rechnungsdatum: "Rechnungsdatum",
-    faellig: "Zahlbar bis",
-    netto: "Netto",
-    umsatzsteuer: "Umsatzsteuer",
-    gesamt: "Gesamtbetrag",
-    iban: "IBAN",
-    bic: "BIC",
-  },
-  umsatzsteuerZeile: (satz) => `USt ${satz} %`,
-
   // Hinweise der Prüfungen
   fehlt: "nicht gefunden",
   ohneBeschriftung: "ohne Beschriftung gefunden, bitte prüfen",
   ibanPruefziffer: "Prüfziffer stimmt nicht, bitte prüfen",
-  summenOk: "Summen stimmen",
-  summenDifferenz: (differenz) => `Netto + USt ergibt nicht den Gesamtbetrag (Differenz ${differenz})`,
-  steuerRechnung: (satz, soll) => `${satz} % vom Netto wären ${soll}`,
 
   // Absender und Empfänger
   parteien: { absender: "Von", empfaenger: "An" },
@@ -423,21 +457,14 @@ const TEXTE = {
     email: "E-Mail",
     telefon: "Telefon",
   },
-  ustOderSteuernummer: "USt-IdNr. oder Steuernummer fehlt",
   nichtDeutschland: "XFact ist für Rechnungen innerhalb Deutschlands gedacht",
-  landAngenommen: "Deutschland (angenommen)",
 
   // Positionen
   positionenTitel: "Positionen",
   spaltenTitel: { datum: "Datum", beschreibung: "Beschreibung", menge: "Menge", einheit: "Einheit",
     einzelpreis: "Preis", steuersatz: "USt", gesamt: "Gesamt" },
-  keinePositionen: "Keine Positionstabelle gefunden",
-  leistungsdatumFehlt: "Leistungsdatum fehlt",
   mengeMalPreis: (soll) => `Menge × Preis ergibt ${soll}`,
   mengeAngenommen: "Menge fehlt, 1 angenommen",
-  summePositionen: "Summe der Positionen",
-  positionenGleichNetto: "entspricht dem Netto",
-  positionenUngleichNetto: (netto) => `weicht vom Netto ab (${netto})`,
 
   // Steuerfälle: Hinweistexte, falls auf der Rechnung keiner zu finden ist
   steuerfallText: {
@@ -453,6 +480,41 @@ const TEXTE = {
   xmlFehlt: "Für die XRechnung fehlt noch:",
   xmlErzeugen: "XML erzeugen",
   xmlBereit: "Alle Pflichtangaben für die XRechnung sind vorhanden.",
+  aufDerRechnung: (betrag) => `auf der Rechnung: ${betrag}`,
+
+  // Prüfansicht
+  ansicht: {
+    rechnung: "Rechnung",
+    datum: "Datum",
+    klickenZumAendern: "Klicken zum Ändern",
+    eingeben: "eingeben",
+    hinzufuegen: "hinzufügen",
+    ansprechpartner: "Ansprechpartner",
+    emailFuerRechnungen: "E-Mail für Rechnungen",
+    netto: "Netto",
+    umsatzsteuer: (satz) => `USt ${satz} %`,
+    steuerBefreit: {
+      AE: "USt 0 % – Steuerschuldnerschaft des Leistungsempfängers",
+      E: "keine USt – Kleinunternehmer",
+    },
+    gesamt: "Gesamtbetrag",
+    zahlbarBis: "Zahlbar bis",
+    weitereAngaben: "Weitere Angaben",
+    steuerfall: "Steuer",
+    steuerfaelle: {
+      standard: "Umsatzsteuer wird ausgewiesen (19 % / 7 %)",
+      reverse_charge: "Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)",
+      kleinunternehmer: "Kleinunternehmer (§ 19 UStG), keine Umsatzsteuer",
+    },
+    leistungsdatum: "Leistungsdatum für Positionen ohne Datum",
+    gleichRechnungsdatum: "= Rechnungsdatum",
+    referenz: "Referenz / Bestellnummer des Kunden",
+    leitwegId: "Leitweg-ID (nur bei Behörden)",
+    einheitWaehlen: "Einheit wählen …",
+    stimmt: "Stimmt",
+    stimmtTitel: "Der Wert ist richtig",
+  },
+  summenWieAufRechnung: "wie auf der Rechnung",
 
   // Schritt 3: Fertig
   heruntergeladen: (name) => `„${name}“ wurde heruntergeladen.`,
@@ -526,6 +588,15 @@ const ERKENNUNGSREGELN = {
     m: "MTR", "m²": "MTK", qm: "MTK", "m³": "MTQ", kg: "KGM", l: "LTR", liter: "LTR",
   },
 
+  // Auswahl, wenn eine Einheit unbekannt ist
+  einheitenListe: [
+    { code: "HUR", name: "Stunde" }, { code: "DAY", name: "Tag" }, { code: "LS", name: "Pauschale" },
+    { code: "C62", name: "Stück" }, { code: "KMT", name: "Kilometer" }, { code: "MON", name: "Monat" },
+    { code: "WEE", name: "Woche" }, { code: "MIN", name: "Minute" }, { code: "MTR", name: "Meter" },
+    { code: "MTK", name: "Quadratmeter" }, { code: "MTQ", name: "Kubikmeter" }, { code: "KGM", name: "Kilogramm" },
+    { code: "LTR", name: "Liter" },
+  ],
+
   // Spaltenüberschriften der Positionstabelle. Ein Tabellenkopf braucht
   // mindestens drei davon, darunter "gesamt".
   spalten: {
@@ -580,86 +651,81 @@ const ERKENNUNGSREGELN = {
 // Was rot (fehlt) oder gelb (unsicher) markiert wird.
 // =============================================================================
 const PRUEFUNGEN = {
-  // Ohne diese Angaben wird die XRechnung ungültig: rot
-  pflichtfelder: ["rechnungsnummer", "rechnungsdatum", "gesamt", "iban"],
   // Erlaubte Abweichung beim Nachrechnen, in Euro
   rundungstoleranz: 0.01,
 };
 
-/**
- * Prüft die erkannten Kopfdaten. Ergebnis: Liste von Hinweisen
- * { feld, stufe: "fehlt" | "unsicher" | "ok", text }.
- */
-function pruefeKopfdaten(kopf) {
-  const hinweise = [];
-  for (const feld of PRUEFUNGEN.pflichtfelder) {
-    if (!kopf[feld]) hinweise.push({ feld, stufe: "fehlt", text: TEXTE.fehlt });
-  }
-  for (const [feld, fund] of Object.entries(kopf)) {
-    if (fund && fund.unsicher) hinweise.push({ feld, stufe: "unsicher", text: fund.unsicher });
-  }
 
-  // Nachrechnen: Netto + Umsatzsteuer = Gesamtbetrag
-  if (kopf.netto && kopf.gesamt) {
-    const steuer = kopf.umsatzsteuer.reduce((summe, s) => summe + s.betrag, 0);
-    const differenz = kopf.netto.wert + steuer - kopf.gesamt.wert;
-    if (Math.abs(differenz) > PRUEFUNGEN.rundungstoleranz) {
-      hinweise.push({ feld: "gesamt", stufe: "unsicher", text: TEXTE.summenDifferenz(alsBetrag(differenz)) });
-    } else {
-      hinweise.push({ feld: "gesamt", stufe: "ok", text: TEXTE.summenOk });
-    }
-    // Bei nur einem Steuersatz: stimmt der Steuerbetrag zum Netto?
-    if (kopf.umsatzsteuer.length === 1) {
-      const { satz, betrag } = kopf.umsatzsteuer[0];
-      const soll = runde(kopf.netto.wert * satz / 100);
-      if (Math.abs(soll - betrag) > PRUEFUNGEN.rundungstoleranz) {
-        hinweise.push({ feld: "umsatzsteuer", stufe: "unsicher", text: TEXTE.steuerRechnung(satz, alsBetrag(soll)) });
-      }
-    }
+
+
+/**
+ * Was fehlt noch für eine gültige XRechnung? Liste von { feld, text }.
+ * Ist sie leer, kann die XML erzeugt werden.
+ */
+function pruefeRechnung(r) {
+  const fehlt = [];
+  const p = TEXTE.pflicht;
+  const pflicht = (feld, wert, text) => { if (!wert) fehlt.push({ feld, text }); };
+  pflicht("nummer", r.nummer, p.nummer);
+  pflicht("datum", r.datum, p.datum);
+  pflicht("faellig", r.faellig, p.faellig);
+  pflicht("iban", r.bank.iban, p.iban);
+  for (const feld of ["name", "plz", "ort"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
+  pflicht("absender.ustId", r.absender.ustId || r.absender.steuernummer, p.absender.ustId);
+  for (const feld of ["kontakt", "telefon", "email"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
+  for (const feld of ["name", "plz", "ort", "email"]) pflicht(`empfaenger.${feld}`, r.empfaenger[feld], p.empfaenger[feld]);
+  if (r.steuerfall.art === "reverse_charge") pflicht("empfaenger.ustId", r.empfaenger.ustId, p.empfaenger.ustId);
+  pflicht("positionen", r.positionen.length, p.positionen);
+  for (const pos of r.positionen) {
+    pflicht(`position.${pos.nr}.einheit`, pos.einheitCode, p.einheit(pos.nr, pos.einheit));
+    pflicht(`position.${pos.nr}.datum`, pos.von, p.leistungsdatum(pos.nr));
+    pflicht(`position.${pos.nr}.satz`, pos.kategorie !== "S" || pos.satz > 0, p.steuersatz(pos.nr));
   }
-  return hinweise;
+  return fehlt;
 }
 
-/** Prüft Absender und Empfänger. Felder heißen z.B. "absender.name". */
-function pruefeParteien({ absender, empfaenger }) {
-  const hinweise = [];
-  for (const [rolle, partei] of Object.entries({ absender, empfaenger })) {
-    for (const feld of ["name", "plz", "ort"]) {
-      if (!partei[feld]) hinweise.push({ feld: `${rolle}.${feld}`, stufe: "fehlt", text: TEXTE.fehlt });
-    }
-    if (partei.land && partei.land.wert !== "DE") {
+/**
+ * Hinweise zur (ggf. bearbeiteten) Rechnung, für die Prüfansicht. Liste von
+ * { feld, stufe: "fehlt" | "unsicher" | "ok", text }. "bestaetigt" enthält die
+ * Felder, die der Nutzer geändert oder bestätigt hat; dort entfallen die
+ * gelben Hinweise aus der Erkennung.
+ */
+function hinweiseZurRechnung(r, erkannt, bestaetigt = new Set()) {
+  const hinweise = pruefeRechnung(r).map(({ feld }) => ({ feld, stufe: "fehlt", text: TEXTE.fehlt }));
+  const unsicher = (feld, text) => { if (!bestaetigt.has(feld)) hinweise.push({ feld, stufe: "unsicher", text }); };
+  const { kopf, positionen } = erkannt;
+
+  if (kopf.rechnungsdatum?.unsicher && r.datum) unsicher("datum", kopf.rechnungsdatum.unsicher);
+  if (r.bank.iban && !ibanPruefzifferOk(r.bank.iban.replace(/\s/g, ""))) unsicher("iban", TEXTE.ibanPruefziffer);
+  for (const rolle of ["absender", "empfaenger"]) {
+    if (r[rolle].land && r[rolle].land !== "DE") {
       hinweise.push({ feld: `${rolle}.land`, stufe: "unsicher", text: TEXTE.nichtDeutschland });
     }
   }
-  if (!absender.ustId && !absender.steuernummer) {
-    hinweise.push({ feld: "absender.ustId", stufe: "fehlt", text: TEXTE.ustOderSteuernummer });
-  }
-  return hinweise;
-}
-
-/**
- * Prüft die Positionen: Gibt es welche, stimmt Menge × Preis, hat jede ein
- * Leistungsdatum, und ergibt ihre Summe das Netto? Felder: "positionen",
- * "position.1", "position.2" …
- */
-function pruefePositionen(positionen, kopf) {
-  if (!positionen.length) return [{ feld: "positionen", stufe: "fehlt", text: TEXTE.keinePositionen }];
-  const hinweise = [];
-  for (const position of positionen) {
-    const feld = `position.${position.nr}`;
-    if (!position.datumVon) hinweise.push({ feld, stufe: "fehlt", text: TEXTE.leistungsdatumFehlt });
-    if (position.mengeAngenommen) hinweise.push({ feld, stufe: "unsicher", text: TEXTE.mengeAngenommen });
-    const soll = runde(position.menge * position.einzelpreis);
-    if (Math.abs(soll - position.gesamt) > PRUEFUNGEN.rundungstoleranz) {
-      hinweise.push({ feld, stufe: "unsicher", text: TEXTE.mengeMalPreis(alsBetrag(soll)) });
+  for (const p of r.positionen) {
+    if (positionen.find((q) => q.nr === p.nr)?.mengeAngenommen) unsicher(`position.${p.nr}.menge`, TEXTE.mengeAngenommen);
+    const soll = runde(p.menge * p.einzelpreis);
+    if (Math.abs(soll - p.gesamt) > PRUEFUNGEN.rundungstoleranz) {
+      unsicher(`position.${p.nr}.gesamt`, TEXTE.mengeMalPreis(alsBetrag(soll)));
     }
   }
-  if (kopf.netto) {
-    const summe = runde(positionen.reduce((s, p) => s + p.gesamt, 0));
-    const gleich = Math.abs(summe - kopf.netto.wert) <= PRUEFUNGEN.rundungstoleranz;
-    hinweise.push(gleich
-      ? { feld: "positionen", stufe: "ok", text: TEXTE.positionenGleichNetto }
-      : { feld: "positionen", stufe: "unsicher", text: TEXTE.positionenUngleichNetto(alsBetrag(kopf.netto.wert)) });
+
+  // Stimmen die Summen mit denen auf der Rechnung überein?
+  const summen = summenDerRechnung(r);
+  const vergleiche = [];
+  if (kopf.netto) vergleiche.push(["netto", summen.netto, kopf.netto.wert]);
+  if (kopf.gesamt) vergleiche.push(["brutto", summen.brutto, kopf.gesamt.wert]);
+  for (const s of kopf.umsatzsteuer) {
+    const gruppe = summen.gruppen.find((g) => g.satz === s.satz);
+    vergleiche.push([`steuer.${s.satz}`, gruppe ? gruppe.betrag : 0, s.betrag]);
+  }
+  for (const [feld, berechnet, aufRechnung] of vergleiche) {
+    if (Math.abs(berechnet - aufRechnung) > PRUEFUNGEN.rundungstoleranz) {
+      hinweise.push({ feld: `summe.${feld}`, stufe: "unsicher", text: TEXTE.aufDerRechnung(alsBetrag(aufRechnung)) });
+    }
+  }
+  if (kopf.gesamt && !hinweise.some((h) => h.feld.startsWith("summe."))) {
+    hinweise.push({ feld: "summe.brutto", stufe: "ok", text: TEXTE.summenWieAufRechnung });
   }
   return hinweise;
 }
@@ -689,10 +755,7 @@ const XRECHNUNG = {
 
 /** Erzeugt die XRechnung als Text. Vorher mit pruefeRechnung() prüfen. */
 function erzeugeXml(r) {
-  const gruppen = steuergruppen(r.positionen);
-  const netto = runde(gruppen.reduce((s, g) => s + g.basis, 0));
-  const steuer = runde(gruppen.reduce((s, g) => s + g.betrag, 0));
-  const brutto = runde(netto + steuer);
+  const { gruppen, netto, steuer, brutto } = summenDerRechnung(r);
   const zeitraum = leistungszeitraumGesamt(r.positionen);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -1470,80 +1533,92 @@ function erkenneSteuerfall(pdf) {
 
 /**
  * Setzt aus allem Erkannten die Rechnung zusammen, wie sie in die XRechnung
- * geht. "ergaenzungen" enthält, was nicht im PDF steht oder korrigiert wurde:
- *   { absender: { email, telefon, kontakt }, empfaenger: { email, ustId },
- *     kaeuferreferenz, leitwegId, leistungsdatum, faellig, einheiten: { "std": "HUR" } }
+ * geht. "ergaenzungen" enthält, was der Nutzer ergänzt oder geändert hat; es
+ * hat immer Vorrang, auch ein bewusst geleertes Feld (null):
+ *   { nummer, datum, faellig, iban, bic, steuerfall: "standard" | "reverse_charge" | "kleinunternehmer",
+ *     absender: { name, adresse: [...], plz, ort, ustId, steuernummer, email, telefon, kontakt },
+ *     empfaenger: { …wie absender },
+ *     positionen: { 1: { name, beschreibung, menge, einheit, einzelpreis, gesamt, satz, von, bis } },
+ *     kaeuferreferenz, leitwegId, leistungsdatum, einheiten: { "std": "HUR" } }
  * Alle Werte sind hier schlichte Werte, keine Funde mehr.
  */
 function baueRechnung({ kopf, parteien, positionen, steuerfall }, ergaenzungen = {}) {
+  const e = ergaenzungen;
   const w = (fund) => (fund ? fund.wert : null);
-  const partei = (p, extra = {}) => ({
+  const partei = (p, geaendert = {}) => ({
     name: w(p.name), adresse: p.adresse.map(w), plz: w(p.plz), ort: w(p.ort), land: w(p.land) || "DE",
     ustId: w(p.ustId), steuernummer: w(p.steuernummer), email: w(p.email), telefon: w(p.telefon),
-    kontakt: w(p.kontakt), ...ohneLeere(extra),
+    kontakt: w(p.kontakt),
+    ...geaendert,
   });
-  const kategorie = { standard: "S", reverse_charge: "AE", kleinunternehmer: "E" }[steuerfall.art];
+  const art = waehle(e, "steuerfall", steuerfall.art);
+  const kategorie = { standard: "S", reverse_charge: "AE", kleinunternehmer: "E" }[art];
+  const text = art === steuerfall.art && steuerfall.text ? steuerfall.text : TEXTE.steuerfallText[art] || null;
   const einSatz = kopf.umsatzsteuer.length === 1 ? kopf.umsatzsteuer[0].satz : null;
-  const leistungsdatum = ergaenzungen.leistungsdatum || null;
+  const leistungsdatum = e.leistungsdatum || null;
+  const referenz = e.kaeuferreferenz || null;
+  const leitwegId = e.leitwegId || null;
 
   return {
-    nummer: w(kopf.rechnungsnummer),
-    datum: w(kopf.rechnungsdatum),
-    faellig: ergaenzungen.faellig || w(kopf.faellig),
+    nummer: waehle(e, "nummer", w(kopf.rechnungsnummer)),
+    datum: waehle(e, "datum", w(kopf.rechnungsdatum)),
+    faellig: waehle(e, "faellig", w(kopf.faellig)),
     waehrung: "EUR",
-    kaeuferreferenz: ergaenzungen.leitwegId || ergaenzungen.kaeuferreferenz || TEXTE.keineKaeuferreferenz,
-    bestellreferenz: ergaenzungen.leitwegId ? ergaenzungen.kaeuferreferenz || null : null,
-    steuerfall: { art: steuerfall.art, kategorie, text: steuerfall.text || TEXTE.steuerfallText[steuerfall.art] || null },
-    absender: partei(parteien.absender, ergaenzungen.absender),
-    empfaenger: partei(parteien.empfaenger, ergaenzungen.empfaenger),
-    bank: { iban: w(kopf.iban), bic: w(kopf.bic) },
-    positionen: positionen.map((p) => ({
-      nr: p.nr, name: p.name, beschreibung: p.beschreibung || null,
-      menge: p.menge, einheit: p.einheit, einheitCode: einheitCode(p.einheit, ergaenzungen.einheiten),
-      einzelpreis: p.einzelpreis, gesamt: p.gesamt,
-      kategorie,
-      satz: kategorie === "S" ? (p.steuersatz ?? einSatz) : 0,
-      von: p.datumVon || leistungsdatum, bis: p.datumBis || leistungsdatum,
-    })),
+    referenz, leitwegId, leistungsdatum,
+    // BT-10: bei Behörden die Leitweg-ID, sonst die Referenz des Kunden
+    kaeuferreferenz: leitwegId || referenz || TEXTE.keineKaeuferreferenz,
+    bestellreferenz: leitwegId ? referenz : null,
+    steuerfall: { art, kategorie, text },
+    absender: partei(parteien.absender, e.absender),
+    empfaenger: partei(parteien.empfaenger, e.empfaenger),
+    bank: { iban: waehle(e, "iban", w(kopf.iban)), bic: waehle(e, "bic", w(kopf.bic)) },
+    positionen: positionen.map((p) => {
+      const g = (e.positionen || {})[p.nr] || {};
+      const einheit = waehle(g, "einheit", p.einheit);
+      return {
+        nr: p.nr,
+        name: waehle(g, "name", p.name),
+        beschreibung: waehle(g, "beschreibung", p.beschreibung || null),
+        menge: waehle(g, "menge", p.menge),
+        einheit,
+        einheitCode: einheitCode(einheit, e.einheiten),
+        einzelpreis: waehle(g, "einzelpreis", p.einzelpreis),
+        gesamt: waehle(g, "gesamt", p.gesamt),
+        kategorie,
+        satz: kategorie === "S" ? waehle(g, "satz", p.steuersatz ?? einSatz) : 0,
+        von: waehle(g, "von", p.datumVon || leistungsdatum),
+        bis: waehle(g, "bis", p.datumBis || p.datumVon || leistungsdatum),
+      };
+    }),
   };
 }
 
-function ohneLeere(objekt) {
-  return Object.fromEntries(Object.entries(objekt || {}).filter(([, wert]) => wert));
+/** Wert aus den Ergänzungen, wenn der Nutzer ihn gesetzt hat (auch null), sonst der erkannte. */
+function waehle(ergaenzungen, schluessel, erkannt) {
+  return ergaenzungen && Object.hasOwn(ergaenzungen, schluessel) ? ergaenzungen[schluessel] : erkannt;
 }
+
+/** Summen, wie sie in die XRechnung gehen: Netto, Steuer je Satz, Gesamt. */
+function summenDerRechnung(r) {
+  const gruppen = steuergruppen(r.positionen);
+  const netto = runde(gruppen.reduce((s, g) => s + g.basis, 0));
+  const steuer = runde(gruppen.reduce((s, g) => s + g.betrag, 0));
+  return { gruppen, netto, steuer, brutto: runde(netto + steuer) };
+}
+
 
 /** Code einer Einheit: zuerst die Zuordnung des Nutzers, dann die Erkennungsregeln. */
 function einheitCode(einheit, eigene = {}) {
   if (!einheit) return null;
-  const schluessel = einheit.trim().toLowerCase().replace(/\.$/, "");
-  return eigene[schluessel] || ERKENNUNGSREGELN.einheiten[schluessel] || null;
+  const schluessel = einheitSchluessel(einheit);
+  return (eigene || {})[schluessel] || ERKENNUNGSREGELN.einheiten[schluessel] || null;
 }
 
-/**
- * Was fehlt noch für eine gültige XRechnung? Liste von { feld, text }.
- * Ist sie leer, kann die XML erzeugt werden.
- */
-function pruefeRechnung(r) {
-  const fehlt = [];
-  const p = TEXTE.pflicht;
-  const pflicht = (feld, wert, text) => { if (!wert) fehlt.push({ feld, text }); };
-  pflicht("rechnungsnummer", r.nummer, p.nummer);
-  pflicht("rechnungsdatum", r.datum, p.datum);
-  pflicht("faellig", r.faellig, p.faellig);
-  pflicht("iban", r.bank.iban, p.iban);
-  for (const feld of ["name", "plz", "ort"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
-  pflicht("absender.ustId", r.absender.ustId || r.absender.steuernummer, p.absender.ustId);
-  for (const feld of ["kontakt", "telefon", "email"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
-  for (const feld of ["name", "plz", "ort", "email"]) pflicht(`empfaenger.${feld}`, r.empfaenger[feld], p.empfaenger[feld]);
-  if (r.steuerfall.art === "reverse_charge") pflicht("empfaenger.ustId", r.empfaenger.ustId, p.empfaenger.ustId);
-  pflicht("positionen", r.positionen.length, p.positionen);
-  for (const pos of r.positionen) {
-    pflicht(`position.${pos.nr}.einheit`, pos.einheitCode, p.einheit(pos.nr, pos.einheit));
-    pflicht(`position.${pos.nr}.datum`, pos.von, p.leistungsdatum(pos.nr));
-    pflicht(`position.${pos.nr}.steuersatz`, pos.kategorie !== "S" || pos.satz > 0, p.steuersatz(pos.nr));
-  }
-  return fehlt;
+/** "Std." → "std": so wird eine Einheit nachgeschlagen und gemerkt. */
+function einheitSchluessel(einheit) {
+  return einheit.trim().toLowerCase().replace(/\.$/, "");
 }
+
 
 // --- Absender und Empfänger ---------------------------------------------------
 
@@ -1768,8 +1843,9 @@ function alsDatum(iso) {
 window.XFact = {
   TEXTE, ERKENNUNGSREGELN, PRUEFUNGEN, KI,
   lesePdf, zuZeilen, alsLayoutText, hatText,
-  erkenneKopfdaten, pruefeKopfdaten, erkenneParteien, pruefeParteien, erkennePositionen, pruefePositionen,
+  erkenneKopfdaten, erkenneParteien, erkennePositionen,
   leistungszeitraum, erkenneSteuerfall, erkenneRechnung, baueRechnung, pruefeRechnung, erzeugeXml, xmlDateiname, einheitCode,
+  summenDerRechnung, hinweiseZurRechnung, einheitSchluessel, ibanPruefzifferOk,
   betraege, datumsangaben, ibanPruefzifferOk,
   alsBetrag, alsDatum,
 };
@@ -1780,16 +1856,32 @@ window.XFact = {
 // Die drei Schritte und die Bedienung der Seite.
 // =============================================================================
 
-const { TEXTE, lesePdf, alsLayoutText, hatText, erkenneRechnung, pruefeKopfdaten, pruefeParteien,
-  pruefePositionen, baueRechnung, pruefeRechnung, erzeugeXml, xmlDateiname, alsBetrag, alsDatum } = window.XFact;
+const { TEXTE, ERKENNUNGSREGELN, lesePdf, alsLayoutText, hatText, erkenneRechnung, baueRechnung,
+  pruefeRechnung, hinweiseZurRechnung, summenDerRechnung, erzeugeXml, xmlDateiname, einheitSchluessel,
+  datumsangaben, alsBetrag, alsDatum } = window.XFact;
 
 /**
- * Die Rechnung, die gerade bearbeitet wird: Dateiname, alles Erkannte und
- * die Ergänzungen des Nutzers (siehe baueRechnung).
+ * Die Rechnung, die gerade bearbeitet wird: Dateiname, alles Erkannte, die
+ * Ergänzungen des Nutzers (siehe baueRechnung) und welche Felder er geändert
+ * oder bestätigt hat.
  */
-const zustand = { dateiname: null, erkannt: null, ergaenzungen: {}, xml: null };
+const zustand = { dateiname: null, erkannt: null, ergaenzungen: {}, bestaetigt: new Set(), xml: null };
 
 const $ = (id) => document.getElementById(id);
+
+/** Baut ein Element: el("div", { class: "x" }, kind1, "Text", …) */
+function el(name, eigenschaften = {}, ...kinder) {
+  const element = document.createElement(name);
+  for (const [schluessel, wert] of Object.entries(eigenschaften)) {
+    if (wert === undefined || wert === null || wert === false) continue;
+    if (schluessel === "class") element.className = wert;
+    else if (schluessel.startsWith("on")) element.addEventListener(schluessel.slice(2), wert);
+    else if (schluessel in element && typeof wert !== "string") element[schluessel] = wert;
+    else element.setAttribute(schluessel, wert === true ? "" : wert);
+  }
+  element.append(...kinder.flat(Infinity).filter((k) => k !== null && k !== undefined && k !== false));
+  return element;
+}
 
 function zeigeSchritt(name) {
   for (const schritt of document.querySelectorAll(".schritt")) {
@@ -1820,46 +1912,333 @@ async function dateiGewaehlt(datei) {
   if (!hatText(pdf)) return zeigeMeldung(TEXTE.keinText);
 
   const zeilen = pdf.seiten.reduce((summe, seite) => summe + seite.zeilen.length, 0);
+  Object.assign(zustand, {
+    dateiname: datei.name, erkannt: erkenneRechnung(pdf), ergaenzungen: {}, bestaetigt: new Set(), xml: null,
+  });
   $("pruefen-dateiname").textContent = datei.name;
   $("pruefen-info").textContent = TEXTE.seitenUndZeilen(pdf.seiten.length, zeilen);
-  const erkannt = erkenneRechnung(pdf);
-  Object.assign(zustand, { dateiname: datei.name, erkannt, ergaenzungen: {}, xml: null });
-  const { kopf, parteien, positionen } = erkannt;
-  zeigeParteien(parteien, pruefeParteien(parteien));
-  zeigePositionen(positionen, pruefePositionen(positionen, kopf));
-  zeigeKopfdaten(kopf, pruefeKopfdaten(kopf));
-  zeigePflichtangaben();
   $("rohtext").textContent = alsLayoutText(pdf);
+  zeigeRechnung();
   zeigeSchritt("pruefen");
 }
 
-/** Zeigt, was für die XRechnung noch fehlt, und gibt den Knopf frei, wenn nichts fehlt. */
-function zeigePflichtangaben() {
-  const fehlt = pruefeRechnung(baueRechnung(zustand.erkannt, zustand.ergaenzungen));
-  const bereich = $("xml-fehlt");
-  bereich.replaceChildren();
-  if (fehlt.length) {
-    const titel = document.createElement("div");
-    titel.textContent = TEXTE.xmlFehlt;
-    const liste = document.createElement("ul");
-    for (const f of fehlt) {
-      const punkt = document.createElement("li");
-      punkt.textContent = f.text;
-      liste.append(punkt);
+// --- Ändern -------------------------------------------------------------------
+
+/**
+ * Übernimmt eine Änderung des Nutzers. pfad z.B. "datum", "empfaenger.email",
+ * "absender.adresse.0", "position.3.menge", "einheit.std".
+ */
+function setze(pfad, wert) {
+  const e = zustand.ergaenzungen;
+  const [bereich, a, b] = pfad.split(".");
+  if (bereich === "position") {
+    e.positionen ??= {};
+    const position = (e.positionen[a] ??= {});
+    position[b] = wert;
+    // Ein einzelnes Datum gilt als Tag: von = bis
+    if (b === "von") { position.bis = wert; zustand.bestaetigt.add(`position.${a}.datum`); }
+  } else if (bereich === "absender" || bereich === "empfaenger") {
+    e[bereich] ??= {};
+    if (a === "adresse") {
+      const adresse = [...aktuelleRechnung()[bereich].adresse];
+      adresse[Number(b)] = wert;
+      e[bereich].adresse = adresse.filter(Boolean);
+    } else {
+      e[bereich][a] = wert;
     }
-    bereich.append(titel, liste);
+  } else if (bereich === "einheit") {
+    e.einheiten ??= {};
+    e.einheiten[a] = wert;
   } else {
-    const bereit = document.createElement("div");
-    bereit.className = "bereit";
-    bereit.textContent = TEXTE.xmlBereit;
-    bereich.append(bereit);
+    e[bereich] = wert;
   }
+  zustand.bestaetigt.add(pfad);
+  neuZeichnen();
+}
+
+/**
+ * Nach einer Änderung neu zeichnen – erst wenn der Fokus (z.B. per Tab)
+ * weitergewandert ist, damit er im neu gezeichneten Feld erhalten bleibt.
+ */
+function neuZeichnen() {
+  setTimeout(() => {
+    const pfad = document.activeElement?.dataset?.pfad;
+    zeigeRechnung();
+    if (pfad) document.querySelector(`[data-pfad="${CSS.escape(pfad)}"]`)?.focus();
+  }, 0);
+}
+
+function aktuelleRechnung() {
+  return baueRechnung(zustand.erkannt, zustand.ergaenzungen);
+}
+
+/** "1.080,50" oder "1080.5" → 1080.5; Unlesbares → undefined */
+function zahlAusEingabe(text) {
+  const rein = String(text).replace(/[€%\s]/g, "");
+  if (!rein) return null;
+  const zahl = Number(rein.includes(",") ? rein.replace(/\./g, "").replace(",", ".") : rein);
+  return Number.isFinite(zahl) ? zahl : undefined;
+}
+
+const darstellung = {
+  text: (w) => w,
+  datum: (w) => alsDatum(w),
+  zahl: (w) => w.toLocaleString("de-DE", { maximumFractionDigits: 4 }),
+  betrag: (w) => alsBetrag(w),
+  satz: (w) => `${w.toLocaleString("de-DE")} %`,
+  iban: (w) => w.replace(/\s/g, "").replace(/(.{4})/g, "$1 ").trim(),
+};
+
+const einlesen = {
+  text: (t) => t.trim() || null,
+  datum: (t) => t || null,
+  zahl: zahlAusEingabe,
+  betrag: zahlAusEingabe,
+  satz: zahlAusEingabe,
+  iban: (t) => t.replace(/\s/g, "").toUpperCase() || null,
+};
+
+/**
+ * Ein bearbeitbarer Wert. Klick (oder Enter) macht ihn zum Eingabefeld.
+ * Fehlt er und ist er Pflicht (roter Hinweis), steht das Eingabefeld gleich da.
+ * optionen: { pfad, wert, art, hinweise: [Felder], klasse, platzhalter, optional }
+ */
+function feld({ pfad, wert, art = "text", hinweise: hinweisFelder = [pfad], klasse = "", platzhalter, optional }) {
+  const marken = hinweisMarken(zustand.hinweise, ...hinweisFelder);
+  const fehlt = zustand.hinweise.some((h) => hinweisFelder.includes(h.feld) && h.stufe === "fehlt");
+  const leer = wert === null || wert === undefined || wert === "";
+  const huelle = el("span", { class: `feld ${klasse}` });
+
+  const bearbeiten = () => {
+    const eingabe = el("input", {
+      class: `eingabe${fehlt ? " fehlt" : ""}`,
+      type: art === "datum" ? "date" : "text",
+      "data-pfad": pfad,
+      placeholder: platzhalter || TEXTE.ansicht.eingeben,
+      size: Math.max(8, Math.min(40, String(leer ? platzhalter || "" : darstellung[art](wert)).length + 2)),
+    });
+    eingabe.value = leer ? "" : art === "datum" ? wert
+      : art === "betrag" || art === "zahl" || art === "satz" ? darstellung.zahl(wert) : String(wert);
+    let fertig = false;
+    const uebernehmen = () => {
+      if (fertig) return;
+      fertig = true;
+      const neu = einlesen[art](eingabe.value);
+      if (neu === undefined || (neu === null && leer)) return neuZeichnen();
+      // Unverändert übernommen heißt: Der Nutzer bestätigt den Wert
+      if (neu === wert) { bestaetige(...hinweisFelder); return; }
+      setze(pfad, neu);
+    };
+    eingabe.addEventListener("change", uebernehmen);
+    eingabe.addEventListener("blur", uebernehmen);
+    eingabe.addEventListener("keydown", (ereignis) => {
+      if (ereignis.key === "Enter") eingabe.blur();
+      if (ereignis.key === "Escape") { fertig = true; neuZeichnen(); }
+    });
+    return eingabe;
+  };
+
+  if (leer && fehlt) {
+    huelle.append(bearbeiten());
+  } else {
+    const anzeige = el("span", {
+      class: `wert bearbeitbar${leer ? " leer" : ""}`, tabindex: "0", "data-pfad": pfad,
+      title: TEXTE.ansicht.klickenZumAendern,
+    }, leer ? (optional ? TEXTE.ansicht.hinzufuegen : "–") : darstellung[art](wert));
+    const oeffnen = () => {
+      const eingabe = bearbeiten();
+      anzeige.replaceWith(eingabe);
+      eingabe.focus();
+      if (eingabe.type === "text") eingabe.select();
+    };
+    anzeige.addEventListener("click", oeffnen);
+    anzeige.addEventListener("keydown", (ereignis) => { if (ereignis.key === "Enter") { ereignis.preventDefault(); oeffnen(); } });
+    huelle.append(anzeige);
+  }
+  huelle.append(...marken);
+  return huelle;
+}
+
+/**
+ * Die Hinweise zu einem oder mehreren Feldern als farbige Marken. Gelbe
+ * Hinweise zu einzelnen Werten lassen sich mit "Stimmt" bestätigen.
+ */
+function hinweisMarken(hinweise, ...felder) {
+  return hinweise.filter((h) => felder.includes(h.feld)).map((h) => {
+    const marke = el("span", { class: `hinweis ${h.stufe}` }, h.text);
+    const bestaetigbar = h.stufe === "unsicher" && !h.feld.startsWith("summe.") && !h.feld.endsWith(".land");
+    if (!bestaetigbar) return marke;
+    return el("span", { class: "feld" }, marke,
+      el("button", { class: "knopf klein", title: TEXTE.ansicht.stimmtTitel, onclick: () => bestaetige(h.feld) },
+        TEXTE.ansicht.stimmt));
+  });
+}
+
+/** Der Nutzer bestätigt Werte: Die gelben Hinweise dazu entfallen. */
+function bestaetige(...felder) {
+  for (const feld of felder) zustand.bestaetigt.add(feld);
+  neuZeichnen();
+}
+
+// --- Prüfansicht ----------------------------------------------------------------
+
+/** Zeichnet die Prüfansicht aus der aktuellen (bearbeiteten) Rechnung. */
+function zeigeRechnung() {
+  const r = aktuelleRechnung();
+  zustand.hinweise = hinweiseZurRechnung(r, zustand.erkannt, zustand.bestaetigt);
+  const a = TEXTE.ansicht;
+
+  const kopf = el("div", { class: "rechnung-kopf" },
+    el("div", { class: "titel" }, `${a.rechnung} `, feld({ pfad: "nummer", wert: r.nummer })),
+    el("div", {}, el("span", { class: "leise" }, `${a.datum} `), feld({ pfad: "datum", wert: r.datum, art: "datum" })));
+
+  $("rechnung").replaceChildren(
+    kopf,
+    el("div", { class: "parteien" }, partei("absender", r), partei("empfaenger", r)),
+    positionen(r),
+    summen(r),
+    zahlung(r),
+    weitereAngaben(r));
+  zeigePflichtangaben(r);
+}
+
+function partei(rolle, r) {
+  const p = r[rolle];
+  const a = TEXTE.ansicht;
+  const pf = TEXTE.parteiFelder;
+  const pfad = (name) => `${rolle}.${name}`;
+  const land = zustand.erkannt.parteien[rolle].land;
+  const zeilen = [
+    el("div", { class: "zeile name" }, feld({ pfad: pfad("name"), wert: p.name })),
+    ...p.adresse.map((zeile, i) => el("div", { class: "zeile" }, feld({ pfad: pfad(`adresse.${i}`), wert: zeile, hinweise: [] }))),
+    el("div", { class: "zeile" }, feld({ pfad: pfad("plz"), wert: p.plz }), " ", feld({ pfad: pfad("ort"), wert: p.ort })),
+    land && !land.angenommen ? el("div", { class: "zeile" }, land.text, ...hinweisMarken(zustand.hinweise, pfad("land"))) : null,
+  ];
+  const eintrag = (bezeichnung, name, optionen = {}) => [
+    el("dt", {}, bezeichnung),
+    el("dd", {}, feld({ pfad: pfad(name), wert: p[name], ...optionen })),
+  ];
+  const details = rolle === "absender"
+    ? [eintrag(pf.ustId, "ustId", { optional: Boolean(p.steuernummer) }),
+      eintrag(pf.steuernummer, "steuernummer", { optional: true, hinweise: [] }),
+      eintrag(a.ansprechpartner, "kontakt"), eintrag(pf.telefon, "telefon"), eintrag(pf.email, "email")]
+    : [eintrag(pf.ustId, "ustId", { optional: r.steuerfall.art !== "reverse_charge" }),
+      eintrag(a.emailFuerRechnungen, "email")];
+  return el("div", { class: "partei" }, el("h3", {}, TEXTE.parteien[rolle]), zeilen, el("dl", {}, details));
+}
+
+function positionen(r) {
+  const t = TEXTE.spaltenTitel;
+  const bereich = el("div", { class: "positionen" }, el("h3", {}, TEXTE.positionenTitel));
+  if (!r.positionen.length) {
+    bereich.append(...hinweisMarken(zustand.hinweise, "positionen"));
+    return bereich;
+  }
+  const rumpf = el("tbody");
+  for (const p of r.positionen) {
+    const pfad = (name) => `position.${p.nr}.${name}`;
+    const datum = p.von && p.bis && p.von !== p.bis
+      ? [feld({ pfad: pfad("von"), wert: p.von, art: "datum", hinweise: [] }), " – ",
+        feld({ pfad: pfad("bis"), wert: p.bis, art: "datum", hinweise: [] })]
+      : feld({ pfad: pfad("von"), wert: p.von, art: "datum", hinweise: [pfad("datum")] });
+    const marken = hinweisMarken(zustand.hinweise, pfad("gesamt"), pfad("menge"));
+    rumpf.append(el("tr", { class: marken.length ? "mit-hinweis" : "" },
+      el("td", { class: "datum" }, datum),
+      el("td", {},
+        el("div", { class: "name" }, feld({ pfad: pfad("name"), wert: p.name })),
+        p.beschreibung ? el("div", { class: "beschreibung" }, feld({ pfad: pfad("beschreibung"), wert: p.beschreibung })) : null),
+      el("td", { class: "zahl" }, feld({ pfad: pfad("menge"), wert: p.menge, art: "zahl", hinweise: [] })),
+      el("td", {}, einheit(p)),
+      el("td", { class: "zahl" }, feld({ pfad: pfad("einzelpreis"), wert: p.einzelpreis, art: "betrag", hinweise: [] })),
+      el("td", { class: "zahl" }, p.kategorie === "S"
+        ? feld({ pfad: pfad("satz"), wert: p.satz || null, art: "satz" }) : "–"),
+      el("td", { class: "zahl" }, feld({ pfad: pfad("gesamt"), wert: p.gesamt, art: "betrag", hinweise: [] }))));
+    if (marken.length) rumpf.append(el("tr", { class: "hinweise" }, el("td", { colSpan: 7 }, marken)));
+  }
+  bereich.append(el("table", {},
+    el("thead", {}, el("tr", {},
+      el("th", {}, t.datum), el("th", {}, t.beschreibung), el("th", { class: "zahl" }, t.menge),
+      el("th", {}, t.einheit), el("th", { class: "zahl" }, t.einzelpreis), el("th", { class: "zahl" }, t.steuersatz),
+      el("th", { class: "zahl" }, t.gesamt))),
+    rumpf));
+  return bereich;
+}
+
+/** Einheit einer Position; ist sie unbekannt, eine Auswahl der Einheiten der XRechnung. */
+function einheit(p) {
+  const pfad = `position.${p.nr}.einheit`;
+  if (p.einheitCode) return feld({ pfad, wert: p.einheit, hinweise: [] });
+  const auswahl = el("select", {
+    class: "eingabe fehlt", "data-pfad": pfad,
+    onchange: (ereignis) => {
+      const gewaehlt = ERKENNUNGSREGELN.einheitenListe.find((x) => x.code === ereignis.target.value);
+      if (!gewaehlt) return;
+      // Bekannte Schreibweise merken ("Fahrt" = Stück), sonst den Namen der Einheit setzen
+      if (p.einheit) setze(`einheit.${einheitSchluessel(p.einheit)}`, gewaehlt.code);
+      else { setze(pfad, gewaehlt.name); setze(`einheit.${einheitSchluessel(gewaehlt.name)}`, gewaehlt.code); }
+    },
+  }, el("option", { value: "" }, p.einheit ? `${p.einheit} = …` : TEXTE.ansicht.einheitWaehlen),
+  ERKENNUNGSREGELN.einheitenListe.map((x) => el("option", { value: x.code }, x.name)));
+  return auswahl;
+}
+
+function summen(r) {
+  const s = summenDerRechnung(r);
+  const a = TEXTE.ansicht;
+  const marken = (feld) => hinweisMarken(zustand.hinweise, `summe.${feld}`);
+  const zeile = (bezeichnung, betrag, feld, klasse = "") => el("div", { class: `summe ${klasse}` },
+    el("span", {}, bezeichnung), el("span", { class: "zahl" }, alsBetrag(betrag)), el("span", {}, marken(feld)));
+  return el("div", { class: "summen" },
+    zeile(a.netto, s.netto, "netto"),
+    s.gruppen.map((g) => zeile(g.kategorie === "S" ? a.umsatzsteuer(g.satz) : a.steuerBefreit[g.kategorie],
+      g.betrag, `steuer.${g.satz}`)),
+    zeile(a.gesamt, s.brutto, "brutto", "gesamt"));
+}
+
+function zahlung(r) {
+  const a = TEXTE.ansicht;
+  return el("div", { class: "zahlung" },
+    el("span", {}, el("span", { class: "leise" }, `${a.zahlbarBis} `), feld({ pfad: "faellig", wert: r.faellig, art: "datum" })),
+    el("span", {}, el("span", { class: "leise" }, "IBAN "), feld({ pfad: "iban", wert: r.bank.iban, art: "iban" })),
+    el("span", {}, el("span", { class: "leise" }, "BIC "), feld({ pfad: "bic", wert: r.bank.bic, optional: true })));
+}
+
+function weitereAngaben(r) {
+  const a = TEXTE.ansicht;
+  const steuerfaelle = Object.entries(a.steuerfaelle).map(([art, name]) =>
+    el("label", { class: "wahl" },
+      el("input", { type: "radio", name: "steuerfall", value: art, checked: r.steuerfall.art === art,
+        onchange: () => setze("steuerfall", art) }),
+      name));
+  const ohneDatum = zustand.erkannt.positionen.some((p) => !p.datumVon);
+  return el("div", { class: "weitere" },
+    el("h3", {}, a.weitereAngaben),
+    el("div", { class: "angabe" }, el("div", { class: "leise" }, a.steuerfall), el("div", { class: "wahlen" }, steuerfaelle)),
+    ohneDatum ? el("div", { class: "angabe" },
+      el("div", { class: "leise" }, a.leistungsdatum),
+      feld({ pfad: "leistungsdatum", wert: r.leistungsdatum, art: "datum", hinweise: [], optional: true }),
+      r.datum ? el("button", { class: "knopf klein", onclick: () => setze("leistungsdatum", r.datum) }, a.gleichRechnungsdatum) : null)
+      : null,
+    el("div", { class: "angabe" }, el("div", { class: "leise" }, a.referenz),
+      feld({ pfad: "kaeuferreferenz", wert: r.referenz, optional: true, hinweise: [] })),
+    el("div", { class: "angabe" }, el("div", { class: "leise" }, a.leitwegId),
+      feld({ pfad: "leitwegId", wert: r.leitwegId, optional: true, hinweise: [] })));
+}
+
+/** Zeigt, was für die XRechnung noch fehlt, und gibt den Knopf frei, wenn nichts fehlt. */
+function zeigePflichtangaben(r = aktuelleRechnung()) {
+  const fehlt = pruefeRechnung(r);
+  $("xml-fehlt").replaceChildren(fehlt.length
+    ? el("div", {}, TEXTE.xmlFehlt, el("ul", {}, fehlt.map((f) => el("li", {}, f.text))))
+    : el("div", { class: "bereit" }, TEXTE.xmlBereit));
   $("knopf-xml").disabled = fehlt.length > 0;
 }
 
+// --- Fertig ---------------------------------------------------------------------
+
 /** Erzeugt die XML, lädt sie herunter und zeigt Schritt 3. */
 function xmlErzeugen() {
-  const rechnung = baueRechnung(zustand.erkannt, zustand.ergaenzungen);
+  const rechnung = aktuelleRechnung();
   if (pruefeRechnung(rechnung).length) return;
   zustand.xml = erzeugeXml(rechnung);
   herunterladen();
@@ -1869,177 +2248,11 @@ function xmlErzeugen() {
 
 function herunterladen() {
   const adresse = URL.createObjectURL(new Blob([zustand.xml], { type: "application/xml" }));
-  const link = document.createElement("a");
-  link.href = adresse;
-  link.download = xmlDateiname(zustand.dateiname);
+  const link = el("a", { href: adresse, download: xmlDateiname(zustand.dateiname) });
   document.body.append(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(adresse), 1000);
-}
-
-/** Zeigt die erkannten Kopfdaten als Liste mit Markierungen. */
-function zeigeKopfdaten(kopf, hinweise) {
-  const f = TEXTE.felder;
-  const eintraege = [
-    ["rechnungsnummer", f.rechnungsnummer, kopf.rechnungsnummer?.wert],
-    ["rechnungsdatum", f.rechnungsdatum, kopf.rechnungsdatum && alsDatum(kopf.rechnungsdatum.wert)],
-    ["faellig", f.faellig, kopf.faellig && alsDatum(kopf.faellig.wert)],
-    ["netto", f.netto, kopf.netto && alsBetrag(kopf.netto.wert)],
-    ...(kopf.umsatzsteuer.length
-      ? kopf.umsatzsteuer.map((s) => ["umsatzsteuer", TEXTE.umsatzsteuerZeile(s.satz), alsBetrag(s.betrag)])
-      : [["umsatzsteuer", f.umsatzsteuer, null]]),
-    ["gesamt", f.gesamt, kopf.gesamt && alsBetrag(kopf.gesamt.wert)],
-    ["iban", f.iban, kopf.iban && kopf.iban.wert.replace(/(.{4})/g, "$1 ").trim()],
-    ["bic", f.bic, kopf.bic?.wert],
-  ];
-
-  const liste = $("kopfdaten");
-  liste.replaceChildren();
-  const gezeigt = new Set();
-  for (const [feld, bezeichnung, wert] of eintraege) {
-    const dt = document.createElement("dt");
-    dt.textContent = bezeichnung;
-    const dd = document.createElement("dd");
-    const wertSpan = document.createElement("span");
-    wertSpan.className = "wert";
-    wertSpan.textContent = wert || "–";
-    dd.append(wertSpan);
-    if (!gezeigt.has(feld)) {
-      dd.append(...hinweisMarken(hinweise, feld));
-      gezeigt.add(feld);
-    }
-    liste.append(dt, dd);
-  }
-}
-
-/** Die Hinweise zu einem oder mehreren Feldern als farbige Marken. */
-function hinweisMarken(hinweise, ...felder) {
-  return hinweise.filter((h) => felder.includes(h.feld)).map((hinweis) => {
-    const marke = document.createElement("span");
-    marke.className = `hinweis ${hinweis.stufe}`;
-    marke.textContent = hinweis.text;
-    return marke;
-  });
-}
-
-/** Zeigt die Positionen als Tabelle, Hinweise jeweils unter der Zeile. */
-function zeigePositionen(positionen, hinweise) {
-  const bereich = $("positionen");
-  bereich.replaceChildren();
-  const titel = document.createElement("h3");
-  titel.textContent = TEXTE.positionenTitel;
-  bereich.append(titel);
-  if (!positionen.length) {
-    bereich.append(...hinweisMarken(hinweise, "positionen"));
-    return;
-  }
-
-  const element = (name, text, klasse) => {
-    const e = document.createElement(name);
-    if (text !== undefined && text !== null) e.textContent = text;
-    if (klasse) e.className = klasse;
-    return e;
-  };
-  const zahl = (wert) => wert.toLocaleString("de-DE", { maximumFractionDigits: 4 });
-  const datum = (p) => !p.datumVon ? "–"
-    : p.datumVon === p.datumBis ? alsDatum(p.datumVon) : `${alsDatum(p.datumVon)} – ${alsDatum(p.datumBis)}`;
-
-  const t = TEXTE.spaltenTitel;
-  const tabelle = element("table");
-  const kopf = element("tr");
-  kopf.append(element("th", t.datum), element("th", t.beschreibung), element("th", t.menge, "zahl"),
-    element("th", t.einheit), element("th", t.einzelpreis, "zahl"), element("th", t.gesamt, "zahl"));
-  const kopfbereich = element("thead");
-  kopfbereich.append(kopf);
-  tabelle.append(kopfbereich);
-
-  const rumpf = element("tbody");
-  for (const p of positionen) {
-    const marken = hinweisMarken(hinweise, `position.${p.nr}`);
-    const zeile = element("tr", null, marken.length ? "mit-hinweis" : "");
-    const text = element("td");
-    text.append(element("div", p.name, "name"));
-    if (p.beschreibung) text.append(element("div", p.beschreibung, "beschreibung"));
-    zeile.append(element("td", datum(p), "datum"), text, element("td", zahl(p.menge), "zahl"),
-      element("td", p.einheit || "–"), element("td", alsBetrag(p.einzelpreis), "zahl"),
-      element("td", alsBetrag(p.gesamt), "zahl"));
-    rumpf.append(zeile);
-    if (marken.length) {
-      const hinweiszeile = element("tr", null, "hinweise");
-      const zelle = element("td");
-      zelle.colSpan = 6;
-      zelle.append(...marken);
-      hinweiszeile.append(zelle);
-      rumpf.append(hinweiszeile);
-    }
-  }
-  tabelle.append(rumpf);
-
-  const fuss = element("tfoot");
-  const summe = element("tr");
-  const bezeichnung = element("td", TEXTE.summePositionen);
-  bezeichnung.colSpan = 5;
-  const betrag = element("td", alsBetrag(positionen.reduce((s, p) => s + p.gesamt, 0)), "zahl");
-  summe.append(bezeichnung, betrag);
-  const pruefung = element("tr");
-  const pruefzelle = element("td", null, "rechts");
-  pruefzelle.colSpan = 6;
-  pruefzelle.append(...hinweisMarken(hinweise, "positionen"));
-  pruefung.append(pruefzelle);
-  fuss.append(summe, pruefung);
-  tabelle.append(fuss);
-  bereich.append(tabelle);
-}
-
-/** Zeigt Absender ("Von") und Empfänger ("An") nebeneinander. */
-function zeigeParteien(parteien, hinweise) {
-  const bereich = $("parteien");
-  bereich.replaceChildren();
-  for (const rolle of ["absender", "empfaenger"]) {
-    const p = parteien[rolle];
-    const feld = (name) => `${rolle}.${name}`;
-    const kasten = document.createElement("div");
-    kasten.className = "partei";
-    const titel = document.createElement("h3");
-    titel.textContent = TEXTE.parteien[rolle];
-    kasten.append(titel);
-
-    const zeile = (text, klasse, ...felder) => {
-      const marken = hinweisMarken(hinweise, ...felder.map(feld));
-      if (!text && !marken.length) return;
-      const div = document.createElement("div");
-      div.className = `zeile ${klasse || ""}`;
-      const span = document.createElement("span");
-      span.textContent = text || "–";
-      div.append(span, ...marken);
-      kasten.append(div);
-    };
-    zeile(p.name?.wert, "name", "name");
-    for (const adresse of p.adresse) zeile(adresse.wert);
-    zeile([p.plz?.wert, p.ort?.wert].filter(Boolean).join(" "), "", "plz", "ort");
-    zeile(p.land && !p.land.angenommen ? p.land.text : null, "", "land");
-
-    const details = document.createElement("dl");
-    const eintrag = (bezeichnung, wert, name) => {
-      const marken = hinweisMarken(hinweise, feld(name));
-      if (!wert && !marken.length) return;
-      const dt = document.createElement("dt");
-      dt.textContent = bezeichnung;
-      const dd = document.createElement("dd");
-      const span = document.createElement("span");
-      span.textContent = wert || "–";
-      dd.append(span, ...marken);
-      details.append(dt, dd);
-    };
-    const pf = TEXTE.parteiFelder;
-    eintrag(pf.ustId, p.ustId?.wert, "ustId");
-    eintrag(pf.steuernummer, p.steuernummer?.wert, "steuernummer");
-    eintrag(pf.email, p.email?.wert, "email");
-    eintrag(pf.telefon, p.telefon?.wert, "telefon");
-    if (details.children.length) kasten.append(details);
-    bereich.append(kasten);
-  }
 }
 
 function richteSeiteEin() {
@@ -2074,7 +2287,7 @@ function richteSeiteEin() {
 
 richteSeiteEin();
 // Für Tests und Neugierige
-Object.assign(window.XFact, { dateiGewaehlt, zustand, zeigePflichtangaben });
+Object.assign(window.XFact, { dateiGewaehlt, zustand, setze });
 </script>
 
 <!-- === BIBLIOTHEKEN: ANFANG =================================================

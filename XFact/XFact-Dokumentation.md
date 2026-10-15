@@ -73,12 +73,19 @@ Markierungen zeigen, was zu tun ist:
 | Farbe | Bedeutung | Was Sie tun |
 |---|---|---|
 | **Rot** | Diese Angabe fehlt. Ohne sie wird die XRechnung ungültig. | Direkt im Feld daneben eintragen. |
-| **Gelb** | Unsicher erkannt, oder es gibt einen Hinweis, z.B. „Diese Rechnung wurde bereits umgewandelt“. | Prüfen, gegebenenfalls korrigieren. Gelb hält Sie nicht auf. |
+| **Gelb** | Unsicher erkannt, oder es gibt einen Hinweis, z.B. „Diese Rechnung wurde bereits umgewandelt“. | Prüfen und korrigieren, oder auf **„Stimmt“** klicken, wenn der Wert richtig ist. Gelb hält Sie nicht auf. |
 | **Grau** | Aus Ihren gemerkten Angaben ergänzt, z.B. „aus Kundenprofil“. | Nur zur Information. |
 
 Bei den Summen zeigt ein **✓**, dass alles aufgeht. Sonst nennt XFact die Differenz.
 
-Unter der Rechnung stehen **Weitere Angaben**, die im Rechnungsbild keinen Platz haben, zum Beispiel der Steuerfall oder die Zuordnung Ihrer Einheiten. Neben jeder ergänzten Angabe steht das Häkchen **„merken“**. Es ist vorausgewählt.
+**Ändern:** Klicken Sie auf einen Wert, ändern Sie ihn und drücken Sie Enter, oder wechseln Sie mit Tab ins nächste Feld. Mit Escape brechen Sie ab. Kennt XFact eine Einheit nicht, wählen Sie direkt in der Tabelle aus, was sie bedeutet, z.B. „Fahrt“ = Stück.
+
+Unter der Rechnung stehen **Weitere Angaben**, die im Rechnungsbild keinen Platz haben:
+- **Steuer:** normal mit 19 % / 7 %, Steuerschuldnerschaft des Leistungsempfängers (§ 13b) oder Kleinunternehmer (§ 19). XFact wählt vor, was auf der Rechnung steht.
+- **Leistungsdatum für Positionen ohne Datum:** Mit **„= Rechnungsdatum“** übernehmen Sie das Rechnungsdatum.
+- **Referenz / Bestellnummer** des Kunden und **Leitweg-ID** (nur bei Behörden), beides optional.
+
+Darunter sehen Sie, was für die XRechnung noch fehlt. Neben jeder ergänzten Angabe steht das Häkchen **„merken“**. Es ist vorausgewählt.
 
 Sobald nichts mehr rot ist, wird **XML erzeugen** aktiv.
 
