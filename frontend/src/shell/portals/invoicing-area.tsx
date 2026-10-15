@@ -2,6 +2,7 @@ import * as React from "react";
 import {
   Copy,
   Download,
+  FileCode2,
   FileText,
   Filter,
   Hash,
@@ -40,6 +41,7 @@ import {
 } from "./invoice-print-format";
 import { createInvoicePdfBlob, invoiceFilenameFor } from "./invoice-pdf";
 import { INVOICE_UNIT_LABELS } from "@/domain/invoice-units";
+import { buildInvoiceXml, checkXRechnung, invoiceXmlFilename } from "./invoice-xrechnung";
 
 const NO_PASSWORD_MANAGER_PROPS = {
   autoComplete: "new-password",
@@ -1032,6 +1034,7 @@ function InvoicePdfPreview({
 }) {
   const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
   const [pdfError, setPdfError] = React.useState<string | null>(null);
+  const [xmlIssues, setXmlIssues] = React.useState<string[]>([]);
   const blobRef = React.useRef<Blob | null>(null);
 
   React.useEffect(() => {
@@ -1064,8 +1067,28 @@ function InvoicePdfPreview({
     link.click();
   }
 
+  // Erst prüfen, dann erzeugen: eine XRechnung mit Lücken wird vom Empfänger
+  // abgelehnt, und der Grund ist dort schwerer zu finden als hier.
+  function downloadXRechnung() {
+    const issues = checkXRechnung(invoice, settings);
+    if (issues.length > 0) {
+      setXmlIssues(issues);
+      return;
+    }
+    setXmlIssues([]);
+    const blob = new Blob([buildInvoiceXml(invoice, settings)], {
+      type: "application/xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = invoiceXmlFilename(invoice);
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
-    <div className="fixed inset-0 z-50 grid grid-rows-[auto_1fr] gap-3 bg-zinc-950/50 p-6">
+    <div className="fixed inset-0 z-50 grid grid-rows-[auto_auto_1fr] gap-3 bg-zinc-950/50 p-6">
       <div className="flex items-center justify-end gap-2">
         {pdfError && (
           <span className="max-w-56 truncate rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">
@@ -1083,10 +1106,31 @@ function InvoicePdfPreview({
         >
           <Download />
         </Button>
+        <Button
+          type="button"
+          size="icon"
+          className="bg-[var(--brand)] text-white hover:opacity-90"
+          aria-label="XRechnung herunterladen"
+          title="XRechnung herunterladen"
+          onClick={downloadXRechnung}
+        >
+          <FileCode2 />
+        </Button>
         <Button type="button" variant="outline" size="icon" aria-label="Schließen" title="Schließen" onClick={onClose}>
           <X />
         </Button>
       </div>
+
+      {xmlIssues.length > 0 && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          <div className="font-semibold">Die XRechnung lässt sich noch nicht erzeugen:</div>
+          <ul className="mt-1 list-disc pl-4">
+            {xmlIssues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="min-h-0 rounded-md bg-zinc-100 shadow-2xl">
         {pdfUrl ? (

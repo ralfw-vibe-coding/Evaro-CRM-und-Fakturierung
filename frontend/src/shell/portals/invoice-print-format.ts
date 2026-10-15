@@ -78,14 +78,24 @@ export function invoicePdfFilename(invoiceNumber: string, companyName: string): 
   return `INV ${normalizedNumber} ${safeCompany || "Kunde"}.pdf`;
 }
 
+/** Kaufmännisch auf zwei Stellen. */
+function round2(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+/**
+ * Positionsbetrag, auf zwei Stellen gerundet (Regel R5 der XRechnung-
+ * Anforderung). Die Summen werden aus den **gerundeten** Positionsbeträgen
+ * gebildet, damit PDF und XML auf denselben Betrag kommen.
+ */
 export function lineTotal(line: InvoiceLine): number {
-  return Math.max(0, Number(line.quantity) || 0) * Math.max(0, Number(line.unit_price) || 0);
+  return round2(Math.max(0, Number(line.quantity) || 0) * Math.max(0, Number(line.unit_price) || 0));
 }
 
 export function invoiceTotal(invoice: Invoice) {
-  const net = invoice.data.lines.reduce((sum, line) => sum + lineTotal(line), 0);
-  const vat = net * (Math.max(0, Number(invoice.vat_rate) || 0) / 100);
-  return { net, vat, gross: net + vat };
+  const net = round2(invoice.data.lines.reduce((sum, line) => sum + lineTotal(line), 0));
+  const vat = round2(net * (Math.max(0, Number(invoice.vat_rate) || 0) / 100));
+  return { net, vat, gross: round2(net + vat) };
 }
 
 export function formatMoney(value: number): string {
@@ -107,10 +117,23 @@ export function splitLines(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
-export function formatOffsetDate(base: Date, days: number): string {
+/**
+ * Datum plus Tage als JJJJ-MM-TT.
+ *
+ * Bewusst aus den lokalen Datumsteilen zusammengesetzt: `toISOString()` rechnet
+ * nach UTC um und verschiebt östlich von Greenwich auf den Vortag — das
+ * Zahlungsziel landete dadurch einen Tag zu früh im PDF.
+ */
+export function offsetIsoDate(base: Date, days: number): string {
   const date = new Date(base);
   date.setDate(date.getDate() + days);
-  return formatDate(date.toISOString().slice(0, 10));
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+export function formatOffsetDate(base: Date, days: number): string {
+  return formatDate(offsetIsoDate(base, days));
 }
 
 export function standardPaymentTermsLine(
