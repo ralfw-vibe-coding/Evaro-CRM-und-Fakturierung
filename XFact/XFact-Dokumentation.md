@@ -85,7 +85,7 @@ Unter der Rechnung stehen **Weitere Angaben**, die im Rechnungsbild keinen Platz
 - **Leistungsdatum für Positionen ohne Datum:** Mit **„= Rechnungsdatum“** übernehmen Sie das Rechnungsdatum.
 - **Referenz / Bestellnummer** des Kunden und **Leitweg-ID** (nur bei Behörden), beides optional.
 
-Darunter sehen Sie, was für die XRechnung noch fehlt. Neben jeder ergänzten Angabe steht das Häkchen **„merken“**. Es ist vorausgewählt.
+Darunter sehen Sie, was für die XRechnung noch fehlt, und das Häkchen **„Ergänzte Angaben merken“**. Es ist vorausgewählt. Darunter steht genau, was XFact sich merken wird, z.B. „Berg GmbH & Co. KG: E-Mail für Rechnungen rechnung@berg.de“.
 
 Sobald nichts mehr rot ist, wird **XML erzeugen** aktiv.
 
@@ -122,23 +122,26 @@ Für Ihr eigenes Unternehmen genügt **USt-IdNr. oder Steuernummer**.
 
 ## 8. Was XFact sich merkt
 
-**Gemerkt werden:**
-- **Ihre Firma bzw. Firmen:** Stammdaten, Ansprechpartner, Bankverbindung, gelernte Beschriftungen Ihrer Rechnungsvorlage. Arbeiten Sie für mehrere Firmen, z.B. als Buchhalter, legt XFact automatisch je Firma ein eigenes Profil an.
-- **Kunden:** E-Mail für Rechnungen, Leitweg-ID oder Referenz, Steuerfall
-- **Einheiten:** Ihre Schreibweise und die genormte Einheit
-- **Einstellungen:** KI an oder aus, Anbieter, Modell, Schlüssel
-- **Logbuch:** Datum, Dateiname, Rechnungsnummer, Kunde und Betrag jeder umgewandelten Rechnung
+Wenn Sie „XML erzeugen“ klicken und das Häkchen „Ergänzte Angaben merken“ gesetzt ist, merkt sich XFact, was Sie ergänzt haben:
+
+- **Für Ihre Firma:** E-Mail, Telefon, Ansprechpartner, USt-IdNr. bzw. Steuernummer, falls sie nicht auf der Rechnung stehen. Dazu die Einheiten, die Sie zugeordnet haben (z.B. „Fahrt“ = Stück). Arbeiten Sie für mehrere Firmen, z.B. als Buchhalter, legt XFact je Firma ein eigenes Profil an. Erkannt wird die Firma an ihrer USt-IdNr. oder Steuernummer.
+- **Für jeden Kunden:** E-Mail für Rechnungen, USt-IdNr. und Leitweg-ID. Erkannt wird der Kunde an seiner USt-IdNr., sonst an Name und PLZ.
+- **Logbuch:** Datum, Dateiname, Rechnungsnummer, Kunde und Betrag jeder umgewandelten Rechnung. Das wird immer eingetragen, auch ohne Häkchen.
 
 **Ihre Rechnungen selbst speichert XFact nicht.**
 
-XFact lernt mit: Korrigieren Sie eine Erkennung, merkt sich XFact zum Beispiel, dass bei Ihnen „Belegnr.“ die Rechnungsnummer ist. Ab der nächsten Rechnung klappt die Erkennung dann besser.
+**Gemerktes füllt nur Lücken.** Bei der nächsten Rechnung ergänzt XFact nur, was im PDF fehlt. Solche Angaben sind grau markiert: „aus Kundenprofil“ bzw. „aus Firmenprofil“. Was auf der Rechnung steht, gewinnt immer.
+
+**Doppelt umgewandelt?** Wandeln Sie eine Rechnungsnummer ein zweites Mal um, zeigt XFact gelb: „bereits am … umgewandelt“. Verhindert wird es nicht.
+
+Über das **Menü (☰)** sehen Sie alles Gemerkte. Dort können Sie Angaben ändern und einzelne Firmen, Kunden oder Einheiten löschen. Zum Löschen klicken Sie zweimal: Der Mülleimer wird erst zu „?“.
 
 ### Daten sichern, umziehen, löschen
 
 Im Menü finden Sie:
-- **Daten exportieren:** eine Datei mit allen gemerkten Angaben. Der API-Schlüssel ist nur enthalten, wenn Sie das ausdrücklich ankreuzen.
-- **Daten importieren:** stellt eine exportierte Datei wieder her, zum Beispiel auf einem neuen Rechner. Die vorhandenen Angaben werden dabei ersetzt.
-- **Alle Daten löschen:** nach einer Rückfrage
+- **Daten exportieren:** eine Datei `xfact-daten-JJJJ-MM-TT.json` mit allen gemerkten Angaben. Ein KI-Schlüssel ist darin nicht enthalten.
+- **Daten importieren:** stellt eine exportierte Datei wieder her, zum Beispiel auf einem neuen Rechner. Die vorhandenen Angaben werden dabei ersetzt, nach einer Rückfrage.
+- **Alle Daten löschen:** zweimal klicken
 
 > **Wichtig:** Leeren Sie Ihren Browser-Speicher oder wechseln Sie Browser oder Rechner, sind die gemerkten Angaben weg. Exportieren Sie deshalb regelmäßig.
 

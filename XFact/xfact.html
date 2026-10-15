@@ -20,6 +20,7 @@
     XML-ERZEUGUNG          wie die XRechnung entsteht
     PDF LESEN              Text und Zeilen aus dem PDF holen
     ERKENNUNG              wendet die Erkennungsregeln auf den Text an
+    GEDÄCHTNIS             was sich XFact merkt: Firmen, Kunden, Einheiten, Logbuch
     ABLAUF                 die drei Schritte: Hochladen, Prüfen, Fertig
     BIBLIOTHEKEN           eingebettete Fremdbibliotheken – nicht ändern
 
@@ -341,7 +342,35 @@ a.knopf { text-decoration: none; }
   font-weight: 600;
   color: var(--farbe-ok);
 }
-.fertig .knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin: var(--abstand) 0 8px; }
+.fertig .knoepfe { margin: var(--abstand) 0 8px; }
+
+.hinweis.ergaenzt { color: var(--farbe-ergaenzt); font-style: italic; }
+.merken { margin-top: 10px; }
+
+.daten-bereich { margin-bottom: calc(var(--abstand) * 2); }
+.daten-bereich h3 {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--farbe-text-leise);
+}
+.firma { border: 1px solid var(--farbe-linie); border-radius: var(--radius); padding: var(--abstand); margin-bottom: var(--abstand); }
+.firma-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.firma-kopf h4 { margin: 0; font-size: 1rem; }
+.firma h5 { margin: var(--abstand) 0 6px; font-size: 0.85rem; color: var(--farbe-text-leise); font-weight: 600; }
+.firma dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; align-items: baseline; }
+.firma dt { color: var(--farbe-text-leise); }
+.firma dd { margin: 0; }
+.liste { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.liste th { text-align: left; font-weight: 500; color: var(--farbe-text-leise); border-bottom: 1px solid var(--farbe-linie); padding: 4px 8px 4px 0; }
+.liste td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--farbe-linie); vertical-align: middle; }
+.liste td:first-child { min-width: 11em; }
+.liste .eingabe { width: 100%; min-width: 9em; }
+.liste .zahl { text-align: right; font-family: var(--schrift-zahlen); white-space: nowrap; }
+.knoepfe { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.meldung.gut { background: transparent; color: var(--farbe-ok); padding-left: 0; }
 
 .gelesen summary { cursor: pointer; color: var(--farbe-text-leise); margin-bottom: 8px; }
 
@@ -393,13 +422,28 @@ a.knopf { text-decoration: none; }
       <!-- Die erkannte Rechnung, neutral dargestellt; jeder Wert ist änderbar -->
       <div class="rechnung" id="rechnung"></div>
       <div class="abschluss">
-        <div id="xml-fehlt"></div>
+        <div>
+          <div id="xml-fehlt"></div>
+          <label class="wahl merken"><input type="checkbox" id="merken"><span id="merken-text"></span></label>
+          <div class="leise" id="wird-gemerkt"></div>
+        </div>
         <button class="knopf haupt" id="knopf-xml" data-text="xmlErzeugen"></button>
       </div>
       <details class="gelesen">
         <summary data-text="gelesenerText"></summary>
         <pre class="rohtext" id="rohtext"></pre>
       </details>
+    </div>
+  </section>
+
+  <!-- Menü: gemerkte Angaben -->
+  <section class="schritt" id="schritt-daten" hidden>
+    <div class="karte">
+      <div class="zeile-oben">
+        <h2 id="daten-titel"></h2>
+        <button class="knopf" id="knopf-zurueck"></button>
+      </div>
+      <div id="daten"></div>
     </div>
   </section>
 
@@ -482,6 +526,51 @@ const TEXTE = {
   xmlBereit: "Alle Pflichtangaben für die XRechnung sind vorhanden.",
   aufDerRechnung: (betrag) => `auf der Rechnung: ${betrag}`,
 
+  // Gedächtnis
+  gemerkt: {
+    merken: "Ergänzte Angaben merken",
+    wirdGemerkt: "Wird gemerkt:",
+    nichtsNeues: "Nichts Neues zu merken.",
+    absender: (feld, wert) => `${feld}: ${wert}`,
+    einheit: (einheit, name) => `Einheit „${einheit}“ = ${name}`,
+    kunde: (kunde, feld, wert) => `${kunde}: ${feld} ${wert}`,
+    herkunft: { firma: "aus Firmenprofil", kunde: "aus Kundenprofil" },
+    schonUmgewandelt: (datum) => `bereits am ${datum} umgewandelt`,
+    importKeinJson: "Die Datei ist keine XFact-Datensicherung (kein lesbares JSON).",
+    importFalscheDatei: "Die Datei ist keine XFact-Datensicherung.",
+    importZuNeu: "Die Datensicherung stammt von einer neueren XFact-Version.",
+  },
+
+  // Menü: gemerkte Angaben
+  daten: {
+    titel: "Gemerkte Angaben",
+    zurueck: "Zurück",
+    firmen: "Meine Firmen",
+    keineFirmen: "Noch nichts gemerkt. XFact merkt sich ergänzte Angaben, sobald Sie eine XML erzeugen.",
+    eigeneAngaben: "Eigene Angaben",
+    einheiten: "Einheiten",
+    keineEinheiten: "Keine eigenen Einheiten.",
+    kunden: "Kunden",
+    keineKunden: "Noch keine Kunden gemerkt.",
+    kundenSpalten: { name: "Kunde", email: "E-Mail für Rechnungen", ustId: "USt-IdNr.", leitwegId: "Leitweg-ID" },
+    logbuch: "Logbuch",
+    keinLogbuch: "Noch keine Rechnung umgewandelt.",
+    logbuchSpalten: { zeitpunkt: "Umgewandelt", dateiname: "Datei", nummer: "Rechnung", kunde: "Kunde", betrag: "Betrag" },
+    datensicherung: "Datensicherung",
+    sicherungHinweis: "Gemerktes liegt nur in diesem Browser. Mit einer Datensicherung nehmen Sie es auf einen anderen Rechner oder Browser mit.",
+    exportieren: "Daten exportieren",
+    importieren: "Daten importieren",
+    allesLoeschen: "Alle Daten löschen",
+    loeschenTitel: "Löschen – zum Bestätigen noch einmal klicken",
+    importErsetzt: "Der Import ersetzt alle gemerkten Angaben.",
+    importJa: "Ja, ersetzen",
+    abbrechen: "Abbrechen",
+    importOk: (firmen, kunden, eintraege) => `Importiert: ${firmen} Firma/Firmen, ${kunden} Kunde(n), ${eintraege} Logbucheinträge.`,
+    geloescht: "Alle gemerkten Angaben wurden gelöscht.",
+    keinSpeicher: "Dieser Browser erlaubt XFact nicht, Daten zu speichern. Gemerktes geht beim Schließen verloren – exportieren Sie es.",
+    dateiname: (datum) => `xfact-daten-${datum}.json`,
+  },
+
   // Prüfansicht
   ansicht: {
     rechnung: "Rechnung",
@@ -512,6 +601,7 @@ const TEXTE = {
     leitwegId: "Leitweg-ID (nur bei Behörden)",
     einheitWaehlen: "Einheit wählen …",
     stimmt: "Stimmt",
+    felder: { email: "E-Mail", telefon: "Telefon", kontakt: "Ansprechpartner", ustId: "USt-IdNr.", steuernummer: "Steuernummer" },
     stimmtTitel: "Der Wert ist richtig",
   },
   summenWieAufRechnung: "wie auf der Rechnung",
@@ -1839,6 +1929,218 @@ function alsDatum(iso) {
   return `${tag}.${monat}.${jahr}`;
 }
 
+// === GEDÄCHTNIS ===============================================================
+// Was sich XFact merkt: je Rechnungssteller (Firma) die eigenen Angaben, die
+// Einheiten und die Kunden, dazu ein Logbuch der umgewandelten Rechnungen.
+// Rechnungen selbst werden nicht gespeichert.
+//
+// Aufbau:
+//   { format: "xfact-daten", version: 1,
+//     firmen: { <schlüssel>: { name, absender: { email, telefon, kontakt, ustId, steuernummer },
+//                              einheiten: { "fahrt": "C62" },
+//                              kunden: { <schlüssel>: { name, plz, ort, email, ustId, leitwegId } } } },
+//     logbuch: [ { zeitpunkt, dateiname, firma, nummer, kunde, betrag } ],   (neueste zuerst)
+//     einstellungen: { merken: true } }
+//
+// Gemerktes ergänzt nur, was im PDF fehlt. Was auf der Rechnung steht, gewinnt.
+// =============================================================================
+
+const GEDAECHTNIS = {
+  format: "xfact-daten",
+  version: 1,
+  speicherSchluessel: "xfact.gedaechtnis",
+  logbuchMaximal: 1000,
+  // Diese Angaben werden gemerkt, wenn der Nutzer sie ergänzt hat
+  absenderFelder: ["email", "telefon", "kontakt", "ustId", "steuernummer"],
+  kundenFelder: ["email", "ustId"],
+};
+
+function leeresGedaechtnis() {
+  return { format: GEDAECHTNIS.format, version: GEDAECHTNIS.version, firmen: {}, logbuch: [], einstellungen: { merken: true } };
+}
+
+/** Tiefe Kopie (das Gedächtnis besteht nur aus JSON-Daten) */
+const kopie = (daten) => JSON.parse(JSON.stringify(daten));
+
+const schluesselText = (text) => String(text).toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+
+/** Woran eine Firma wiedererkannt wird: USt-IdNr., sonst Steuernummer, sonst Name. */
+function firmaSchluessel(partei) {
+  if (partei.ustId) return schluesselText(partei.ustId);
+  if (partei.steuernummer) return `st:${schluesselText(partei.steuernummer)}`;
+  return partei.name ? `name:${schluesselText(partei.name)}` : null;
+}
+
+/** Woran ein Kunde wiedererkannt wird: USt-IdNr., sonst Name und PLZ. */
+function kundeSchluessel(partei) {
+  if (partei.ustId) return schluesselText(partei.ustId);
+  return partei.name ? `name:${schluesselText(partei.name)}|${partei.plz || ""}` : null;
+}
+
+/** Firma und Kunde dieser Rechnung im Gedächtnis (oder null), erkannt am PDF selbst. */
+function imGedaechtnis(gedaechtnis, erkannt) {
+  const r = baueRechnung(erkannt, {});
+  const firma = gedaechtnis.firmen[firmaSchluessel(r.absender)] || null;
+  const kunde = firma ? firma.kunden[kundeSchluessel(r.empfaenger)] || null : null;
+  return { r, firma, kunde };
+}
+
+/**
+ * Was das Gedächtnis zu dieser Rechnung beitragen kann – nur für Lücken.
+ * Ergebnis: { ergaenzungen (für baueRechnung), herkunft: { pfad: "firma" | "kunde" } }
+ */
+function vorgabenAusGedaechtnis(gedaechtnis, erkannt) {
+  const { r, firma, kunde } = imGedaechtnis(gedaechtnis, erkannt);
+  const ergaenzungen = {};
+  const herkunft = {};
+  if (!firma) return { ergaenzungen, herkunft };
+
+  for (const feld of GEDAECHTNIS.absenderFelder) {
+    if (!r.absender[feld] && firma.absender[feld]) {
+      (ergaenzungen.absender ??= {})[feld] = firma.absender[feld];
+      herkunft[`absender.${feld}`] = "firma";
+    }
+  }
+  if (Object.keys(firma.einheiten).length) {
+    ergaenzungen.einheiten = { ...firma.einheiten };
+    for (const p of r.positionen) {
+      if (!p.einheitCode && p.einheit && firma.einheiten[einheitSchluessel(p.einheit)]) {
+        herkunft[`position.${p.nr}.einheit`] = "firma";
+      }
+    }
+  }
+  if (kunde) {
+    for (const feld of GEDAECHTNIS.kundenFelder) {
+      if (!r.empfaenger[feld] && kunde[feld]) {
+        (ergaenzungen.empfaenger ??= {})[feld] = kunde[feld];
+        herkunft[`empfaenger.${feld}`] = "kunde";
+      }
+    }
+    if (kunde.leitwegId) {
+      ergaenzungen.leitwegId = kunde.leitwegId;
+      herkunft.leitwegId = "kunde";
+    }
+  }
+  return { ergaenzungen, herkunft };
+}
+
+/**
+ * Merkt sich, was der Nutzer zu dieser Rechnung ergänzt hat – nur Angaben,
+ * die im PDF fehlten, denn nur solche Lücken füllt das Gedächtnis später
+ * wieder (siehe vorgabenAusGedaechtnis). Gibt ein neues
+ * Gedächtnis zurück und die Liste dessen, was neu oder geändert ist
+ * (Texte für die Anzeige "Wird gemerkt: …").
+ */
+function merkeRechnung(gedaechtnis, erkannt, ergaenzungen) {
+  const neu = kopie(gedaechtnis);
+  const gemerkt = [];
+  const vorher = baueRechnung(erkannt, {});
+  const r = baueRechnung(erkannt, ergaenzungen);
+  const schluessel = firmaSchluessel(vorher.absender) || firmaSchluessel(r.absender);
+  if (!schluessel) return { gedaechtnis: neu, gemerkt };
+
+  const firma = (neu.firmen[schluessel] ??= { name: r.absender.name, absender: {}, einheiten: {}, kunden: {} });
+  firma.name = r.absender.name || firma.name;
+  const m = TEXTE.gemerkt;
+  for (const feld of GEDAECHTNIS.absenderFelder) {
+    const wert = r.absender[feld];
+    if (wert && !vorher.absender[feld] && wert !== firma.absender[feld]) {
+      firma.absender[feld] = wert;
+      gemerkt.push(m.absender(TEXTE.ansicht.felder[feld], wert));
+    }
+  }
+  for (const [einheit, code] of Object.entries(ergaenzungen.einheiten || {})) {
+    if (firma.einheiten[einheit] === code) continue;
+    firma.einheiten[einheit] = code;
+    gemerkt.push(m.einheit(einheit, ERKENNUNGSREGELN.einheitenListe.find((x) => x.code === code)?.name || code));
+  }
+
+  const kundeSchl = kundeSchluessel(vorher.empfaenger) || kundeSchluessel(r.empfaenger);
+  if (kundeSchl) {
+    const kunde = (firma.kunden[kundeSchl] ??= {});
+    Object.assign(kunde, { name: r.empfaenger.name, plz: r.empfaenger.plz, ort: r.empfaenger.ort });
+    for (const feld of GEDAECHTNIS.kundenFelder) {
+      const wert = r.empfaenger[feld];
+      if (wert && !vorher.empfaenger[feld] && wert !== kunde[feld]) {
+        kunde[feld] = wert;
+        const bezeichnung = feld === "email" ? TEXTE.ansicht.emailFuerRechnungen : TEXTE.ansicht.felder[feld];
+        gemerkt.push(m.kunde(r.empfaenger.name, bezeichnung, wert));
+      }
+    }
+    if (r.leitwegId && r.leitwegId !== kunde.leitwegId) {
+      kunde.leitwegId = r.leitwegId;
+      gemerkt.push(m.kunde(r.empfaenger.name, TEXTE.ansicht.leitwegId, r.leitwegId));
+    }
+  }
+  return { gedaechtnis: neu, gemerkt };
+}
+
+/** Trägt eine umgewandelte Rechnung ins Logbuch ein (neueste zuerst). */
+function insLogbuch(gedaechtnis, r, dateiname, zeitpunkt = new Date().toISOString()) {
+  const neu = kopie(gedaechtnis);
+  neu.logbuch.unshift({
+    zeitpunkt, dateiname, firma: firmaSchluessel(r.absender), nummer: r.nummer,
+    kunde: r.empfaenger.name, betrag: summenDerRechnung(r).brutto,
+  });
+  neu.logbuch.length = Math.min(neu.logbuch.length, GEDAECHTNIS.logbuchMaximal);
+  return neu;
+}
+
+/**
+ * Hinweise aus dem Gedächtnis: grau, was aus Firmen- oder Kundenprofil
+ * ergänzt wurde; gelb, wenn diese Rechnung schon einmal umgewandelt wurde.
+ */
+function hinweiseAusGedaechtnis(gedaechtnis, r, herkunft = {}, bestaetigt = new Set()) {
+  const hinweise = Object.entries(herkunft)
+    .filter(([pfad]) => !bestaetigt.has(pfad))
+    .map(([pfad, quelle]) => ({ feld: pfad, stufe: "ergaenzt", text: TEXTE.gemerkt.herkunft[quelle] }));
+  const frueher = gedaechtnis.logbuch.find((e) => e.nummer === r.nummer && e.firma === firmaSchluessel(r.absender));
+  if (frueher && !bestaetigt.has("nummer")) {
+    hinweise.push({ feld: "nummer", stufe: "unsicher", text: TEXTE.gemerkt.schonUmgewandelt(alsDatum(frueher.zeitpunkt.slice(0, 10))) });
+  }
+  return hinweise;
+}
+
+/** Alle gemerkten Angaben als Text für die Datei "Daten exportieren". */
+function exportiereGedaechtnis(gedaechtnis, { mitSchluessel = false } = {}) {
+  const daten = kopie(gedaechtnis);
+  if (!mitSchluessel && daten.einstellungen?.ki) delete daten.einstellungen.ki.schluessel;
+  return JSON.stringify({ ...daten, exportiert: new Date().toISOString() }, null, 2);
+}
+
+/** Liest eine exportierte Datei. Wirft einen Fehler mit verständlichem Text, wenn sie nicht passt. */
+function importiereGedaechtnis(text) {
+  let daten;
+  try { daten = JSON.parse(text); } catch { throw new Error(TEXTE.gemerkt.importKeinJson); }
+  if (daten?.format !== GEDAECHTNIS.format || typeof daten.firmen !== "object" || !Array.isArray(daten.logbuch)) {
+    throw new Error(TEXTE.gemerkt.importFalscheDatei);
+  }
+  if (daten.version > GEDAECHTNIS.version) throw new Error(TEXTE.gemerkt.importZuNeu);
+  delete daten.exportiert;
+  return { ...leeresGedaechtnis(), ...daten, einstellungen: { ...leeresGedaechtnis().einstellungen, ...daten.einstellungen } };
+}
+
+/** Gedächtnis aus dem Browser laden; ohne Speicher (z.B. gesperrt) ein leeres. */
+function ladeGedaechtnis(speicher = globalThis.localStorage) {
+  try {
+    const text = speicher?.getItem(GEDAECHTNIS.speicherSchluessel);
+    return text ? importiereGedaechtnis(text) : leeresGedaechtnis();
+  } catch (fehler) {
+    console.warn("Gedächtnis nicht lesbar:", fehler);
+    return leeresGedaechtnis();
+  }
+}
+
+function speichereGedaechtnis(gedaechtnis, speicher = globalThis.localStorage) {
+  try {
+    speicher?.setItem(GEDAECHTNIS.speicherSchluessel, JSON.stringify(gedaechtnis));
+    return true;
+  } catch (fehler) {
+    console.warn("Gedächtnis nicht speicherbar:", fehler);
+    return false;
+  }
+}
+
 // Für die Oberfläche, für Tests und für Neugierige.
 window.XFact = {
   TEXTE, ERKENNUNGSREGELN, PRUEFUNGEN, KI,
@@ -1846,6 +2148,8 @@ window.XFact = {
   erkenneKopfdaten, erkenneParteien, erkennePositionen,
   leistungszeitraum, erkenneSteuerfall, erkenneRechnung, baueRechnung, pruefeRechnung, erzeugeXml, xmlDateiname, einheitCode,
   summenDerRechnung, hinweiseZurRechnung, einheitSchluessel, ibanPruefzifferOk,
+  GEDAECHTNIS, leeresGedaechtnis, firmaSchluessel, kundeSchluessel, vorgabenAusGedaechtnis, merkeRechnung,
+  insLogbuch, hinweiseAusGedaechtnis, exportiereGedaechtnis, importiereGedaechtnis, ladeGedaechtnis, speichereGedaechtnis,
   betraege, datumsangaben, ibanPruefzifferOk,
   alsBetrag, alsDatum,
 };
@@ -1858,14 +2162,27 @@ window.XFact = {
 
 const { TEXTE, ERKENNUNGSREGELN, lesePdf, alsLayoutText, hatText, erkenneRechnung, baueRechnung,
   pruefeRechnung, hinweiseZurRechnung, summenDerRechnung, erzeugeXml, xmlDateiname, einheitSchluessel,
-  datumsangaben, alsBetrag, alsDatum } = window.XFact;
+  alsBetrag, alsDatum, GEDAECHTNIS, leeresGedaechtnis, vorgabenAusGedaechtnis, merkeRechnung, insLogbuch,
+  hinweiseAusGedaechtnis, exportiereGedaechtnis, importiereGedaechtnis, ladeGedaechtnis, speichereGedaechtnis,
+} = window.XFact;
 
 /**
  * Die Rechnung, die gerade bearbeitet wird: Dateiname, alles Erkannte, die
  * Ergänzungen des Nutzers (siehe baueRechnung) und welche Felder er geändert
  * oder bestätigt hat.
  */
-const zustand = { dateiname: null, erkannt: null, ergaenzungen: {}, bestaetigt: new Set(), xml: null };
+const zustand = {
+  dateiname: null, erkannt: null, ergaenzungen: {}, bestaetigt: new Set(), xml: null,
+  herkunft: {},                       // was aus dem Gedächtnis ergänzt wurde (pfad → "firma" | "kunde")
+  gedaechtnis: ladeGedaechtnis(),
+  schrittVorDemMenue: "hochladen",
+};
+
+/** Gedächtnis ändern und sofort im Browser speichern. */
+function aendereGedaechtnis(neu) {
+  zustand.gedaechtnis = neu;
+  zustand.speichernGeht = speichereGedaechtnis(neu);
+}
 
 const $ = (id) => document.getElementById(id);
 
@@ -1912,9 +2229,9 @@ async function dateiGewaehlt(datei) {
   if (!hatText(pdf)) return zeigeMeldung(TEXTE.keinText);
 
   const zeilen = pdf.seiten.reduce((summe, seite) => summe + seite.zeilen.length, 0);
-  Object.assign(zustand, {
-    dateiname: datei.name, erkannt: erkenneRechnung(pdf), ergaenzungen: {}, bestaetigt: new Set(), xml: null,
-  });
+  const erkannt = erkenneRechnung(pdf);
+  const { ergaenzungen, herkunft } = vorgabenAusGedaechtnis(zustand.gedaechtnis, erkannt);
+  Object.assign(zustand, { dateiname: datei.name, erkannt, ergaenzungen, herkunft, bestaetigt: new Set(), xml: null });
   $("pruefen-dateiname").textContent = datei.name;
   $("pruefen-info").textContent = TEXTE.seitenUndZeilen(pdf.seiten.length, zeilen);
   $("rohtext").textContent = alsLayoutText(pdf);
@@ -2085,7 +2402,10 @@ function bestaetige(...felder) {
 /** Zeichnet die Prüfansicht aus der aktuellen (bearbeiteten) Rechnung. */
 function zeigeRechnung() {
   const r = aktuelleRechnung();
-  zustand.hinweise = hinweiseZurRechnung(r, zustand.erkannt, zustand.bestaetigt);
+  zustand.hinweise = [
+    ...hinweiseZurRechnung(r, zustand.erkannt, zustand.bestaetigt),
+    ...hinweiseAusGedaechtnis(zustand.gedaechtnis, r, zustand.herkunft, zustand.bestaetigt),
+  ];
   const a = TEXTE.ansicht;
 
   const kopf = el("div", { class: "rechnung-kopf" },
@@ -2232,6 +2552,14 @@ function zeigePflichtangaben(r = aktuelleRechnung()) {
     ? el("div", {}, TEXTE.xmlFehlt, el("ul", {}, fehlt.map((f) => el("li", {}, f.text))))
     : el("div", { class: "bereit" }, TEXTE.xmlBereit));
   $("knopf-xml").disabled = fehlt.length > 0;
+
+  // Was beim Erzeugen gemerkt würde
+  const merken = zustand.gedaechtnis.einstellungen.merken !== false;
+  $("merken").checked = merken;
+  const { gemerkt } = merkeRechnung(zustand.gedaechtnis, zustand.erkannt, zustand.ergaenzungen);
+  $("wird-gemerkt").replaceChildren(!merken ? "" : gemerkt.length
+    ? el("div", {}, TEXTE.gemerkt.wirdGemerkt, el("ul", {}, gemerkt.map((g) => el("li", {}, g))))
+    : TEXTE.gemerkt.nichtsNeues);
 }
 
 // --- Fertig ---------------------------------------------------------------------
@@ -2241,18 +2569,183 @@ function xmlErzeugen() {
   const rechnung = aktuelleRechnung();
   if (pruefeRechnung(rechnung).length) return;
   zustand.xml = erzeugeXml(rechnung);
+  let gedaechtnis = zustand.gedaechtnis;
+  if (gedaechtnis.einstellungen.merken !== false) {
+    gedaechtnis = merkeRechnung(gedaechtnis, zustand.erkannt, zustand.ergaenzungen).gedaechtnis;
+  }
+  aendereGedaechtnis(insLogbuch(gedaechtnis, rechnung, zustand.dateiname));
   herunterladen();
   $("fertig-text").textContent = TEXTE.heruntergeladen(xmlDateiname(zustand.dateiname));
   zeigeSchritt("fertig");
 }
 
 function herunterladen() {
-  const adresse = URL.createObjectURL(new Blob([zustand.xml], { type: "application/xml" }));
-  const link = el("a", { href: adresse, download: xmlDateiname(zustand.dateiname) });
+  ladeHerunter(zustand.xml, xmlDateiname(zustand.dateiname), "application/xml");
+}
+
+function ladeHerunter(text, dateiname, typ) {
+  const adresse = URL.createObjectURL(new Blob([text], { type: typ }));
+  const link = el("a", { href: adresse, download: dateiname });
   document.body.append(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(adresse), 1000);
+}
+
+// --- Menü: gemerkte Angaben --------------------------------------------------------
+
+function zeigeMenue() {
+  const offen = !$("schritt-daten").hidden;
+  if (offen) return zeigeSchritt(zustand.schrittVorDemMenue);
+  zustand.schrittVorDemMenue = [...document.querySelectorAll(".schritt")].find((s) => !s.hidden)?.id.replace("schritt-", "") || "hochladen";
+  zeigeDaten();
+  zeigeSchritt("daten");
+}
+
+/** Mülleimer, der beim ersten Klick zu "?" wird; erst der zweite Klick löscht. */
+function loeschKnopf(loeschen) {
+  const muell = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>';
+  const knopf = el("button", { class: "knopf-symbol", title: TEXTE.daten.loeschenTitel, "aria-label": TEXTE.daten.loeschenTitel });
+  knopf.innerHTML = muell;
+  const zuruecksetzen = (ereignis) => {
+    if (ereignis.target.closest("button") === knopf) return;
+    knopf.innerHTML = muell;
+    delete knopf.dataset.frage;
+    document.removeEventListener("click", zuruecksetzen, true);
+  };
+  knopf.addEventListener("click", () => {
+    if (knopf.dataset.frage) { document.removeEventListener("click", zuruecksetzen, true); return loeschen(); }
+    knopf.dataset.frage = "1";
+    knopf.textContent = "?";
+    document.addEventListener("click", zuruecksetzen, true);
+  });
+  return knopf;
+}
+
+/** Eingabefeld im Menü, das beim Verlassen sofort speichert. */
+function datenFeld(wert, speichern) {
+  const eingabe = el("input", { class: "eingabe", type: "text", size: 20 });
+  eingabe.value = wert || "";
+  eingabe.addEventListener("change", () => speichern(eingabe.value.trim() || null));
+  return eingabe;
+}
+
+/** Eine gemerkte Firma: eigene Angaben, Einheiten, Kunden. */
+function firmaKarte(schluessel, firma, speichern) {
+  const d = TEXTE.daten;
+  const eigene = GEDAECHTNIS.absenderFelder.map((feld) => [
+    el("dt", {}, TEXTE.ansicht.felder[feld]),
+    el("dd", {}, datenFeld(firma.absender[feld], (wert) => speichern((neu) => {
+      setzeOderLoesche(neu.firmen[schluessel].absender, feld, wert);
+    }))),
+  ]);
+  return el("div", { class: "firma" },
+    el("div", { class: "firma-kopf" },
+      el("h4", {}, firma.name || schluessel),
+      loeschKnopf(() => speichern((neu) => { delete neu.firmen[schluessel]; }))),
+    el("h5", {}, d.eigeneAngaben),
+    el("dl", {}, eigene),
+    el("h5", {}, d.einheiten),
+    einheitenTabelle(schluessel, firma, speichern),
+    el("h5", {}, d.kunden),
+    kundenTabelle(schluessel, firma, speichern));
+}
+
+function einheitenTabelle(schluessel, firma, speichern) {
+  const einheiten = Object.entries(firma.einheiten);
+  if (!einheiten.length) return el("div", { class: "leise" }, TEXTE.daten.keineEinheiten);
+  const zeile = ([einheit, code]) => {
+    const auswahl = el("select", { class: "eingabe" },
+      ERKENNUNGSREGELN.einheitenListe.map((x) => el("option", { value: x.code, selected: x.code === code }, x.name)));
+    auswahl.addEventListener("change", () => speichern((neu) => { neu.firmen[schluessel].einheiten[einheit] = auswahl.value; }));
+    const loeschen = loeschKnopf(() => speichern((neu) => { delete neu.firmen[schluessel].einheiten[einheit]; }));
+    return el("tr", {}, el("td", {}, `„${einheit}“`), el("td", {}, auswahl), el("td", {}, loeschen));
+  };
+  return el("table", { class: "liste" }, el("tbody", {}, einheiten.map(zeile)));
+}
+
+function kundenTabelle(schluessel, firma, speichern) {
+  const kunden = Object.entries(firma.kunden);
+  if (!kunden.length) return el("div", { class: "leise" }, TEXTE.daten.keineKunden);
+  const s = TEXTE.daten.kundenSpalten;
+  const zeile = ([kundeSchl, kunde]) => {
+    const felder = ["email", "ustId", "leitwegId"].map((feld) => el("td", {},
+      datenFeld(kunde[feld], (wert) => speichern((neu) => { setzeOderLoesche(neu.firmen[schluessel].kunden[kundeSchl], feld, wert); }))));
+    const loeschen = loeschKnopf(() => speichern((neu) => { delete neu.firmen[schluessel].kunden[kundeSchl]; }));
+    const name = el("td", {}, kunde.name, el("div", { class: "leise" }, [kunde.plz, kunde.ort].filter(Boolean).join(" ")));
+    return el("tr", {}, name, felder, el("td", {}, loeschen));
+  };
+  const kopf = el("tr", {}, el("th", {}, s.name), el("th", {}, s.email), el("th", {}, s.ustId), el("th", {}, s.leitwegId), el("th"));
+  return el("table", { class: "liste" }, el("thead", {}, kopf), el("tbody", {}, kunden.map(zeile)));
+}
+
+function setzeOderLoesche(objekt, feld, wert) {
+  if (wert) objekt[feld] = wert;
+  else delete objekt[feld];
+}
+
+function zeigeDaten(meldung = null) {
+  const d = TEXTE.daten;
+  $("daten-titel").textContent = d.titel;
+  const g = zustand.gedaechtnis;
+  const speichern = (aendern) => { const neu = JSON.parse(JSON.stringify(g)); aendern(neu); aendereGedaechtnis(neu); zeigeDaten(); };
+
+  const firmen = Object.entries(g.firmen).map(([schluessel, firma]) => firmaKarte(schluessel, firma, speichern));
+
+  const ls = d.logbuchSpalten;
+  const zeitpunkt = (iso) => `${alsDatum(iso.slice(0, 10))} ${new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+  const logbuch = g.logbuch.length
+    ? el("table", { class: "liste" },
+      el("thead", {}, el("tr", {}, el("th", {}, ls.zeitpunkt), el("th", {}, ls.dateiname), el("th", {}, ls.nummer),
+        el("th", {}, ls.kunde), el("th", { class: "zahl" }, ls.betrag))),
+      el("tbody", {}, g.logbuch.map((e) => el("tr", {},
+        el("td", {}, zeitpunkt(e.zeitpunkt)), el("td", {}, e.dateiname), el("td", {}, e.nummer),
+        el("td", {}, e.kunde), el("td", { class: "zahl" }, alsBetrag(e.betrag))))))
+    : el("div", { class: "leise" }, d.keinLogbuch);
+
+  const auswahl = el("input", { type: "file", accept: "application/json,.json", hidden: true });
+  const rueckfrage = el("div", { class: "knoepfe" });
+  auswahl.addEventListener("change", async () => {
+    const datei = auswahl.files[0];
+    auswahl.value = "";
+    if (!datei) return;
+    let neu;
+    try { neu = importiereGedaechtnis(await datei.text()); } catch (fehler) { return zeigeDaten({ fehler: fehler.message }); }
+    rueckfrage.replaceChildren(el("span", {}, d.importErsetzt),
+      el("button", { class: "knopf haupt", onclick: () => importieren(neu) }, d.importJa),
+      el("button", { class: "knopf", onclick: () => rueckfrage.replaceChildren() }, d.abbrechen));
+  });
+
+  const hinweis = meldung && el("div", { class: `meldung${meldung.fehler ? "" : " gut"}` }, meldung.fehler || meldung.text);
+  $("daten").replaceChildren(...[
+    zustand.speichernGeht === false ? el("div", { class: "meldung" }, d.keinSpeicher) : null,
+    hinweis,
+    el("div", { class: "daten-bereich" }, el("h3", {}, d.firmen), firmen.length ? firmen : el("div", { class: "leise" }, d.keineFirmen)),
+    el("div", { class: "daten-bereich" }, el("h3", {}, d.logbuch), logbuch),
+    el("div", { class: "daten-bereich" }, el("h3", {}, d.datensicherung),
+      el("p", { class: "leise" }, d.sicherungHinweis),
+      el("div", { class: "knoepfe" },
+        el("button", { class: "knopf", onclick: exportieren }, d.exportieren),
+        el("button", { class: "knopf", onclick: () => auswahl.click() }, d.importieren), auswahl,
+        el("span", { class: "leise" }, d.allesLoeschen), loeschKnopf(allesLoeschen)),
+      rueckfrage),
+  ].filter(Boolean));
+}
+
+function exportieren() {
+  ladeHerunter(exportiereGedaechtnis(zustand.gedaechtnis), TEXTE.daten.dateiname(new Date().toISOString().slice(0, 10)), "application/json");
+}
+
+function importieren(neu) {
+  aendereGedaechtnis(neu);
+  const firmen = Object.values(neu.firmen);
+  const kunden = firmen.reduce((summe, f) => summe + Object.keys(f.kunden).length, 0);
+  zeigeDaten({ text: TEXTE.daten.importOk(firmen.length, kunden, neu.logbuch.length) });
+}
+
+function allesLoeschen() {
+  aendereGedaechtnis(leeresGedaechtnis());
+  zeigeDaten({ text: TEXTE.daten.geloescht });
 }
 
 function richteSeiteEin() {
@@ -2282,12 +2775,22 @@ function richteSeiteEin() {
   $("knopf-erneut").addEventListener("click", herunterladen);
   $("knopf-naechste").addEventListener("click", () => zeigeSchritt("hochladen"));
   $("link-pruefen").href = TEXTE.pruefdienst;
+  $("menue-knopf").addEventListener("click", zeigeMenue);
+  $("knopf-zurueck").textContent = TEXTE.daten.zurueck;
+  $("knopf-zurueck").addEventListener("click", () => zeigeSchritt(zustand.schrittVorDemMenue));
+  $("merken-text").textContent = TEXTE.gemerkt.merken;
+  $("merken").addEventListener("change", (ereignis) => {
+    const neu = JSON.parse(JSON.stringify(zustand.gedaechtnis));
+    neu.einstellungen.merken = ereignis.target.checked;
+    aendereGedaechtnis(neu);
+    zeigePflichtangaben();
+  });
   zeigeSchritt("hochladen");
 }
 
 richteSeiteEin();
 // Für Tests und Neugierige
-Object.assign(window.XFact, { dateiGewaehlt, zustand, setze });
+Object.assign(window.XFact, { dateiGewaehlt, zustand, setze, importieren });
 </script>
 
 <!-- === BIBLIOTHEKEN: ANFANG =================================================

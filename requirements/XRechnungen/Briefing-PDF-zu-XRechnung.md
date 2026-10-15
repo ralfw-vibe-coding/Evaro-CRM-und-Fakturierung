@@ -109,7 +109,7 @@ Zahlbar bis 26.09.2026 · IBAN DE12 3456 … · BIC …
 - **Käuferreferenz bzw. Leitweg-ID** (optional, bei Behörden Pflicht)
 - **Leistungsdatum fehlt** → Schnellknopf „= Rechnungsdatum“
 
-Jede ergänzte Angabe hat ein Häkchen **„merken“**, das standardmäßig gesetzt ist. Gemerkt wird je nach Angabe im Firmenprofil, im Kundenprofil oder in der Einheitenzuordnung.
+Unten steht **ein** Häkchen **„Ergänzte Angaben merken“** (standardmäßig gesetzt) mit der Liste dessen, was gemerkt wird. Das ist eine bewusste Vereinfachung gegenüber einem Häkchen pro Feld. Gemerkt wird je nach Angabe im Firmenprofil, im Kundenprofil oder in der Einheitenzuordnung. **Gemerktes füllt nur Lücken**: Es ergänzt nur, was im PDF fehlt, und es wird auch nur gemerkt, was im PDF fehlte.
 
 Der Knopf **„XML erzeugen“** ist aktiv, sobald kein roter Hinweis mehr offen ist. Gelbe Hinweise blockieren nicht.
 
@@ -338,7 +338,10 @@ Begründung: Aus React- und Tailwind-Code entsteht beim Bauen eine Datei, die ma
 | Repository | bleibt im Evaro-Repo, weil es ein Experiment ist |
 | Steuerfälle Version 1 | 19 %, 7 % (auch gemischt), §13b und §19 (Abschnitt 7) |
 | Ort im Repo | `XFact/` neben `frontend/` und `backend/` |
+| Merken | ein Häkchen für alle ergänzten Angaben statt eines pro Feld; Gemerktes füllt nur Lücken |
+| Speicher | `localStorage` (Schlüssel `xfact.gedaechtnis`); Kunden je Firma; Logbuch höchstens 1000 Einträge. Unter `file://` in Chrome geprüft: bleibt erhalten |
 
 ## 14. Offene Punkte
 
-1. **Testsatz für die Modellwahl:** Die Voreinstellung wird mit den Testrechnungen aus Abschnitt 12 noch einmal geprüft, sobald es sie gibt.
+1. **Lernen pro Firma (Beschriftungen, Abschnitt 6.1)** ist noch nicht gebaut. Die Dokumentation beschreibt es deshalb nicht mehr.
+2. **Testsatz für die Modellwahl:** Die Voreinstellung wird mit den Testrechnungen aus Abschnitt 12 noch einmal geprüft, sobald es sie gibt.
