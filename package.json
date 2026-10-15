@@ -9,6 +9,7 @@
     "dev:postgres": "PERSISTENCE=postgres netlify dev",
     "build": "vite build",
     "test": "vitest run",
+    "validate:xrechnung": "node scripts/validate-xrechnung.mjs",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "typecheck": "tsc -p backend/tsconfig.json --noEmit && tsc -p frontend/tsconfig.json --noEmit",

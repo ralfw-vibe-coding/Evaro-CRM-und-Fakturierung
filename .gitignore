@@ -12,3 +12,6 @@ coverage/
 
 # Datenexport (enthält Personendaten)
 Evaro Export/
+
+# KoSIT-Validator (nur Entwicklung, wird bei Bedarf geladen)
+.kosit/
