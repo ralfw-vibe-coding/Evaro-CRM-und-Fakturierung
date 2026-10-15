@@ -1124,7 +1124,9 @@ function InvoicePdfPreview({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid grid-rows-[auto_auto_1fr] gap-3 bg-zinc-950/50 p-6">
+    // Spalte statt fester Gridzeilen: die Meldungsleiste erscheint nur manchmal,
+    // und feste Zeilen hätten den PDF-Kasten sonst in eine auto-Zeile geschoben.
+    <div className="fixed inset-0 z-50 flex flex-col gap-3 bg-zinc-950/50 p-6">
       <div className="flex items-center justify-end gap-2">
         {pdfError && (
           <span className="max-w-56 truncate rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">
@@ -1168,7 +1170,7 @@ function InvoicePdfPreview({
         </div>
       )}
 
-      <div className="min-h-0 rounded-md bg-zinc-100 shadow-2xl">
+      <div className="min-h-0 flex-1 rounded-md bg-zinc-100 shadow-2xl">
         {pdfUrl ? (
           <iframe src={pdfUrl} title="Rechnung PDF" className="size-full rounded-md border-0" />
         ) : (
