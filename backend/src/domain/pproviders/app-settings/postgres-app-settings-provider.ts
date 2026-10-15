@@ -1,46 +1,19 @@
 import type pg from "pg";
-import type { AppSettings, InvoicingAppSettings } from "../../model.js";
+import type { AppSettings } from "../../model.js";
 import { getPool } from "../postgres/pool.js";
 import type { AppSettingsProvider, AppSettingsUpdate } from "./app-settings-provider.js";
+import { normalizeInvoicingSettings } from "../../invoicing-settings.js";
 
 interface AppSettingsRow {
   data: unknown;
   updated_at: Date;
 }
 
-function text(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-function positiveInt(value: unknown): number | undefined {
-  const parsed = typeof value === "number" ? value : Number(value);
-  if (!Number.isInteger(parsed) || parsed < 0) return undefined;
-  return parsed;
-}
-
-function normalizeInvoicing(value: unknown): InvoicingAppSettings {
-  const data = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-  return {
-    company_name: text(data.company_name),
-    sender_address: text(data.sender_address),
-    bank_details: text(data.bank_details),
-    company_registration: text(data.company_registration),
-    default_payment_due_days: positiveInt(data.default_payment_due_days),
-    vat_number: text(data.vat_number),
-    contact_person: text(data.contact_person),
-    email: text(data.email),
-    phone: text(data.phone),
-    website: text(data.website),
-  };
-}
-
 function toSettings(row?: AppSettingsRow): AppSettings {
   if (!row) return { invoicing: {}, updated_at: null };
   const data = row.data && typeof row.data === "object" ? (row.data as Record<string, unknown>) : {};
   return {
-    invoicing: normalizeInvoicing(data.invoicing),
+    invoicing: normalizeInvoicingSettings(data.invoicing),
     updated_at: row.updated_at.toISOString(),
   };
 }
@@ -56,7 +29,7 @@ export class PostgresAppSettingsProvider implements AppSettingsProvider {
   }
 
   async update(input: AppSettingsUpdate): Promise<AppSettings> {
-    const data = { invoicing: normalizeInvoicing(input.invoicing) };
+    const data = { invoicing: normalizeInvoicingSettings(input.invoicing) };
     const { rows } = await this.pool.query<AppSettingsRow>(
       `INSERT INTO app_settings (id, data, updated_at)
        VALUES ('global', $1, now())

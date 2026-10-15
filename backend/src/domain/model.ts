@@ -155,6 +155,20 @@ export interface InvoicingAppSettings {
   email?: string;
   phone?: string;
   website?: string;
+
+  // Strukturierte Entsprechungen der Freitexte oben. Die XRechnung braucht die
+  // Bestandteile einzeln (BT-35…BT-40, BT-84/86); das PDF druckt weiter die
+  // Freitexte, damit sich am Layout nichts ändert.
+  /** Absenderanschrift, Land als ISO-3166-1-Alpha-2-Code (BT-35…BT-40). */
+  address?: Address;
+  /** IBAN ohne Leerzeichen (BT-84). */
+  iban?: string;
+  /** BIC (BT-86). */
+  bic?: string;
+  /** Firmierung in Landesschrift, z.B. kyrillisch (BT-28). */
+  trading_name?: string;
+  /** Handels-/Registernummer, nicht die USt-IdNr. (BT-30). */
+  registration_id?: string;
 }
 
 export interface AppSettings {

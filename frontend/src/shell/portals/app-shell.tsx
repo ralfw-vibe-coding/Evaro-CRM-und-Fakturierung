@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CrmArea } from "./crm-area";
 import { InvoicingArea } from "./invoicing-area";
-import type { AppSettings, InvoicingAppSettings, SessionUser } from "@/domain/model";
+import type { Address, AppSettings, InvoicingAppSettings, SessionUser } from "@/domain/model";
 
 export type AppArea = "crm" | "invoicing";
 
@@ -251,6 +251,11 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
     setStatus(null);
   }
 
+  function patchAddress(key: keyof Address, value: string) {
+    setDraft((current) => ({ ...current, address: { ...current.address, [key]: value } }));
+    setStatus(null);
+  }
+
   async function save() {
     if (!dirty || busy) return;
     setBusy(true);
@@ -356,6 +361,68 @@ function AppSettingsDialog({ onClose }: { onClose: () => void }) {
               className="w-full rounded-md border border-[var(--input)] bg-transparent px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] sm:text-sm"
             />
           </SettingsField>
+        </section>
+
+        <section className="grid gap-3">
+          <div className="text-xs font-semibold uppercase text-[var(--muted-foreground)]">
+            Für die XRechnung
+          </div>
+          <p className="-mt-1 text-xs text-[var(--muted-foreground)]">
+            Dieselben Angaben wie oben, aber einzeln — das XML-Format verlangt sie zerlegt. Das PDF
+            druckt weiter die Freitexte.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_7rem]">
+            <SettingsField label="Straße">
+              <Input
+                value={draft.address?.street ?? ""}
+                onChange={(event) => patchAddress("street", event.target.value)}
+              />
+            </SettingsField>
+            <SettingsField label="PLZ">
+              <Input
+                value={draft.address?.zip ?? ""}
+                onChange={(event) => patchAddress("zip", event.target.value)}
+              />
+            </SettingsField>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_7rem]">
+            <SettingsField label="Ort">
+              <Input
+                value={draft.address?.city ?? ""}
+                onChange={(event) => patchAddress("city", event.target.value)}
+              />
+            </SettingsField>
+            <SettingsField label="Land (ISO)">
+              <Input
+                value={draft.address?.country ?? ""}
+                placeholder="DE"
+                maxLength={2}
+                onChange={(event) => patchAddress("country", event.target.value)}
+              />
+            </SettingsField>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
+            <SettingsField label="IBAN">
+              <Input value={draft.iban ?? ""} onChange={(event) => patch("iban", event.target.value)} />
+            </SettingsField>
+            <SettingsField label="BIC">
+              <Input value={draft.bic ?? ""} onChange={(event) => patch("bic", event.target.value)} />
+            </SettingsField>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <SettingsField label="Firmierung in Landesschrift">
+              <Input
+                value={draft.trading_name ?? ""}
+                onChange={(event) => patch("trading_name", event.target.value)}
+              />
+            </SettingsField>
+            <SettingsField label="Registernummer">
+              <Input
+                value={draft.registration_id ?? ""}
+                onChange={(event) => patch("registration_id", event.target.value)}
+              />
+            </SettingsField>
+          </div>
         </section>
 
         {status && <p className={cn("text-sm", statusTone === "error" && "text-[var(--destructive)]")}>{status}</p>}

@@ -1,4 +1,5 @@
 import type { AppSettings, InvoicingAppSettings } from "../../model.js";
+import { normalizeInvoicingSettings } from "../../invoicing-settings.js";
 import type { AppSettingsProvider } from "../../pproviders/app-settings/app-settings-provider.js";
 
 export interface UpdateAppSettingsCommand {
@@ -10,36 +11,10 @@ export type UpdateAppSettingsResult =
   | { ok: true; settings: AppSettings }
   | { ok: false; error: string };
 
-function text(value: string | undefined): string | undefined {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-function positiveInt(value: number | undefined): number | undefined {
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 0) return undefined;
-  return parsed;
-}
-
-function normalize(input: InvoicingAppSettings): InvoicingAppSettings {
-  return {
-    company_name: text(input.company_name),
-    sender_address: text(input.sender_address),
-    bank_details: text(input.bank_details),
-    company_registration: text(input.company_registration),
-    default_payment_due_days: positiveInt(input.default_payment_due_days),
-    vat_number: text(input.vat_number),
-    contact_person: text(input.contact_person),
-    email: text(input.email),
-    phone: text(input.phone),
-    website: text(input.website),
-  };
-}
-
 export function updateAppSettings(deps: { appSettings: AppSettingsProvider }) {
   return async function process(command: UpdateAppSettingsCommand): Promise<UpdateAppSettingsResult> {
-    if (!text(command.user_id)) return { ok: false, error: "Kein angemeldeter Benutzer." };
-    const settings = await deps.appSettings.update({ invoicing: normalize(command.invoicing ?? {}) });
+    if (!command.user_id?.trim()) return { ok: false, error: "Kein angemeldeter Benutzer." };
+    const settings = await deps.appSettings.update({ invoicing: normalizeInvoicingSettings(command.invoicing) });
     return { ok: true, settings };
   };
 }
