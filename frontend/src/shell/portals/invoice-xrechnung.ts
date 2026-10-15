@@ -357,6 +357,14 @@ export function buildInvoiceXml(invoice: Invoice, settings: AppSettings): string
     ...wrap("ram:SpecifiedTaxRegistration", el("ram:ID", normalizeVatId(buyer.vat_id), ' schemeID="VA"')),
   ]);
 
+  // R1: Öffentliche Auftraggeber adressieren sich über die Leitweg-ID, die
+  // dann BT-10 belegt. Die eigene Referenz weicht in dem Fall nach BT-13 aus.
+  // Ohne beides verlangt XRechnung trotzdem einen Wert in BT-10.
+  const leitwegId = buyer.leitweg_id?.trim();
+  const reference = invoice.data.reference?.trim();
+  const buyerReference = leitwegId || reference || BUYER_REFERENCE_FALLBACK;
+  const orderReference = leitwegId ? reference : undefined;
+
   const paymentDescription = paymentTermsText(invoice.data, invoice.invoice_date, language)
     // Ein führendes # wertet XRechnung als Skonto-Angabe aus.
     .replace(/^#+/, "")
@@ -384,9 +392,12 @@ export function buildInvoiceXml(invoice: Invoice, settings: AppSettings): string
       ...wrap("rsm:SupplyChainTradeTransaction", [
         ...lines.flat(),
         ...wrap("ram:ApplicableHeaderTradeAgreement", [
-          ...el("ram:BuyerReference", invoice.data.reference?.trim() || BUYER_REFERENCE_FALLBACK),
+          ...el("ram:BuyerReference", buyerReference),
           ...sellerParty,
           ...buyerParty,
+          // Nur belegt, wenn die Leitweg-ID BT-10 beansprucht und die
+          // Referenz deshalb hierher ausweicht (Regel R1).
+          ...wrap("ram:BuyerOrderReferencedDocument", el("ram:IssuerAssignedID", orderReference)),
         ]),
         ...(singleDay
           ? wrap(

@@ -52,6 +52,8 @@ export type BusinessPartnerType = "customer" | "supplier" | "partner" | "authori
 export interface BusinessPartnerData {
   name: string;
   vat_id?: string;
+  /** Adressierung öffentlicher Auftraggeber, geht nach BT-10 (siehe invoice-xrechnung). */
+  leitweg_id?: string;
   address?: Address;
   invoice_language?: "de" | "en";
   channels: Channel[];
@@ -96,6 +98,8 @@ export type InvoiceStatus = "draft" | "billed" | "paid";
 export interface InvoiceGpSnapshot {
   name: string;
   vat_id?: string;
+  /** Zum Zeitpunkt des Abrechnens übernommen, damit die XRechnung sie führt. */
+  leitweg_id?: string;
   address?: Address;
   email?: string;
   invoice_language?: "de" | "en";

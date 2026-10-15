@@ -10,6 +10,7 @@ export function snapshotFromBusinessPartner(bp: BusinessPartner): InvoiceGpSnaps
   return {
     name: bp.data.name,
     vat_id: text(bp.data.vat_id),
+    leitweg_id: text(bp.data.leitweg_id),
     address: bp.data.address,
     email: text(email),
     invoice_language: bp.data.invoice_language ?? "de",

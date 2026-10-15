@@ -178,6 +178,7 @@ function normalizeBusinessPartnerData(data: BusinessPartnerData, channels: Chann
   return {
     name: data.name.trim(),
     vat_id: normalizeOptional(data.vat_id),
+    leitweg_id: normalizeOptional(data.leitweg_id),
     address: data.address
       ? {
           street: normalizeOptional(data.address.street),
@@ -1244,6 +1245,14 @@ function BusinessPartnerCoreSections({
             onChange={(event) => onDataChange((current) => ({ ...current, vat_id: event.target.value }))}
           />
         </div>
+        <Input
+          value={data.leitweg_id ?? ""}
+          placeholder="Leitweg-ID (nur öffentliche Auftraggeber)"
+          aria-label="Leitweg-ID"
+          title="Vergibt der öffentliche Auftraggeber. Steht sie hier, adressiert die XRechnung darüber."
+          {...NO_PASSWORD_MANAGER_PROPS}
+          onChange={(event) => onDataChange((current) => ({ ...current, leitweg_id: event.target.value }))}
+        />
       </Section>
 
       <Section

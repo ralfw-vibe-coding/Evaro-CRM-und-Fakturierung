@@ -3,6 +3,7 @@ import type { BusinessPartnerData } from "./model.js";
 export interface RawBusinessPartnerData {
   name?: string;
   vat_id?: string;
+  leitweg_id?: string;
   address?: {
     street?: string;
     zip?: string;
@@ -78,6 +79,7 @@ export function validateBusinessPartnerData(
     data: {
       name: name!,
       vat_id: trimOrUndefined(raw.vat_id),
+      leitweg_id: trimOrUndefined(raw.leitweg_id),
       address,
       invoice_language: normalizeInvoiceLanguage(raw.invoice_language),
       channels: normalizeChannels(raw.channels),

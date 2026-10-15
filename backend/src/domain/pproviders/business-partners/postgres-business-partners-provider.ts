@@ -65,6 +65,7 @@ function normalizeBusinessPartnerData(raw: unknown): BusinessPartnerData {
   return {
     name: text(data.name) ?? "",
     vat_id: text(data.vat_id),
+    leitweg_id: text(data.leitweg_id),
     address: normalizeAddress(data.address),
     invoice_language: data.invoice_language === "en" ? "en" : data.invoice_language === "de" ? "de" : undefined,
     channels: channels(data.channels),

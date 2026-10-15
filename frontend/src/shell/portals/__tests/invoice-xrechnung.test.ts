@@ -196,6 +196,25 @@ describe("buildInvoiceXml", () => {
     expect(out).toContain("Уърк уит Ииз ЕООД");
   });
 
+  it("adressiert über die Leitweg-ID und schiebt die Referenz nach BT-13 (R1)", () => {
+    const behoerde: Invoice = {
+      ...INVOICE,
+      gp_snapshot: { ...INVOICE.gp_snapshot, leitweg_id: "04011000-1234512345-06" },
+      data: { ...INVOICE.data, reference: "Bestellung 4711" },
+    };
+    const out = buildInvoiceXml(behoerde, SETTINGS);
+    writeFileSync(".kosit/generated/Rechnung-mit-Leitweg.xml", out, "utf8");
+    expect(out).toContain("<ram:BuyerReference>04011000-1234512345-06</ram:BuyerReference>");
+    expect(out).toContain("<ram:IssuerAssignedID>Bestellung 4711</ram:IssuerAssignedID>");
+  });
+
+  it("nimmt ohne Leitweg-ID die Referenz für BT-10 und lässt BT-13 weg", () => {
+    const privat = { ...INVOICE, data: { ...INVOICE.data, reference: "Bestellung 4711" } };
+    const out = buildInvoiceXml(privat, SETTINGS);
+    expect(out).toContain("<ram:BuyerReference>Bestellung 4711</ram:BuyerReference>");
+    expect(out).not.toContain("BuyerOrderReferencedDocument");
+  });
+
   it("legt bei mehreren Leistungstagen den Zeitraum in den Kopf (R4)", () => {
     const zeitraum: Invoice = {
       ...INVOICE,
