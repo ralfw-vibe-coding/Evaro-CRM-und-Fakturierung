@@ -211,8 +211,11 @@ describe("eine XRechnung mit allem, was XFact nicht erzeugt", () => {
 
   it("Zahlung: Skonto wird lesbar", () => {
     expect(r.zahlung).toMatchObject({ faellig: "2026-10-31", verwendungszweck: "R-2026-77" });
-    expect(Viewer.lesbareBedingungen(r.zahlung.bedingungen))
-      .toBe(`${Viewer.TEXTE.skonto("2,00", "14")}\nZahlbar innerhalb 30 Tagen netto.`);
+    // 14 Tage ab 01.10.2026; 2 % vom Zahlbetrag 108,25 €
+    expect(Viewer.lesbareBedingungen(r.zahlung.bedingungen, r))
+      .toBe(`${Viewer.TEXTE.skonto("2,00", 14, "15.10.2026", Viewer.alsBetrag(106.09))}\nZahlbar innerhalb 30 Tagen netto.`);
+    expect(Viewer.lesbareBedingungen("#SKONTO#TAGE=10#PROZENT=3.00#BASISBETRAG=100.00#", r))
+      .toBe(Viewer.TEXTE.skonto("3,00", 10, "11.10.2026", Viewer.alsBetrag(97)));
   });
 
   it("Anhang: eingebettete Datei", () => {

@@ -51,6 +51,15 @@ describe("Pflichtangaben", () => {
     expect(XFact.pruefeRechnung(mit)).toEqual([]);
   });
 
+  it("Skonto: ohne Frist rot, ein anderer Betrag als berechnet gelb", () => {
+    expect(XFact.pruefeRechnung(musterRechnung({ skonto: [{ prozent: 2, tage: null, bis: null, betrag: null }] })))
+      .toEqual([{ feld: "skonto.1", text: XFact.TEXTE.pflicht.skontoFrist(2) }]);
+    // Gesamtbetrag 119 €, 2 % Skonto ergibt 116,62 €
+    const r = musterRechnung({ skonto: [{ prozent: 2, tage: 8, bis: "2026-09-20", betrag: 116.5 }] });
+    expect(gelb(hinweise(r))).toEqual([`skonto.1: ${XFact.TEXTE.pruefer.skontoBetrag("116,50 €", "116,62 €")}`]);
+    expect(gelb(hinweise({ skonto: [{ prozent: 2, tage: 8, bis: "2026-09-20", betrag: 116.62 }] }))).toEqual([]);
+  });
+
   it("ein Steuerfall, den XFact nicht kennt, ist rot", () => {
     const fehlt = XFact.pruefeRechnung(musterRechnung({ steuerfall: { art: null, kategorie: null, text: null } }));
     expect(fehlt.map((f: any) => f.feld)).toContain("steuerfall");

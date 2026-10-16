@@ -520,6 +520,7 @@ const TEXTE = {
     ustIdAufbau: "Aufbau der USt-IdNr. stimmt nicht",
     leitwegIdAufbau: "Aufbau oder Prüfziffer der Leitweg-ID stimmt nicht",
     glaeubigerIdAufbau: "Aufbau oder Prüfziffer der Gläubiger-ID stimmt nicht",
+    skontoBetrag: (laut, berechnet) => `auf der Rechnung ${laut}, berechnet ${berechnet}`,
     leitwegIdBehoerde: "Empfänger ist vermutlich eine Behörde – dann meist Pflicht",
     steuerfallNicht: (kategorie) => `Steuerkategorie „${kategorie}“ unterstützt XFact nicht`,
   },
@@ -580,7 +581,7 @@ const TEXTE = {
 
   // Positionen
   positionenTitel: "Positionen",
-  spaltenTitel: { datum: "Datum", beschreibung: "Beschreibung", menge: "Menge", einheit: "Einheit",
+  spaltenTitel: { nr: "Pos.", datum: "Datum", beschreibung: "Beschreibung", menge: "Menge", einheit: "Einheit",
     einzelpreis: "Preis", steuersatz: "USt", gesamt: "Gesamt" },
   mengeMalPreis: (soll) => `Menge × Preis ergibt ${soll}`,
 
@@ -674,6 +675,9 @@ const TEXTE = {
     einzugAm: "Einzug am",
     zahlungsarten: { ueberweisung: "Überweisung", lastschrift: "Lastschrift", kreditkarte: "Kreditkarte" },
     belastungAm: "Belastung am",
+    skonto: "Skonto",
+    skontoBis: "bis",
+    skontoEntfernen: "Skonto entfernen",
     karte: "Kreditkarte des Kunden, letzte 4 Ziffern",
     glaeubigerId: "Gläubiger-ID",
     mandatsreferenz: "Mandatsreferenz",
@@ -730,6 +734,7 @@ const TEXTE = {
     leistungsdatum: (nr) => `Position ${nr}: Leistungsdatum`,
     zeitraumVerkehrt: (nr) => `Position ${nr}: Leistungszeitraum endet vor seinem Beginn`,
     steuersatz: (nr) => `Position ${nr}: USt-Satz`,
+    skontoFrist: (prozent) => `Frist für ${prozent} % Skonto`,
   },
 };
 
@@ -862,14 +867,16 @@ function pruefeRechnung(r) {
   }
   if (art === "kreditkarte") pflicht("empfaenger.karte", /^\d{4}$/.test(r.empfaenger.karte || ""), p.empfaenger.karte);
   pflicht("positionen", r.positionen.length, p.positionen);
+  (r.skonto || []).forEach((k, i) => pflicht(`skonto.${i + 1}`, k.tage > 0, p.skontoFrist(k.prozent)));
   for (const pos of r.positionen) {
-    pflicht(`position.${pos.nr}.einheit`, codes.includes(pos.einheitCode), p.einheit(pos.nr, pos.einheit));
-    pflicht(`position.${pos.nr}.datum`, pos.von, p.leistungsdatum(pos.nr));
+    const nummer = pos.posNr || pos.nr;
+    pflicht(`position.${pos.nr}.einheit`, codes.includes(pos.einheitCode), p.einheit(nummer, pos.einheit));
+    pflicht(`position.${pos.nr}.datum`, pos.von, p.leistungsdatum(nummer));
     // Ein Zeitraum, der vor seinem Beginn endet, lehnt die XRechnung ab (Regel BR-30)
     if (pos.von && pos.bis && pos.bis < pos.von) {
-      fehlt.push({ feld: `position.${pos.nr}.datum`, text: p.zeitraumVerkehrt(pos.nr), kurz: TEXTE.pruefer.zeitraumVerkehrt });
+      fehlt.push({ feld: `position.${pos.nr}.datum`, text: p.zeitraumVerkehrt(nummer), kurz: TEXTE.pruefer.zeitraumVerkehrt });
     }
-    pflicht(`position.${pos.nr}.satz`, pos.kategorie !== "S" || pos.satz > 0, p.steuersatz(pos.nr));
+    pflicht(`position.${pos.nr}.satz`, pos.kategorie !== "S" || pos.satz > 0, p.steuersatz(nummer));
   }
   return fehlt;
 }
@@ -942,6 +949,13 @@ function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null,
       hinweise.push({ feld: `summe.${feld}`, stufe: "unsicher", text: TEXTE.aufDerRechnung(alsBetrag(aufRechnung)) });
     }
   }
+  // Skontobetrag: so, wie er auf der Rechnung steht?
+  (r.skonto || []).forEach((k, i) => {
+    const berechnet = betragMitSkonto(r, k);
+    if (k.betrag && Math.abs(berechnet - k.betrag) > PRUEFUNGEN.rundungstoleranz) {
+      regel(`skonto.${i + 1}`, t.skontoBetrag(alsBetrag(k.betrag), alsBetrag(berechnet)));
+    }
+  });
   if (befund.summen.brutto && !hinweise.some((h) => h.feld.startsWith("summe."))) {
     hinweise.push({ feld: "summe.brutto", stufe: "ok", text: TEXTE.summenWieAufRechnung });
   }
@@ -996,7 +1010,8 @@ Vorgehen:
    - Steuerkategorie: S = Umsatzsteuer wird ausgewiesen (19 %, 7 %); AE = Steuerschuldnerschaft des Leistungsempfängers / Reverse Charge (§ 13b UStG, auch EU-Reverse-Charge), Satz 0; E = steuerbefreit, z.B. Kleinunternehmer § 19 UStG, Satz 0; K = innergemeinschaftliche Lieferung von Waren; Z = Nullsatz; G = Ausfuhr außerhalb der EU; O = nicht steuerbar.
    - Rabatt auf eine Position: Steht direkt bei oder unter einer Position ein Rabatt oder Nachlass, der nur diese Position betrifft, gehört er als "nachlass" (positiver Betrag) mit "nachlassGrund" zu dieser Position. "einzelpreis" bleibt der Preis vor Rabatt, "gesamt" = menge × einzelpreis − nachlass. Verrechne den Rabatt nicht in den Einzelpreis, lege keine eigene Position dafür an und nimm den Rabatttext nicht in die Beschreibung.
    - Leistungsdatum einer Position: aus der Datumsspalte, sonst aus der Beschreibung (z.B. "06.02.26, 10-12 Uhr" → 2026-02-06), sonst aus einem Leistungszeitraum der ganzen Rechnung. Ein einzelner Tag: von = bis.
-   - Fälligkeit: aus "zahlbar bis" oder Rechnungsdatum + Zahlungsziel in Tagen. Bei Lastschrift das Datum des Einzugs, falls genannt.
+   - Fälligkeit: aus "zahlbar bis" oder Rechnungsdatum + Zahlungsziel in Tagen (beim Skonto: die Frist ohne Abzug, "rein netto"). Bei Lastschrift das Datum des Einzugs, falls genannt.
+   - Skonto: jede Stufe ("bis 30.05. mit 2 % Skonto", "innerhalb 10 Tagen 3 %") mit Satz, Frist und ggf. dem genannten Betrag. Keine Stufe für die Zahlung ohne Abzug.
    - Zahlungsart: "lastschrift", wenn der Betrag vom Konto des Kunden eingezogen bzw. abgebucht wird (SEPA-Lastschrift); "kreditkarte", wenn er einer Kreditkarte belastet wird; sonst "ueberweisung". Bei Kreditkarte die letzten 4 Ziffern der Karte, falls angegeben. Bei Lastschrift außerdem Gläubiger-ID, Mandatsreferenz und IBAN des Kunden, soweit angegeben; eine gekürzte oder maskierte IBAN (z.B. DE12 **** 3456) als "".
    - Zweistellige Jahre: 26 = 2026.
    - Öffentliche Stelle: Ist der Rechnungsempfänger eine Behörde oder ein öffentlicher Auftraggeber (Bund, Land, Kommune, Amt, öffentliche Hochschule, Anstalt oder Körperschaft des öffentlichen Rechts)? Firmen in Privatrechtsform (GmbH, AG, KG, e.V., …) sind es nicht, auch wenn sie der öffentlichen Hand gehören.
@@ -1042,6 +1057,12 @@ const KI_SCHEMA = (() => {
       leitwegId: T("Leitweg-ID öffentlicher Auftraggeber (BT-10), Muster wie 04011000-1234512345-06"),
       leistungVon: T("Beginn des Leistungszeitraums der ganzen Rechnung JJJJ-MM-TT (BT-73)"),
       leistungBis: T("Ende des Leistungszeitraums der ganzen Rechnung JJJJ-MM-TT (BT-74)"),
+      skonto: liste({
+        prozent: Z("Skontosatz in Prozent"),
+        tage: Z("Skontofrist in Tagen ab Rechnungsdatum; aus einem Datum errechnet, sonst 0"),
+        bis: T("Letzter Tag der Skontofrist JJJJ-MM-TT, falls ein Datum genannt ist"),
+        betrag: Z("Zahlbetrag mit Skonto, wie er auf der Rechnung steht; 0, wenn keiner"),
+      }),
       bemerkung: T("Sonstiger Hinweis/Kommentar zur Rechnung (BT-22)"),
     }),
     verkaeufer: partei("Rechnungssteller"),
@@ -1059,6 +1080,7 @@ const KI_SCHEMA = (() => {
       verwendungszweck: T("Verwendungszweck (BT-83)"),
     }),
     positionen: liste({
+      posNr: T("Positionsnummer, wie sie auf der Rechnung steht (BT-126); leer, wenn keine"),
       name: T("Bezeichnung der Leistung (BT-153)"),
       beschreibung: T("Weiterer Text zur Position, der nicht schon in der Bezeichnung steht (BT-154)"),
       menge: Z("Menge (BT-129)"),
@@ -1169,8 +1191,12 @@ function befundAusKi(daten, text) {
   kaeufer.oeffentlich = daten.kaeufer?.oeffentlich === true;
   return {
     text,
-    rechnung: felder(daten.rechnung, ["nummer", "datum", "art", "faellig", "zahlungsbedingungen", "bestellnummer",
-      "leitwegId", "leistungVon", "leistungBis", "bemerkung"]),
+    rechnung: {
+      ...felder(daten.rechnung, ["nummer", "datum", "art", "faellig", "zahlungsbedingungen", "bestellnummer",
+        "leitwegId", "leistungVon", "leistungBis", "bemerkung"]),
+      skonto: (daten.rechnung?.skonto || []).map((k) => ({ ...felder(k, ["prozent", "tage", "betrag"], z), bis: t(k.bis) }))
+        .filter((k) => k.prozent > 0),
+    },
     verkaeufer,
     kaeufer,
     zahlung: {
@@ -1185,7 +1211,7 @@ function befundAusKi(daten, text) {
     },
     positionen: (daten.positionen || []).map((p, i) => ({
       nr: i + 1,
-      ...felder(p, ["name", "beschreibung", "einheitText", "einheitCode", "steuerkategorie", "von", "bis", "nachlassGrund"]),
+      ...felder(p, ["posNr", "name", "beschreibung", "einheitText", "einheitCode", "steuerkategorie", "von", "bis", "nachlassGrund"]),
       ...felder(p, ["menge", "einzelpreis", "gesamt", "steuersatz", "nachlass"], z),
     })),
     steuer: (daten.steuer || []).map((s) => ({ ...felder(s, ["kategorie", "befreiungsgrund"]), ...felder(s, ["satz", "basis", "betrag"], z) })),
@@ -1242,7 +1268,10 @@ function jevFragen(r) {
   stimmt("kontakt", "absender.kontakt", "der Ansprechpartner beim Rechnungssteller", r.absender.kontakt);
   const einheiten = Object.fromEntries(REGELN.einheiten.map((x) => [x.code, x.name]));
   for (const p of r.positionen) {
-    const bez = `die Position ${p.nr} („${p.name}“)`;
+    // So, wie die Position auf der Rechnung steht: mit ihrer Nummer, bei gleichen Namen mit dem Anfang der Beschreibung
+    const gleichNamig = r.positionen.filter((q) => q.name === p.name).length > 1;
+    const zusatz = gleichNamig && p.beschreibung ? `, ${p.beschreibung.slice(0, 60)}` : "";
+    const bez = `Position ${p.posNr || p.nr} („${p.name}“${zusatz})`;
     stimmt(`p${p.nr}_menge`, `position.${p.nr}.menge`, `die Menge von ${bez}`, p.menge);
     stimmt(`p${p.nr}_preis`, `position.${p.nr}.einzelpreis`, `der Einzelpreis von ${bez}`, p.einzelpreis);
     if (p.nachlass) {
@@ -1263,6 +1292,8 @@ function jevFragen(r) {
       O: "Nicht steuerbar.",
     }, r.steuerfall.kategorie);
   }
+  (r.skonto || []).forEach((k, i) => stimmt(`skonto${i + 1}`, `skonto.${i + 1}`,
+    `der Skonto bei Zahlung ${k.bis ? `bis ${alsDatum(k.bis)}` : `innerhalb von ${k.tage} Tagen`}`, `${k.prozent} %`));
   auswahl("zahlungsart", "zahlungsart", "Wie wird der Rechnungsbetrag bezahlt", {
     ueberweisung: "Der Kunde überweist den Betrag (oder es ist nichts dazu angegeben).",
     lastschrift: "Der Betrag wird per Lastschrift vom Konto des Kunden eingezogen bzw. abgebucht.",
@@ -1300,7 +1331,8 @@ async function frageJev(r, text, einstellungen, holen) {
  *     absender: { name, adresse: [...], plz, ort, ustId, steuernummer, email, telefon, kontakt, glaeubigerId },
  *     empfaenger: { …wie absender, iban, mandatsreferenz, karte },
  *     positionen: { 1: { name, beschreibung, menge, einheitCode, einzelpreis, gesamt, satz, von, bis } },
- *     kaeuferreferenz, leitwegId, leistungsdatum, einheiten: { "pauschale": "LS" } }
+ *     kaeuferreferenz, leitwegId, leistungsdatum, einheiten: { "pauschale": "LS" },
+ *     skonto: [{ prozent, tage, bis }] }
  */
 function baueRechnung(befund, ergaenzungen = {}) {
   const e = ergaenzungen;
@@ -1329,6 +1361,7 @@ function baueRechnung(befund, ergaenzungen = {}) {
     waehrung: "EUR",
     zahlungsart: waehle(e, "zahlungsart", zahlung.art || "ueberweisung"),
     zahlungsbedingungen: befund.rechnung.zahlungsbedingungen ?? null,
+    skonto: skontoStufen(waehle(e, "skonto", befund.rechnung.skonto || []), waehle(e, "datum", befund.rechnung.datum)),
     referenz, leitwegId, leistungsdatum,
     // BT-10: bei Behörden die Leitweg-ID, sonst die Referenz des Kunden
     kaeuferreferenz: leitwegId || referenz || TEXTE.keineKaeuferreferenz,
@@ -1351,6 +1384,8 @@ function baueRechnung(befund, ergaenzungen = {}) {
           : [befund.rechnung.leistungVon, befund.rechnung.leistungBis || befund.rechnung.leistungVon];
       return {
         nr: p.nr,
+        // Die Nummer, die auf der Rechnung steht (sie kann Lücken haben); "nr" zählt nur durch
+        posNr: p.posNr || String(p.nr),
         name: waehle(g, "name", p.name),
         beschreibung: waehle(g, "beschreibung", p.beschreibung),
         menge: waehle(g, "menge", p.menge),
@@ -1368,6 +1403,31 @@ function baueRechnung(befund, ergaenzungen = {}) {
       };
     }),
   };
+}
+
+/**
+ * Skontostufen mit Frist in Tagen und letztem Tag. Die Frist zählt ab dem
+ * Rechnungsdatum; steht auf der Rechnung ein Datum, wird daraus gerechnet.
+ */
+function skontoStufen(stufen, rechnungsdatum) {
+  return (stufen || []).filter((k) => k.prozent > 0).map((k) => {
+    const tage = k.bis && rechnungsdatum ? tageZwischen(rechnungsdatum, k.bis) : k.tage || null;
+    const bis = k.bis || (rechnungsdatum && tage ? plusTage(rechnungsdatum, tage) : null);
+    return { prozent: k.prozent, tage, bis, betrag: k.betrag || null };
+  });
+}
+
+/** Was mit Skonto zu zahlen ist */
+function betragMitSkonto(r, stufe) {
+  return runde(summenDerRechnung(r).brutto * (1 - stufe.prozent / 100));
+}
+
+function tageZwischen(von, bis) {
+  return Math.round((Date.parse(`${bis}T00:00:00Z`) - Date.parse(`${von}T00:00:00Z`)) / 86400000);
+}
+
+function plusTage(iso, tage) {
+  return new Date(Date.parse(`${iso}T00:00:00Z`) + tage * 86400000).toISOString().slice(0, 10);
 }
 
 /** Steuerfall nach der Kategorie, die die KI am häufigsten vergeben hat; null, wenn XFact sie nicht kennt. */
@@ -1437,7 +1497,7 @@ function erzeugeXml(r) {
     <ram:IssueDateTime>${datum102(r.datum)}</ram:IssueDateTime>
   </rsm:ExchangedDocument>
   <rsm:SupplyChainTradeTransaction>
-${r.positionen.map(positionXml).join("")}    <ram:ApplicableHeaderTradeAgreement>
+${r.positionen.map((p) => positionXml(p, eindeutigeNummern(r.positionen))).join("")}    <ram:ApplicableHeaderTradeAgreement>
       <ram:BuyerReference>${x(r.kaeuferreferenz)}</ram:BuyerReference>
 ${verkaeuferXml(r.absender)}${kaeuferXml(r.empfaenger)}${r.bestellreferenz ? `      <ram:BuyerOrderReferencedDocument>
         <ram:IssuerAssignedID>${x(r.bestellreferenz)}</ram:IssuerAssignedID>
@@ -1514,18 +1574,26 @@ function zahlungsbedingungXml(r) {
   const text = lastschrift ? r.zahlungsbedingungen || TEXTE.lastschrift(datum)
     : r.zahlungsart === "kreditkarte" ? r.zahlungsbedingungen || TEXTE.kreditkarte(datum)
       : TEXTE.zahlbarBis(datum);
+  // Skonto im Format der XRechnung: je Stufe eine Zeile #SKONTO#TAGE=n#PROZENT=n.nn#
+  const skonto = (r.skonto || []).map((k) => `#SKONTO#TAGE=${k.tage}#PROZENT=${k.prozent.toFixed(2)}#\n`).join("");
   return `      <ram:SpecifiedTradePaymentTerms>
-        <ram:Description>${x(text)}</ram:Description>
+        <ram:Description>${x(skonto + text)}</ram:Description>
 ${r.faellig ? `        <ram:DueDateDateTime>${datum102(r.faellig)}</ram:DueDateDateTime>
 ` : ""}${lastschrift && r.empfaenger.mandatsreferenz ? `        <ram:DirectDebitMandateID>${x(r.empfaenger.mandatsreferenz)}</ram:DirectDebitMandateID>
 ` : ""}      </ram:SpecifiedTradePaymentTerms>
 `;
 }
 
-function positionXml(p) {
+/** Die Nummern der Rechnung, wenn jede nur einmal vorkommt; sonst wird durchgezählt (BT-126 muss eindeutig sein) */
+function eindeutigeNummern(positionen) {
+  const nummern = positionen.map((p) => p.posNr || String(p.nr));
+  return new Set(nummern).size === nummern.length;
+}
+
+function positionXml(p, nummerDerRechnung = true) {
   return `    <ram:IncludedSupplyChainTradeLineItem>
       <ram:AssociatedDocumentLineDocument>
-        <ram:LineID>${p.nr}</ram:LineID>
+        <ram:LineID>${x(nummerDerRechnung ? p.posNr || p.nr : p.nr)}</ram:LineID>
       </ram:AssociatedDocumentLineDocument>
       <ram:SpecifiedTradeProduct>
         <ram:Name>${x(p.name)}</ram:Name>
@@ -2021,7 +2089,7 @@ window.XFact = {
   TEXTE, REGELN, PRUEFUNGEN, KI, KI_ANWEISUNG, KI_SCHEMA,
   lesePdf, zuZeilen, ohneDoppelte, alsLayoutText, hatText,
   kiEingerichtet, ueberOpenRouter, frageKi, pruefeVerbindung, befundAusKi, jevFragen, frageJev,
-  baueRechnung, steuerfallAusBefund, summenDerRechnung, einheitSchluessel,
+  baueRechnung, steuerfallAusBefund, summenDerRechnung, einheitSchluessel, betragMitSkonto,
   pruefeRechnung, hinweiseZurRechnung, ibanPruefzifferOk, ustIdAufbauOk, leitwegIdOk, glaeubigerIdOk, datumGueltig, stehtImText,
   erzeugeXml, xmlDateiname,
   GEDAECHTNIS, leeresGedaechtnis, firmaSchluessel, kundeSchluessel, vorgabenAusGedaechtnis, merkeRechnung,
@@ -2037,7 +2105,7 @@ window.XFact = {
 
 const { TEXTE, REGELN, lesePdf, alsLayoutText, hatText, kiEingerichtet, ueberOpenRouter, frageKi, frageJev,
   pruefeVerbindung, KI, baueRechnung,
-  pruefeRechnung, hinweiseZurRechnung, summenDerRechnung, erzeugeXml, xmlDateiname, einheitSchluessel,
+  pruefeRechnung, hinweiseZurRechnung, summenDerRechnung, erzeugeXml, xmlDateiname, einheitSchluessel, betragMitSkonto,
   alsBetrag, alsDatum, GEDAECHTNIS, leeresGedaechtnis, vorgabenAusGedaechtnis, merkeRechnung, insLogbuch,
   hinweiseAusGedaechtnis, exportiereGedaechtnis, importiereGedaechtnis, ladeGedaechtnis, speichereGedaechtnis,
 } = window.XFact;
@@ -2243,6 +2311,12 @@ function setze(pfad, wert) {
     } else {
       e[bereich][a] = wert;
     }
+  } else if (bereich === "skonto") {
+    // Die Skontostufen werden als Ganzes ersetzt; ein neues Datum bestimmt die Frist neu
+    const stufen = aktuelleRechnung().skonto.map((k) => ({ ...k }));
+    if (b === undefined) stufen.splice(Number(a) - 1, 1);
+    else Object.assign(stufen[Number(a) - 1], { [b]: wert }, b === "bis" ? { tage: null } : {});
+    e.skonto = stufen;
   } else if (bereich === "einheit") {
     e.einheiten ??= {};
     e.einheiten[a] = wert;
@@ -2456,6 +2530,7 @@ function positionen(r) {
     const mitFeld = zustand.hinweise.map((h) => (spalten[h.feld] ? { ...h, text: `${spalten[h.feld]}: ${h.text}` } : h));
     const marken = hinweisMarken(mitFeld, ...Object.keys(spalten));
     rumpf.append(el("tr", { class: marken.length ? "mit-hinweis" : "" },
+      el("td", { class: "zahl leise" }, p.posNr || p.nr),
       el("td", { class: "datum" }, datum),
       el("td", {},
         el("div", { class: "name" }, feld({ pfad: pfad("name"), wert: p.name })),
@@ -2468,11 +2543,11 @@ function positionen(r) {
       el("td", { class: "zahl" }, p.kategorie === "S"
         ? feld({ pfad: pfad("satz"), wert: p.satz || null, art: "satz" }) : "–"),
       el("td", { class: "zahl" }, feld({ pfad: pfad("gesamt"), wert: p.gesamt, art: "betrag", hinweise: [] }))));
-    if (marken.length) rumpf.append(el("tr", { class: "hinweise" }, el("td", { colSpan: 7 }, marken)));
+    if (marken.length) rumpf.append(el("tr", { class: "hinweise" }, el("td", { colSpan: 8 }, marken)));
   }
   bereich.append(el("table", {},
     el("thead", {}, el("tr", {},
-      el("th", {}, t.datum), el("th", {}, t.beschreibung), el("th", { class: "zahl" }, t.menge),
+      el("th", { class: "zahl" }, t.nr), el("th", {}, t.datum), el("th", {}, t.beschreibung), el("th", { class: "zahl" }, t.menge),
       el("th", {}, t.einheit), el("th", { class: "zahl" }, t.einzelpreis), el("th", { class: "zahl" }, t.steuersatz),
       el("th", { class: "zahl" }, t.gesamt))),
     rumpf));
@@ -2532,7 +2607,12 @@ function zahlung(r) {
         angabe(a.mandatsreferenz, feld({ pfad: "empfaenger.mandatsreferenz", wert: r.empfaenger.mandatsreferenz, optional: true }))]
       : [angabe(a.zahlbarBis, feld({ pfad: "faellig", wert: r.faellig, art: "datum" })),
         angabe("IBAN", feld({ pfad: "iban", wert: r.bank.iban, art: "iban" })),
-        angabe("BIC", feld({ pfad: "bic", wert: r.bank.bic, optional: true }))]);
+        angabe("BIC", feld({ pfad: "bic", wert: r.bank.bic, optional: true }))],
+    (r.skonto || []).map((k, i) => angabe(a.skonto, el("span", { class: "feld" },
+      feld({ pfad: `skonto.${i + 1}.prozent`, wert: k.prozent, art: "zahl", hinweise: [] }), "% ",
+      a.skontoBis, " ", feld({ pfad: `skonto.${i + 1}.bis`, wert: k.bis, art: "datum", hinweise: [`skonto.${i + 1}`] }),
+      el("span", { class: "leise" }, `= ${alsBetrag(betragMitSkonto(r, k))}`),
+      el("button", { class: "knopf klein", title: a.skontoEntfernen, onclick: () => setze(`skonto.${i + 1}`, null) }, "×")))));
 }
 
 function weitereAngaben(r) {

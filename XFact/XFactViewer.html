@@ -375,7 +375,8 @@ const TEXTE = {
   anhaenge: "Anhänge",
   herunterladen: "Herunterladen",
   nurLink: "Link",
-  skonto: (prozent, tage) => `${prozent} % Skonto bei Zahlung innerhalb von ${tage} Tagen`,
+  skonto: (prozent, tage, bis, betrag) =>
+    `${prozent} % Skonto bei Zahlung innerhalb von ${tage} Tagen${bis ? ` (bis ${bis})` : ""}${betrag ? `: ${betrag}` : ""}`,
 
   // Nachrechnen
   stimmt: "Positionen, Steuer und Summen gehen auf",
@@ -638,13 +639,19 @@ function nachlassZuschlag(a) {
 
 /**
  * Zahlungsbedingungen lesbar machen: XRechnung schreibt Skonto als
- * #SKONTO#TAGE=14#PROZENT=2.00#; daraus wird ein Satz.
+ * #SKONTO#TAGE=14#PROZENT=2.00# (optional #BASISBETRAG=…#); daraus wird ein
+ * Satz mit dem letzten Tag der Frist (ab Rechnungsdatum) und dem Betrag.
  */
-function lesbareBedingungen(bedingungen) {
+function lesbareBedingungen(bedingungen, r = null) {
   if (!bedingungen) return null;
-  return bedingungen.split(/\r?\n/).map((zeile) => {
-    const skonto = /^#SKONTO#TAGE=(\d+)#PROZENT=([\d.]+)#/.exec(zeile.trim());
-    return skonto ? TEXTE.skonto(alsZahl(Number(skonto[2]), 2), skonto[1]) : zeile;
+  return bedingungen.split(/\r?\n/).filter((zeile) => zeile.trim()).map((zeile) => {
+    const skonto = /^#SKONTO#TAGE=(\d+)#PROZENT=([\d.]+)#(?:BASISBETRAG=([\d.]+)#)?/.exec(zeile.trim());
+    if (!skonto) return zeile;
+    const [tage, prozent] = [Number(skonto[1]), Number(skonto[2])];
+    const basis = skonto[3] ? Number(skonto[3]) : r?.summen.zahlbetrag;
+    const bis = r?.datum ? new Date(Date.parse(`${r.datum}T00:00:00Z`) + tage * 86400000).toISOString().slice(0, 10) : null;
+    const betrag = basis ? alsBetrag(Math.round(basis * (100 - prozent)) / 100, r?.waehrung) : null;
+    return TEXTE.skonto(alsZahl(prozent, 2), tage, alsDatum(bis), betrag);
   }).join("\n");
 }
 
@@ -909,7 +916,7 @@ function zeigeZahlung(r) {
       angabe(f.mandatsreferenz, "BT-89", z.mandatsreferenz),
       angabe(f.verwendungszweck, "BT-83", z.verwendungszweck),
       angabe(f.faellig, "BT-9", alsDatum(z.faellig)),
-      angabe(f.bedingungen, "BT-20", lesbareBedingungen(z.bedingungen) && el("span", { class: "bemerkung" }, lesbareBedingungen(z.bedingungen)))));
+      angabe(f.bedingungen, "BT-20", z.bedingungen && el("span", { class: "bemerkung" }, lesbareBedingungen(z.bedingungen, r)))));
 }
 
 function zeigeAnhaenge(r) {

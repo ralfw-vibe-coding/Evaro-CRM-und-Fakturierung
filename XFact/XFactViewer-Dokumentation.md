@@ -59,7 +59,7 @@ XFactViewer läuft vollständig in Ihrem Browser, auch ohne Internet. **Die Rech
 | **Nachlässe und Zuschläge** | auf die ganze Rechnung, falls vorhanden |
 | **Summen** | Netto, Umsatzsteuer je Satz bzw. Art der Steuerbefreiung, Gesamtbetrag, bereits gezahlt, zu zahlen; darunter der Text der Rechnung zur Steuerbefreiung |
 | **Nachrechnen** | ✓, wenn alles aufgeht, sonst gelb, wo die Abweichung liegt |
-| **Zahlung** | Zahlungsart; bei Überweisung IBAN, BIC und Kontoinhaber; bei Lastschrift Gläubiger-ID, Mandatsreferenz und das Konto, von dem abgebucht wird; Verwendungszweck, Fälligkeit, Zahlungsbedingungen. Skonto, das in der XRechnung als `#SKONTO#TAGE=14#PROZENT=2.00#` steht, erscheint als „2,00 % Skonto bei Zahlung innerhalb von 14 Tagen“. |
+| **Zahlung** | Zahlungsart; bei Überweisung IBAN, BIC und Kontoinhaber; bei Lastschrift Gläubiger-ID, Mandatsreferenz und das Konto, von dem abgebucht wird; Verwendungszweck, Fälligkeit, Zahlungsbedingungen. Skonto, das in der XRechnung als `#SKONTO#TAGE=14#PROZENT=2.00#` steht, erscheint mit letztem Tag und Betrag, z.B. „2,00 % Skonto bei Zahlung innerhalb von 14 Tagen (bis 15.10.2026): 106,09 €“. Die Frist zählt ab dem Rechnungsdatum, der Betrag vom Zahlbetrag (oder vom Basisbetrag, wenn die Rechnung einen nennt). |
 | **Bemerkungen, Lieferanschrift, Anhänge** | wenn die Rechnung welche enthält |
 
 Was in der Datei nicht steht, wird nicht angezeigt. Leere Zeilen gibt es nicht.

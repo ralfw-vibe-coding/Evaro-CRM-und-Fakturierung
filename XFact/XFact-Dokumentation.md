@@ -84,7 +84,11 @@ Bei den Summen zeigt ein **✓**, dass alles aufgeht. Sonst nennt XFact die Diff
 
 **Ändern:** Klicken Sie auf einen Wert, ändern Sie ihn und drücken Sie Enter, oder wechseln Sie mit Tab ins nächste Feld. Mit Escape brechen Sie ab. Die Einheit jeder Position steht als Auswahl in der Tabelle (Stunde, Tag, Pauschale, Stück …). Ändern Sie sie, gilt das für alle Positionen mit derselben Schreibweise, und XFact merkt es sich für Ihre Firma.
 
+**Positionsnummern** zeigt XFact so, wie sie auf der Rechnung stehen, auch mit Lücken (1, 2, 4). Genau diese Nummern stehen auch in der XRechnung.
+
 **Rabatt auf eine Position:** Steht unter einer Position ein Rabatt, der nur sie betrifft, zeigt XFact ihn unter der Beschreibung, z.B. „Willkommensangebot: −23,39 €“. Der Preis bleibt der Preis vor Rabatt, der Betrag der Position ist Preis × Menge minus Rabatt, genau wie auf der Rechnung. In der XRechnung steht der Rabatt als Nachlass dieser Position.
+
+**Skonto:** Nennt die Rechnung Skonto, z.B. „zahlbar bis 30.05.2026 mit 2 % Skonto“, zeigt XFact unter der Zahlung „Skonto 2 % bis 30.05.2026 = 4.716,11 €“. Satz und Datum lassen sich ändern, mit × entfernen Sie die Angabe. Die Frist zählt ab dem Rechnungsdatum. Weicht der Betrag auf der Rechnung vom berechneten ab, wird er gelb. In der XRechnung steht das Skonto in der vorgeschriebenen Form, sodass das Programm Ihres Kunden es erkennt.
 
 **Zahlung:** Unter den Summen wählen Sie **Überweisung**, **Lastschrift** oder **Kreditkarte**. Vorgewählt ist, was die KI auf der Rechnung erkannt hat, z.B. „Der Betrag wird von Ihrem Konto eingezogen“.
 - **Überweisung:** Fälligkeit („Zahlbar bis“), Ihre IBAN und BIC.

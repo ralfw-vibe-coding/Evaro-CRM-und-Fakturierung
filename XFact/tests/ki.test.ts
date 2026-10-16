@@ -83,6 +83,23 @@ describe("KI fragen", () => {
     expect(XFact.befundAusKi({ ...roh, zahlung: { ...zahlung, karte: "" } }, "x").zahlung.karte).toBeNull();
   });
 
+  it("Skonto und Positionsnummer werden übernommen", () => {
+    const rechnung = { ...roh.rechnung, skonto: [{ prozent: 2, tage: 8, bis: "2026-09-20", betrag: 606.42 }, { prozent: 0, tage: 0, bis: "", betrag: 0 }] };
+    const befund = XFact.befundAusKi({ ...roh, rechnung, positionen: [{ ...roh.positionen[0], posNr: "4" }] }, "x");
+    expect(befund.rechnung.skonto).toEqual([{ prozent: 2, tage: 8, bis: "2026-09-20", betrag: 606.42 }]);
+    expect(XFact.baueRechnung(befund, {}).positionen[0]).toMatchObject({ nr: 1, posNr: "4" });
+  });
+
+  it("Prüfer: Position mit ihrer Nummer, gleichnamige mit Beschreibung; Skonto", () => {
+    const p = musterRechnung().positionen[0];
+    const r = musterRechnung({ positionen: [{ ...p, posNr: "2", beschreibung: "schwarz" }, { ...p, nr: 2, posNr: "4", beschreibung: "weiß" }],
+      skonto: [{ prozent: 2, tage: 8, bis: "2026-09-20", betrag: null }] });
+    const { fragen, felder } = XFact.jevFragen(r);
+    expect(fragen.p2_menge.instructions).toContain("Position 4 („Montage“, weiß)");
+    expect(fragen.skonto1.instructions).toContain("Zahlung bis 20.09.2026");
+    expect(felder.skonto1).toEqual({ pfad: "skonto.1", art: "noul" });
+  });
+
   it("Rabatt auf eine Position wird übernommen", () => {
     const p = { ...roh.positionen[0], einzelpreis: 24.101, nachlass: 23.39, nachlassGrund: "Willkommensangebot", gesamt: 0.711 };
     expect(XFact.befundAusKi({ ...roh, positionen: [p] }, "x").positionen[0])

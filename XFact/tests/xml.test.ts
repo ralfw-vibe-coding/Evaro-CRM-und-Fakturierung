@@ -77,13 +77,14 @@ describe("Beispielrechnungen (aufgezeichnete KI-Antworten)", () => {
 });
 
 /** KI-Antwort für eine Rechnung eines deutschen Handwerksbetriebs; Positionen, Steuer und Käufer austauschbar */
-function musterBefund({ positionen, steuer, kaeuferUstId = "", summen, leitwegId = "", zahlung = {}, faellig = "2026-09-26" }: {
+function musterBefund({ positionen, steuer, kaeuferUstId = "", summen, leitwegId = "", zahlung = {}, faellig = "2026-09-26", skonto = [] }: {
   positionen: object[]; steuer: object[]; kaeuferUstId?: string; summen: object; leitwegId?: string; zahlung?: object; faellig?: string;
+  skonto?: object[];
 }) {
   const text = "Muster Handwerk GmbH … Rechnungsnummer: 2026-0153 … IBAN DE89 3704 0044 0532 0130 00 … DE196047852";
   return XFact.befundAusKi({
     rechnung: { nummer: "2026-0153", datum: "2026-09-12", art: "380", faellig, zahlungsbedingungen: "",
-      bestellnummer: "Auftrag 4711", leitwegId, leistungVon: "", leistungBis: "", bemerkung: "" },
+      bestellnummer: "Auftrag 4711", leitwegId, leistungVon: "", leistungBis: "", bemerkung: "", skonto },
     verkaeufer: { name: "Muster Handwerk GmbH", strasse: "Hauptstr. 1", zusatz: "", plz: "20095", ort: "Hamburg", land: "DE",
       ustId: "", steuernummer: "12/345/67890", email: "info@muster-handwerk.example", telefon: "040 123456", kontakt: "Max Muster" },
     kaeufer: { name: "Berg GmbH & Co. KG", strasse: "Alte Ziegelei 21", zusatz: "", plz: "51491", ort: "Overath", land: "DE",
@@ -198,6 +199,28 @@ describe("die drei Steuerfälle", () => {
     const befund = musterBefund({ positionen: [pos("Wartung", 2, "Std", 65, 130, "E", 0)],
       ...keineSteuer(130, "E", "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."), zahlung: { art: "kreditkarte" } });
     expect(zurXml(befund, {}, "nicht-erzeugt.xml").fehlt.map((f: any) => f.feld)).toEqual(["empfaenger.karte"]);
+  });
+
+  it("Skonto im Format der XRechnung, Frist aus dem Datum der Rechnung", () => {
+    const befund = musterBefund({ positionen: [pos("Montage Küche", 8, "Std", 65, 520, "S", 19)],
+      steuer: [{ kategorie: "S", satz: 19, basis: 520, betrag: 98.8, befreiungsgrund: "" }],
+      summen: { netto: 520, steuer: 98.8, brutto: 618.8, zahlbetrag: 618.8 }, faellig: "2026-10-12",
+      skonto: [{ prozent: 2, tage: 0, bis: "2026-09-20", betrag: 606.42 }, { prozent: 1, tage: 14, bis: "", betrag: 0 }] });
+    const { rechnung, fehlt, xml } = zurXml(befund, {}, "Muster-Skonto.xml");
+    expect(fehlt).toEqual([]);
+    expect(rechnung.skonto).toEqual([{ prozent: 2, tage: 8, bis: "2026-09-20", betrag: 606.42 }, { prozent: 1, tage: 14, bis: "2026-09-26", betrag: null }]);
+    expect(xml).toContain("<ram:Description>#SKONTO#TAGE=8#PROZENT=2.00#\n#SKONTO#TAGE=14#PROZENT=1.00#\nZahlbar bis 12.10.2026</ram:Description>");
+  });
+
+  it("Positionsnummern wie auf der Rechnung, auch mit Lücke; doppelte werden durchgezählt", () => {
+    const p = (posNr: string) => ({ ...pos("Theke", 1, "Stk", 100, 100, "S", 19), posNr });
+    const steuer = [{ kategorie: "S", satz: 19, basis: 200, betrag: 38, befreiungsgrund: "" }];
+    const summen = { netto: 200, steuer: 38, brutto: 238, zahlbetrag: 238 };
+    const mitLuecke = zurXml(musterBefund({ positionen: [p("2"), p("4")], steuer, summen }), {}, "Muster-Positionsnummern.xml");
+    expect(element(mitLuecke.xml!, "LineID")).toEqual(["2", "4"]);
+    expect(XFact.pruefeRechnung(mitLuecke.rechnung)).toEqual([]);
+    const doppelt = zurXml(musterBefund({ positionen: [p("1"), p("1")], steuer, summen }), {}, "Muster-Positionsnummern-doppelt.xml");
+    expect(element(doppelt.xml!, "LineID")).toEqual(["1", "2"]);
   });
 
   it("Sonderzeichen werden maskiert", () => {

@@ -182,7 +182,8 @@ Ist keiner dieser Fälle erkennbar, kommt eine Rückfrage unter „Weitere Angab
 - **SEPA-Überweisung** (`58`, BG-17): Fälligkeitsdatum, IBAN und BIC des Rechnungsstellers.
 - **Kreditkarte** (`54`, BG-18): letzte 4 Ziffern der Karte des Kunden (BT-87, Pflicht; nach BR-51 höchstens die ersten 6 und letzten 4 Ziffern, KoSIT prüft die Länge). Keine eigene Bankverbindung (BR-DE-24-b), Fälligkeit optional; BT-20 nennt die Belastung. Gemerkt im Kundenprofil.
 - **SEPA-Lastschrift** (`59`, BG-19): Gläubiger-ID (BT-90, Pflicht nach BR-DE-30), IBAN des Kunden (BT-91, Pflicht nach BR-DE-31), Mandatsreferenz (BT-89, optional). Keine eigene Bankverbindung (BR-DE-25-b), Fälligkeit optional; die Zahlungsbedingungen (BT-20) nennen den Einzug (BR-CO-25). Die KI erkennt die Zahlungsart; eine maskierte Kunden-IBAN wird nicht übernommen. Gemerkt: Gläubiger-ID im Firmenprofil, IBAN und Mandatsreferenz im Kundenprofil.
-- Skontotexte werden als Freitext übernommen. Ein Text, der mit `#` beginnt, wird entschärft, weil XRechnung ihn sonst als strukturiertes Skonto auswertet.
+- **Skonto** erkennt die KI je Stufe (Satz, Frist, ggf. Datum und Betrag). In BT-20 steht es im Format der XRechnung, je Stufe eine Zeile `#SKONTO#TAGE=8#PROZENT=2.00#`, darunter „Zahlbar bis …“. Die Frist zählt ab dem Rechnungsdatum (BT-2); steht ein Datum auf der Rechnung, wird daraus gerechnet. Ohne Frist rot, abweichender Skontobetrag gelb. Satz und Datum sind in der Prüfansicht änderbar, die Stufe lässt sich entfernen.
+- **Positionsnummer** (BT-126) wie auf der Rechnung, auch mit Lücken; nur wenn eine Nummer doppelt vorkommt, wird durchgezählt. Der Prüfer fragt nach der Position mit dieser Nummer, bei gleichen Bezeichnungen mit dem Anfang der Beschreibung.
 
 **Pflichtangaben, die meist nicht im PDF stehen**, und wo sie gemerkt werden:
 
@@ -286,6 +287,7 @@ Begründung: Aus React- und Tailwind-Code entsteht beim Bauen eine Datei, die ma
 - vitest lädt den Fachlogik-Teil direkt aus `xfact.html` (`XFact/tests/fachlogik.ts`). Getestet wird also genau der ausgelieferte Code, ohne Browser-Umgebung.
   - Die Tests laufen **ohne Netz**: KI und Prüfer bekommen statt `fetch` eine Fassung, die die Anfrage festhält und eine Antwort liefert.
   - Echte Antworten von KI und Prüfer zu den 5 Beispiel-PDFs liegen in `XFact/tests/ki-antworten/`. Neu aufzeichnen: `node XFact/tests/aufzeichnen.mjs <datei-mit-openrouter-schlüssel>` (benutzt genau `frageKi`/`frageJev` aus `xfact.html`; der Schlüssel wird nicht gespeichert).
+- Der Ablauf-Teil wird nicht ausgeführt, aber geprüft: `syntax.test.ts` übersetzt alle Skripte, `namen.test.ts` meldet Namen, die ein Skript verwendet, aber weder selbst definiert noch aus `window.XFact` holt (TypeScript-Compiler mit `checkJs`, nur die Meldung „Cannot find name“). Beides gilt auch für `XFactViewer.html`.
 - Ein Testskript prüft die erzeugten XMLs mit dem KoSIT-Validator. Das vorhandene `scripts/validate-xrechnung.mjs` wird wiederverwendet. Es ist nur ein Werkzeug für die Entwicklung (Java) und wird nicht ausgeliefert.
 
 ## 12. Abnahme
