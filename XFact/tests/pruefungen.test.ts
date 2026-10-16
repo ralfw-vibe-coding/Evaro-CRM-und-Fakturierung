@@ -44,6 +44,13 @@ describe("Pflichtangaben", () => {
       `empfaenger.iban: ${XFact.TEXTE.ibanPruefziffer}`, `absender.glaeubigerId: ${XFact.TEXTE.pruefer.glaeubigerIdAufbau}`]);
   });
 
+  it("Kreditkarte: die letzten 4 Ziffern statt eigener IBAN und Fälligkeit", () => {
+    const ohne = musterRechnung({ zahlungsart: "kreditkarte", faellig: null, bank: { iban: null, bic: null } });
+    expect(XFact.pruefeRechnung(ohne).map((f: any) => f.feld)).toEqual(["empfaenger.karte"]);
+    const mit = { ...ohne, empfaenger: { ...ohne.empfaenger, karte: "4242" } };
+    expect(XFact.pruefeRechnung(mit)).toEqual([]);
+  });
+
   it("ein Steuerfall, den XFact nicht kennt, ist rot", () => {
     const fehlt = XFact.pruefeRechnung(musterRechnung({ steuerfall: { art: null, kategorie: null, text: null } }));
     expect(fehlt.map((f: any) => f.feld)).toContain("steuerfall");

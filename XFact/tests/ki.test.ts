@@ -76,6 +76,19 @@ describe("KI fragen", () => {
     expect(befund.zahlung).toMatchObject({ art: "lastschrift", glaeubigerId: "DE98ZZZ09999999999", mandatsreferenz: "M-4711", kundenIban: null });
   });
 
+  it("Kreditkarte: von der Kartennummer bleiben nur die letzten 4 Ziffern", () => {
+    const zahlung = { art: "kreditkarte", iban: "", bic: "", verwendungszweck: "", glaeubigerId: "", mandatsreferenz: "",
+      kundenIban: "", karte: "4111 1111 1111 4242" };
+    expect(XFact.befundAusKi({ ...roh, zahlung }, "x").zahlung).toMatchObject({ art: "kreditkarte", karte: "4242" });
+    expect(XFact.befundAusKi({ ...roh, zahlung: { ...zahlung, karte: "" } }, "x").zahlung.karte).toBeNull();
+  });
+
+  it("Rabatt auf eine Position wird übernommen", () => {
+    const p = { ...roh.positionen[0], einzelpreis: 24.101, nachlass: 23.39, nachlassGrund: "Willkommensangebot", gesamt: 0.711 };
+    expect(XFact.befundAusKi({ ...roh, positionen: [p] }, "x").positionen[0])
+      .toMatchObject({ einzelpreis: 24.101, nachlass: 23.39, nachlassGrund: "Willkommensangebot", gesamt: 0.711 });
+  });
+
   it("liest JSON auch, wenn es in Text eingebettet ist", async () => {
     const { holen } = holenMit({ choices: [{ message: { content: "Hier das Ergebnis:\n" + JSON.stringify(roh) + "\nFertig." } }] });
     expect((await XFact.frageKi("x", einstellungen, holen)).rechnung.nummer).toBe("RE-1");

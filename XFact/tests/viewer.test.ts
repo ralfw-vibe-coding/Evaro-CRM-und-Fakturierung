@@ -13,13 +13,23 @@ const XFact = ladeFachlogik();
 const mitEmail = { empfaenger: { email: "rechnung@kunde.example" } };
 
 /** XFact baut aus einer aufgezeichneten KI-Antwort die XML; der Viewer liest sie. */
-function hinUndZurueck(name: string, ergaenzungen: object = {}) {
-  const rechnung = XFact.baueRechnung(beispiel(name).befund, { ...mitEmail, ...ergaenzungen });
+function hinUndZurueck(name: string, ergaenzungen: object = {}, befund = beispiel(name).befund, ersetzt: object = {}) {
+  const rechnung = XFact.baueRechnung(befund, { ...mitEmail, ...ergaenzungen, ...ersetzt });
   expect(XFact.pruefeRechnung(rechnung)).toEqual([]);
   return { rechnung, gelesen: Viewer.leseXRechnung(XFact.erzeugeXml(rechnung)) };
 }
 
 describe("liest zurück, was XFact erzeugt", () => {
+  it("Kreditkarte und Rabatt auf eine Position", () => {
+    const befund = JSON.parse(JSON.stringify(beispiel("INV753").befund));
+    Object.assign(befund.positionen[0], { einzelpreis: 800, nachlass: 23, nachlassGrund: "Treue", gesamt: 777 });
+    const { gelesen } = hinUndZurueck("INV753", {}, befund, { zahlungsart: "kreditkarte", empfaenger: { email: "rechnung@kunde.example", karte: "4242" } });
+    expect(gelesen.zahlung.mittel).toEqual([expect.objectContaining({ art: "54", karte: "4242", iban: null })]);
+    expect(gelesen.positionen[0]).toMatchObject({ einzelpreis: 800, gesamt: 777,
+      nachlaesseZuschlaege: [{ zuschlag: false, betrag: 23, grund: "Treue", kategorie: null, satz: null }] });
+    expect(Viewer.rechneNach(gelesen)).toEqual([]);
+  });
+
   it("INV 747: Kopf, Parteien, sieben Positionen, Steuer, Summen", () => {
     const { rechnung, gelesen } = hinUndZurueck("INV747");
     expect(gelesen).toMatchObject({

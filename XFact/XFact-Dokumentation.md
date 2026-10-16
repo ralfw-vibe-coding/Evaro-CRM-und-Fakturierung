@@ -84,9 +84,12 @@ Bei den Summen zeigt ein **✓**, dass alles aufgeht. Sonst nennt XFact die Diff
 
 **Ändern:** Klicken Sie auf einen Wert, ändern Sie ihn und drücken Sie Enter, oder wechseln Sie mit Tab ins nächste Feld. Mit Escape brechen Sie ab. Die Einheit jeder Position steht als Auswahl in der Tabelle (Stunde, Tag, Pauschale, Stück …). Ändern Sie sie, gilt das für alle Positionen mit derselben Schreibweise, und XFact merkt es sich für Ihre Firma.
 
-**Zahlung:** Unter den Summen wählen Sie **Überweisung** oder **Lastschrift**. Vorgewählt ist, was die KI auf der Rechnung erkannt hat, z.B. „Der Betrag wird von Ihrem Konto eingezogen“.
+**Rabatt auf eine Position:** Steht unter einer Position ein Rabatt, der nur sie betrifft, zeigt XFact ihn unter der Beschreibung, z.B. „Willkommensangebot: −23,39 €“. Der Preis bleibt der Preis vor Rabatt, der Betrag der Position ist Preis × Menge minus Rabatt, genau wie auf der Rechnung. In der XRechnung steht der Rabatt als Nachlass dieser Position.
+
+**Zahlung:** Unter den Summen wählen Sie **Überweisung**, **Lastschrift** oder **Kreditkarte**. Vorgewählt ist, was die KI auf der Rechnung erkannt hat, z.B. „Der Betrag wird von Ihrem Konto eingezogen“.
 - **Überweisung:** Fälligkeit („Zahlbar bis“), Ihre IBAN und BIC.
 - **Lastschrift:** Ihre **Gläubiger-ID**, die **IBAN des Kunden**, von der abgebucht wird, die **Mandatsreferenz** (optional) und das Datum des Einzugs (optional). Ihre eigene IBAN und eine Fälligkeit braucht die XRechnung dann nicht. Steht die IBAN des Kunden gekürzt auf der Rechnung (z.B. „DE12 **** 3456“), tragen Sie sie einmal vollständig ein; XFact merkt sie sich für diesen Kunden.
+- **Kreditkarte:** die **letzten 4 Ziffern** der Kreditkarte des Kunden und das Datum der Belastung (optional). Die XRechnung verlangt die Ziffern; mehr als die letzten 4 übernimmt XFact nie. Stehen sie nicht auf der Rechnung, finden Sie sie in Ihrem Zahlungsdienst. XFact merkt sie sich für diesen Kunden.
 
 Unter der Rechnung stehen **Weitere Angaben**, die im Rechnungsbild keinen Platz haben:
 - **Steuer:** normal mit 19 % / 7 %, Steuerschuldnerschaft des Leistungsempfängers (§ 13b) oder Kleinunternehmer (§ 19). Vorgewählt ist, was die KI auf der Rechnung erkannt hat.
@@ -114,6 +117,7 @@ Eine XRechnung verlangt einige Angaben, die auf vielen PDF-Rechnungen fehlen. XF
 | **Käuferreferenz bzw. Leitweg-ID** | Behörden verlangen ihre Leitweg-ID; ohne sie lehnt ihr Rechnungsportal die Rechnung ab, auch wenn die XRechnung sonst gültig ist. XFact fragt danach, wenn der Empfänger vermutlich eine Behörde ist. Bei Firmen ist es optional, z.B. eine Bestellnummer. | diesen Kunden |
 | **Lastschrift:** Gläubiger-ID | Pflicht, wenn der Betrag eingezogen wird | Ihre Firma |
 | **Lastschrift:** IBAN des Kunden, Mandatsreferenz | Die IBAN ist Pflicht, die Mandatsreferenz hilft dem Kunden bei der Zuordnung. | diesen Kunden |
+| **Kreditkarte:** letzte 4 Ziffern | Pflicht, wenn der Betrag einer Kreditkarte belastet wird | diesen Kunden |
 | **Einheit**, z.B. „Std“, „Pausch.“ | Die XRechnung verwendet genormte Einheiten. Die KI ordnet sie zu; korrigieren Sie eine Zuordnung, gilt das künftig. | Ihre Firma |
 | **Leistungsdatum** | Steuerlich vorgeschrieben. Fehlt es, genügt ein Klick auf „= Rechnungsdatum“, wenn beides gleich ist. | diese Rechnung |
 | **Steuerfall** | Nur wenn ihn die KI nicht eindeutig erkennt, siehe Abschnitt 7 | diese Rechnung |
@@ -135,7 +139,7 @@ Den Fall erkennt die KI aus der Rechnung, der Prüfer kontrolliert ihn. Für Ihr
 Wenn Sie „XML erzeugen“ klicken und das Häkchen „Ergänzte Angaben merken“ gesetzt ist, merkt sich XFact, was Sie ergänzt haben:
 
 - **Für Ihre Firma:** E-Mail, Telefon, Ansprechpartner, USt-IdNr. bzw. Steuernummer und Gläubiger-ID, falls sie nicht auf der Rechnung stehen. Dazu Einheiten, deren Zuordnung Sie geändert haben (z.B. „Fahrt“ = Stück). Arbeiten Sie für mehrere Firmen, z.B. als Buchhalter, legt XFact je Firma ein eigenes Profil an. Erkannt wird die Firma an ihrer USt-IdNr. oder Steuernummer.
-- **Für jeden Kunden:** E-Mail für Rechnungen, USt-IdNr., Leitweg-ID, für Lastschriften IBAN und Mandatsreferenz. Erkannt wird der Kunde an seiner USt-IdNr., sonst an Name und PLZ.
+- **Für jeden Kunden:** E-Mail für Rechnungen, USt-IdNr., Leitweg-ID, für Lastschriften IBAN und Mandatsreferenz, für Kreditkarten die letzten 4 Ziffern. Erkannt wird der Kunde an seiner USt-IdNr., sonst an Name und PLZ.
 - **Logbuch:** Datum, Dateiname, Rechnungsnummer, Kunde und Betrag jeder umgewandelten Rechnung. Das wird immer eingetragen, auch ohne Häkchen.
 
 **Ihre Rechnungen selbst speichert XFact nicht.**

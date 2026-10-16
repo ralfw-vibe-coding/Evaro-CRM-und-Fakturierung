@@ -94,9 +94,10 @@ function musterBefund({ positionen, steuer, kaeuferUstId = "", summen, leitwegId
   }, text);
 }
 
-const pos = (name: string, menge: number, einheit: string, preis: number, gesamt: number, kategorie: string, satz: number) => ({
+const pos = (name: string, menge: number, einheit: string, preis: number, gesamt: number, kategorie: string, satz: number,
+  nachlass = 0, nachlassGrund = "") => ({
   name, beschreibung: "", menge, einheitText: einheit, einheitCode: ({ Std: "HUR", Stk: "C62", Pauschale: "LS" } as any)[einheit] || "",
-  einzelpreis: preis, gesamt, steuerkategorie: kategorie, steuersatz: satz, von: "2026-09-07", bis: "2026-09-07",
+  einzelpreis: preis, gesamt, steuerkategorie: kategorie, steuersatz: satz, von: "2026-09-07", bis: "2026-09-07", nachlass, nachlassGrund,
 });
 const keineSteuer = (betrag: number, kategorie: string, grund: string) => ({
   steuer: [{ kategorie, satz: 0, basis: betrag, betrag: 0, befreiungsgrund: grund }],
@@ -170,6 +171,33 @@ describe("die drei Steuerfälle", () => {
     const befund = musterBefund({ positionen: [pos("Wartung Heizung", 2, "Std", 65, 130, "E", 0)],
       ...keineSteuer(130, "E", "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."), zahlung: { art: "lastschrift" } });
     expect(zurXml(befund, {}, "nicht-erzeugt.xml").fehlt.map((f: any) => f.feld)).toEqual(["absender.glaeubigerId", "empfaenger.iban"]);
+  });
+
+  it("Kreditkarte und Rabatt auf eine Position, Preise mit drei Nachkommastellen", () => {
+    const befund = musterBefund({
+      positionen: [pos("Domain muster.com", 1, "Stk", 24.101, 0.711, "S", 19, 23.39, "Willkommensangebot"),
+        pos("Domain muster.eu", 1, "Stk", 25.109, 25.109, "S", 19)],
+      steuer: [{ kategorie: "S", satz: 19, basis: 25.82, betrag: 4.91, befreiungsgrund: "" }],
+      summen: { netto: 25.82, steuer: 4.91, brutto: 30.73, zahlbetrag: 30.73 }, faellig: "",
+      zahlung: { art: "kreditkarte", iban: "", bic: "", karte: "4242" } });
+    expect(XFact.hinweiseZurRechnung(XFact.baueRechnung(befund, {}), befund))
+      .toEqual([{ feld: "summe.brutto", stufe: "ok", text: XFact.TEXTE.summenWieAufRechnung }]);
+    const { fehlt, xml } = zurXml(befund, {}, "Muster-Kreditkarte-Rabatt.xml");
+    expect(fehlt).toEqual([]);
+    expect(element(xml!, "TypeCode")).toContain("54");
+    expect(xml).toMatch(/<ram:ApplicableTradeSettlementFinancialCard>\s*<ram:ID>4242<\/ram:ID>/);
+    expect(element(xml!, "ChargeAmount")).toEqual(["24.101", "25.109"]);
+    expect(element(xml!, "ActualAmount")).toEqual(["23.39"]);
+    expect(element(xml!, "Reason")).toEqual(["Willkommensangebot"]);
+    expect(element(xml!, "LineTotalAmount")).toEqual(["0.71", "25.11", "25.82"]);
+    expect(element(xml!, "Description")).toContain(XFact.TEXTE.kreditkarte(null));
+    expect(xml).not.toContain("PayeePartyCreditorFinancialAccount");
+  });
+
+  it("Kreditkarte ohne die letzten 4 Ziffern: fehlt", () => {
+    const befund = musterBefund({ positionen: [pos("Wartung", 2, "Std", 65, 130, "E", 0)],
+      ...keineSteuer(130, "E", "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."), zahlung: { art: "kreditkarte" } });
+    expect(zurXml(befund, {}, "nicht-erzeugt.xml").fehlt.map((f: any) => f.feld)).toEqual(["empfaenger.karte"]);
   });
 
   it("Sonderzeichen werden maskiert", () => {

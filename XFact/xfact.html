@@ -591,6 +591,10 @@ const TEXTE = {
   },
   // Text der Zahlungsbedingungen in der XML
   zahlbarBis: (datum) => `Zahlbar bis ${datum}`,
+  nachlass: "Rabatt",
+  kreditkarte: (datum) => datum
+    ? `Der Rechnungsbetrag wird am ${datum} der hinterlegten Kreditkarte belastet.`
+    : "Der Rechnungsbetrag wird der hinterlegten Kreditkarte belastet.",
   lastschrift: (datum) => datum
     ? `Der Rechnungsbetrag wird am ${datum} per SEPA-Lastschrift eingezogen.`
     : "Der Rechnungsbetrag wird per SEPA-Lastschrift eingezogen.",
@@ -631,7 +635,7 @@ const TEXTE = {
     kunden: "Kunden",
     keineKunden: "Noch keine Kunden gemerkt.",
     kundenSpalten: { name: "Kunde", email: "E-Mail für Rechnungen", ustId: "USt-IdNr.", leitwegId: "Leitweg-ID",
-      iban: "IBAN (Lastschrift)", mandatsreferenz: "Mandatsreferenz" },
+      iban: "IBAN (Lastschrift)", mandatsreferenz: "Mandatsreferenz", karte: "Kreditkarte" },
     logbuch: "Logbuch",
     keinLogbuch: "Noch keine Rechnung umgewandelt.",
     logbuchSpalten: { zeitpunkt: "Umgewandelt", dateiname: "Datei", nummer: "Rechnung", kunde: "Kunde", betrag: "Betrag" },
@@ -668,7 +672,9 @@ const TEXTE = {
     gesamt: "Gesamtbetrag",
     zahlbarBis: "Zahlbar bis",
     einzugAm: "Einzug am",
-    zahlungsarten: { ueberweisung: "Überweisung", lastschrift: "Lastschrift" },
+    zahlungsarten: { ueberweisung: "Überweisung", lastschrift: "Lastschrift", kreditkarte: "Kreditkarte" },
+    belastungAm: "Belastung am",
+    karte: "Kreditkarte des Kunden, letzte 4 Ziffern",
     glaeubigerId: "Gläubiger-ID",
     mandatsreferenz: "Mandatsreferenz",
     kundenIban: "IBAN des Kunden",
@@ -686,7 +692,8 @@ const TEXTE = {
     einheitWaehlen: "Einheit wählen …",
     stimmt: "Stimmt",
     felder: { email: "E-Mail", telefon: "Telefon", kontakt: "Ansprechpartner", ustId: "USt-IdNr.", steuernummer: "Steuernummer",
-      glaeubigerId: "Gläubiger-ID (Lastschrift)", iban: "IBAN (Lastschrift)", mandatsreferenz: "Mandatsreferenz" },
+      glaeubigerId: "Gläubiger-ID (Lastschrift)", iban: "IBAN (Lastschrift)", mandatsreferenz: "Mandatsreferenz",
+      karte: "Kreditkarte (letzte 4 Ziffern)" },
     stimmtTitel: "Der Wert ist richtig",
   },
   summenWieAufRechnung: "wie auf der Rechnung",
@@ -717,6 +724,7 @@ const TEXTE = {
       email: "E-Mail des Empfängers für Rechnungen",
       ustId: "USt-IdNr. des Empfängers (nötig bei Steuerschuldnerschaft des Leistungsempfängers)",
       iban: "IBAN des Empfängers, von der abgebucht wird (für die Lastschrift)",
+      karte: "letzte 4 Ziffern der Kreditkarte des Empfängers",
     },
     einheit: (nr, einheit) => `Position ${nr}: Einheit${einheit ? ` „${einheit}“` : ""} zuordnen`,
     leistungsdatum: (nr) => `Position ${nr}: Leistungsdatum`,
@@ -838,20 +846,21 @@ function pruefeRechnung(r) {
   const codes = REGELN.einheiten.map((x) => x.code);
   pflicht("nummer", r.nummer, p.nummer);
   pflicht("datum", r.datum, p.datum);
-  // Bei Lastschrift zieht der Rechnungssteller ein: keine eigene IBAN, keine Fälligkeit
-  const lastschrift = r.zahlungsart === "lastschrift";
-  if (!lastschrift) pflicht("faellig", r.faellig, p.faellig);
-  if (!lastschrift) pflicht("iban", r.bank.iban, p.iban);
+  // Bei Lastschrift und Kreditkarte zieht der Rechnungssteller ein: keine eigene IBAN, keine Fälligkeit
+  const art = r.zahlungsart || "ueberweisung";
+  if (art === "ueberweisung") pflicht("faellig", r.faellig, p.faellig);
+  if (art === "ueberweisung") pflicht("iban", r.bank.iban, p.iban);
   pflicht("steuerfall", r.steuerfall.kategorie, p.steuerfall);
   for (const feld of ["name", "plz", "ort"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
   pflicht("absender.ustId", r.absender.ustId || r.absender.steuernummer, p.absender.ustId);
   for (const feld of ["kontakt", "telefon", "email"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
   for (const feld of ["name", "plz", "ort", "email"]) pflicht(`empfaenger.${feld}`, r.empfaenger[feld], p.empfaenger[feld]);
   if (r.steuerfall.art === "reverse_charge") pflicht("empfaenger.ustId", r.empfaenger.ustId, p.empfaenger.ustId);
-  if (lastschrift) {
+  if (art === "lastschrift") {
     pflicht("absender.glaeubigerId", r.absender.glaeubigerId, p.absender.glaeubigerId);
     pflicht("empfaenger.iban", r.empfaenger.iban, p.empfaenger.iban);
   }
+  if (art === "kreditkarte") pflicht("empfaenger.karte", /^\d{4}$/.test(r.empfaenger.karte || ""), p.empfaenger.karte);
   pflicht("positionen", r.positionen.length, p.positionen);
   for (const pos of r.positionen) {
     pflicht(`position.${pos.nr}.einheit`, codes.includes(pos.einheitCode), p.einheit(pos.nr, pos.einheit));
@@ -888,7 +897,7 @@ function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null,
 
   // Formale Regeln
   if (r.steuerfall.art === null) unsicher("steuerfall", t.steuerfallNicht(befund.positionen[0]?.steuerkategorie || "?"));
-  if (r.zahlungsart !== "lastschrift" && r.bank.iban && !ibanPruefzifferOk(r.bank.iban)) regel("iban", TEXTE.ibanPruefziffer);
+  if ((r.zahlungsart || "ueberweisung") === "ueberweisung" && r.bank.iban && !ibanPruefzifferOk(r.bank.iban)) regel("iban", TEXTE.ibanPruefziffer);
   if (r.empfaenger.iban && !ibanPruefzifferOk(r.empfaenger.iban)) regel("empfaenger.iban", TEXTE.ibanPruefziffer);
   if (r.absender.glaeubigerId && !glaeubigerIdOk(r.absender.glaeubigerId)) regel("absender.glaeubigerId", t.glaeubigerIdAufbau);
   for (const rolle of ["absender", "empfaenger"]) {
@@ -914,7 +923,7 @@ function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null,
   // Nachrechnen
   for (const p of r.positionen) {
     if (p.von && !datumGueltig(p.von)) regel(`position.${p.nr}.datum`, t.datumUngueltig);
-    const soll = runde(p.menge * p.einzelpreis);
+    const soll = runde(p.menge * p.einzelpreis - (p.nachlass || 0));
     if (Math.abs(soll - p.gesamt) > PRUEFUNGEN.rundungstoleranz) {
       regel(`position.${p.nr}.gesamt`, TEXTE.mengeMalPreis(alsBetrag(soll)));
     }
@@ -985,9 +994,10 @@ Vorgehen:
 3. Leite ab, was eindeutig ableitbar ist:
    - Einheitencode (UN/ECE Rec. 20): Stunde HUR, Tag DAY, Pauschale LS, Stück C62, Kilometer KMT, Monat MON, Jahr ANN, Woche WEE, Minute MIN, Meter MTR, Quadratmeter MTK, Kubikmeter MTQ, Kilogramm KGM, Liter LTR.
    - Steuerkategorie: S = Umsatzsteuer wird ausgewiesen (19 %, 7 %); AE = Steuerschuldnerschaft des Leistungsempfängers / Reverse Charge (§ 13b UStG, auch EU-Reverse-Charge), Satz 0; E = steuerbefreit, z.B. Kleinunternehmer § 19 UStG, Satz 0; K = innergemeinschaftliche Lieferung von Waren; Z = Nullsatz; G = Ausfuhr außerhalb der EU; O = nicht steuerbar.
+   - Rabatt auf eine Position: Steht direkt bei oder unter einer Position ein Rabatt oder Nachlass, der nur diese Position betrifft, gehört er als "nachlass" (positiver Betrag) mit "nachlassGrund" zu dieser Position. "einzelpreis" bleibt der Preis vor Rabatt, "gesamt" = menge × einzelpreis − nachlass. Verrechne den Rabatt nicht in den Einzelpreis, lege keine eigene Position dafür an und nimm den Rabatttext nicht in die Beschreibung.
    - Leistungsdatum einer Position: aus der Datumsspalte, sonst aus der Beschreibung (z.B. "06.02.26, 10-12 Uhr" → 2026-02-06), sonst aus einem Leistungszeitraum der ganzen Rechnung. Ein einzelner Tag: von = bis.
    - Fälligkeit: aus "zahlbar bis" oder Rechnungsdatum + Zahlungsziel in Tagen. Bei Lastschrift das Datum des Einzugs, falls genannt.
-   - Zahlungsart: "lastschrift", wenn der Betrag vom Konto des Kunden eingezogen bzw. abgebucht wird (SEPA-Lastschrift); sonst "ueberweisung". Bei Lastschrift außerdem Gläubiger-ID, Mandatsreferenz und IBAN des Kunden, soweit angegeben; eine gekürzte oder maskierte IBAN (z.B. DE12 **** 3456) als "".
+   - Zahlungsart: "lastschrift", wenn der Betrag vom Konto des Kunden eingezogen bzw. abgebucht wird (SEPA-Lastschrift); "kreditkarte", wenn er einer Kreditkarte belastet wird; sonst "ueberweisung". Bei Kreditkarte die letzten 4 Ziffern der Karte, falls angegeben. Bei Lastschrift außerdem Gläubiger-ID, Mandatsreferenz und IBAN des Kunden, soweit angegeben; eine gekürzte oder maskierte IBAN (z.B. DE12 **** 3456) als "".
    - Zweistellige Jahre: 26 = 2026.
    - Öffentliche Stelle: Ist der Rechnungsempfänger eine Behörde oder ein öffentlicher Auftraggeber (Bund, Land, Kommune, Amt, öffentliche Hochschule, Anstalt oder Körperschaft des öffentlichen Rechts)? Firmen in Privatrechtsform (GmbH, AG, KG, e.V., …) sind es nicht, auch wenn sie der öffentlichen Hand gehören.
 4. Nichts erfinden. Was weder steht noch eindeutig ableitbar ist: leerer Text "" bzw. Zahl 0.
@@ -1039,7 +1049,8 @@ const KI_SCHEMA = (() => {
       oeffentlich: { type: "boolean", description: "Ist der Rechnungsempfänger eine Behörde bzw. ein öffentlicher Auftraggeber? (dann braucht er meist eine Leitweg-ID)" },
     }),
     zahlung: objekt({
-      art: { type: "string", enum: ["ueberweisung", "lastschrift"], description: "Zahlungsart (BT-81): Überweisung (58) oder SEPA-Lastschrift (59)" },
+      art: { type: "string", enum: ["ueberweisung", "lastschrift", "kreditkarte"], description: "Zahlungsart (BT-81): Überweisung (58), SEPA-Lastschrift (59) oder Kreditkarte (54)" },
+      karte: T("Bei Kreditkarte: die letzten 4 Ziffern der Kartennummer, falls angegeben (BT-87)"),
       iban: T("IBAN des Rechnungsstellers ohne Leerzeichen (BT-84), bei Überweisung"),
       glaeubigerId: T("Gläubiger-Identifikationsnummer des Rechnungsstellers (BT-90), bei Lastschrift"),
       mandatsreferenz: T("Mandatsreferenz (BT-89), bei Lastschrift"),
@@ -1049,11 +1060,13 @@ const KI_SCHEMA = (() => {
     }),
     positionen: liste({
       name: T("Bezeichnung der Leistung (BT-153)"),
-      beschreibung: T("Weitere Beschreibung (BT-154)"),
+      beschreibung: T("Weiterer Text zur Position, der nicht schon in der Bezeichnung steht (BT-154)"),
       menge: Z("Menge (BT-129)"),
       einheitText: T("Einheit, wie sie auf der Rechnung steht"),
       einheitCode: T("Einheit als UN/ECE-Rec.-20-Code (BT-130)"),
-      einzelpreis: Z("Nettopreis je Einheit (BT-146)"),
+      einzelpreis: Z("Nettopreis je Einheit vor einem Rabatt auf die Position (BT-146)"),
+      nachlass: Z("Rabatt bzw. Nachlass nur auf diese Position, als positiver Betrag (BT-136); 0, wenn keiner"),
+      nachlassGrund: T("Grund bzw. Bezeichnung des Rabatts auf die Position (BT-139)"),
       gesamt: Z("Nettobetrag der Position (BT-131)"),
       steuerkategorie: K("Umsatzsteuerkategorie (BT-151)"),
       steuersatz: Z("Steuersatz in Prozent (BT-152)"),
@@ -1162,7 +1175,9 @@ function befundAusKi(daten, text) {
     kaeufer,
     zahlung: {
       ...felder(daten.zahlung, ["bic", "verwendungszweck", "mandatsreferenz"]),
-      art: daten.zahlung?.art === "lastschrift" ? "lastschrift" : "ueberweisung",
+      art: ["lastschrift", "kreditkarte"].includes(daten.zahlung?.art) ? daten.zahlung.art : "ueberweisung",
+      // Von einer Kartennummer nur die letzten 4 Ziffern – mehr gehört nicht in eine Rechnung
+      karte: [String(daten.zahlung?.karte || "").replace(/\D/g, "")].map((z) => (z.length >= 4 ? z.slice(-4) : null))[0],
       iban: ohneLeerzeichen(t(daten.zahlung?.iban)),
       glaeubigerId: ohneLeerzeichen(t(daten.zahlung?.glaeubigerId)),
       // Eine maskierte IBAN (DE12****3456) taugt nicht für den Einzug
@@ -1170,8 +1185,8 @@ function befundAusKi(daten, text) {
     },
     positionen: (daten.positionen || []).map((p, i) => ({
       nr: i + 1,
-      ...felder(p, ["name", "beschreibung", "einheitText", "einheitCode", "steuerkategorie", "von", "bis"]),
-      ...felder(p, ["menge", "einzelpreis", "gesamt", "steuersatz"], z),
+      ...felder(p, ["name", "beschreibung", "einheitText", "einheitCode", "steuerkategorie", "von", "bis", "nachlassGrund"]),
+      ...felder(p, ["menge", "einzelpreis", "gesamt", "steuersatz", "nachlass"], z),
     })),
     steuer: (daten.steuer || []).map((s) => ({ ...felder(s, ["kategorie", "befreiungsgrund"]), ...felder(s, ["satz", "basis", "betrag"], z) })),
     summen: felder(daten.summen, ["netto", "steuer", "brutto", "zahlbetrag"], z),
@@ -1209,7 +1224,8 @@ function jevFragen(r) {
   stimmt("nummer", "nummer", "die Rechnungsnummer", r.nummer);
   stimmt("datum", "datum", "das Rechnungsdatum", r.datum && alsDatum(r.datum));
   const lastschrift = r.zahlungsart === "lastschrift";
-  stimmt("faellig", "faellig", lastschrift ? "das Datum, an dem der Betrag eingezogen wird"
+  stimmt("faellig", "faellig", r.zahlungsart === "kreditkarte" ? "das Datum, an dem der Betrag der Kreditkarte belastet wird"
+    : lastschrift ? "das Datum, an dem der Betrag eingezogen wird"
     : "das Fälligkeitsdatum (zahlbar bis, ggf. aus dem Zahlungsziel errechnet)", r.faellig && alsDatum(r.faellig));
   for (const [rolle, wer] of [["absender", "des Rechnungsstellers (Verkäufer, Absender)"], ["empfaenger", "des Rechnungsempfängers (Käufer, Kunde)"]]) {
     const p = r[rolle];
@@ -1220,7 +1236,7 @@ function jevFragen(r) {
   if (lastschrift) {
     stimmt("glaeubiger", "absender.glaeubigerId", "die Gläubiger-ID des Rechnungsstellers", r.absender.glaeubigerId);
     stimmt("kunden_iban", "empfaenger.iban", "die IBAN des Kunden, von der abgebucht wird", r.empfaenger.iban);
-  } else {
+  } else if (r.zahlungsart !== "kreditkarte") {
     stimmt("iban", "iban", "die IBAN des Rechnungsstellers", r.bank.iban);
   }
   stimmt("kontakt", "absender.kontakt", "der Ansprechpartner beim Rechnungssteller", r.absender.kontakt);
@@ -1229,8 +1245,14 @@ function jevFragen(r) {
     const bez = `die Position ${p.nr} („${p.name}“)`;
     stimmt(`p${p.nr}_menge`, `position.${p.nr}.menge`, `die Menge von ${bez}`, p.menge);
     stimmt(`p${p.nr}_preis`, `position.${p.nr}.einzelpreis`, `der Einzelpreis von ${bez}`, p.einzelpreis);
-    stimmt(`p${p.nr}_gesamt`, `position.${p.nr}.gesamt`, `der Gesamtbetrag von ${bez}`, p.gesamt);
-    if (p.einheitCode) auswahl(`p${p.nr}_einheit`, `position.${p.nr}.einheit`, `Welche Einheit hat ${bez}`, einheiten, p.einheitCode);
+    if (p.nachlass) {
+      stimmt(`p${p.nr}_nachlass`, `position.${p.nr}.nachlass`, `der Rabatt auf ${bez}`, p.nachlass);
+      stimmt(`p${p.nr}_gesamt`, `position.${p.nr}.gesamt`, `der Betrag von ${bez} nach Abzug des Rabatts (er darf aus Preis und Rabatt errechnet und auf Cent gerundet sein)`, p.gesamt);
+    } else {
+      stimmt(`p${p.nr}_gesamt`, `position.${p.nr}.gesamt`, `der Gesamtbetrag von ${bez} (auf Cent gerundet)`, p.gesamt);
+    }
+    if (p.einheitCode) auswahl(`p${p.nr}_einheit`, `position.${p.nr}.einheit`,
+      `Welche Einheit nennt die Rechnung für ${bez} (steht keine Einheit dabei, gilt „Stück“)`, einheiten, p.einheitCode);
   }
   if (r.steuerfall.kategorie) {
     auswahl("steuerfall", "steuerfall", "Welcher Umsatzsteuerfall liegt vor", {
@@ -1244,6 +1266,7 @@ function jevFragen(r) {
   auswahl("zahlungsart", "zahlungsart", "Wie wird der Rechnungsbetrag bezahlt", {
     ueberweisung: "Der Kunde überweist den Betrag (oder es ist nichts dazu angegeben).",
     lastschrift: "Der Betrag wird per Lastschrift vom Konto des Kunden eingezogen bzw. abgebucht.",
+    kreditkarte: "Der Betrag wird einer Kreditkarte des Kunden belastet.",
   }, r.zahlungsart || "ueberweisung");
   return { fragen, felder };
 }
@@ -1273,9 +1296,9 @@ async function frageJev(r, text, einstellungen, holen) {
  * "ergaenzungen" enthält, was der Nutzer ergänzt oder geändert hat; es hat
  * immer Vorrang, auch ein bewusst geleertes Feld (null):
  *   { nummer, datum, faellig, iban, bic, steuerfall: "standard" | "reverse_charge" | "kleinunternehmer",
- *     zahlungsart: "ueberweisung" | "lastschrift",
+ *     zahlungsart: "ueberweisung" | "lastschrift" | "kreditkarte",
  *     absender: { name, adresse: [...], plz, ort, ustId, steuernummer, email, telefon, kontakt, glaeubigerId },
- *     empfaenger: { …wie absender, iban, mandatsreferenz },
+ *     empfaenger: { …wie absender, iban, mandatsreferenz, karte },
  *     positionen: { 1: { name, beschreibung, menge, einheitCode, einzelpreis, gesamt, satz, von, bis } },
  *     kaeuferreferenz, leitwegId, leistungsdatum, einheiten: { "pauschale": "LS" } }
  */
@@ -1286,6 +1309,7 @@ function baueRechnung(befund, ergaenzungen = {}) {
     ustId: p.ustId, steuernummer: p.steuernummer, email: p.email, telefon: p.telefon, kontakt: p.kontakt,
     // für die Lastschrift: Gläubiger-ID des Rechnungsstellers, IBAN und Mandat des Kunden
     glaeubigerId: p.glaeubigerId ?? null, iban: p.iban ?? null, mandatsreferenz: p.mandatsreferenz ?? null,
+    karte: p.karte ?? null,
     ...geaendert,
   });
   const zahlung = befund.zahlung;
@@ -1313,7 +1337,7 @@ function baueRechnung(befund, ergaenzungen = {}) {
     absender: partei({ ...befund.verkaeufer, glaeubigerId: zahlung.glaeubigerId }, e.absender),
     empfaenger: {
       ...partei({ ...befund.kaeufer, telefon: null, kontakt: null, steuernummer: null,
-        iban: zahlung.kundenIban, mandatsreferenz: zahlung.mandatsreferenz }, e.empfaenger),
+        iban: zahlung.kundenIban, mandatsreferenz: zahlung.mandatsreferenz, karte: zahlung.karte }, e.empfaenger),
       // Behörde laut KI: dann wird nach der Leitweg-ID gefragt
       oeffentlich: Boolean(befund.kaeufer.oeffentlich),
     },
@@ -1333,6 +1357,9 @@ function baueRechnung(befund, ergaenzungen = {}) {
         einheit: p.einheitText,
         einheitCode: waehle(g, "einheitCode", eigeneEinheit || p.einheitCode),
         einzelpreis: waehle(g, "einzelpreis", p.einzelpreis),
+        // Rabatt nur auf diese Position (BG-27)
+        nachlass: waehle(g, "nachlass", p.nachlass || null),
+        nachlassGrund: p.nachlassGrund ?? null,
         gesamt: waehle(g, "gesamt", p.gesamt),
         kategorie,
         satz: kategorie === "S" ? waehle(g, "satz", p.steuersatz || null) : 0,
@@ -1380,7 +1407,7 @@ const XRECHNUNG = {
   profil: "urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0",
   prozess: "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0",
   rechnungsart: "380",          // Rechnung
-  zahlungsart: { ueberweisung: "58", lastschrift: "59" },   // SEPA-Überweisung, SEPA-Lastschrift
+  zahlungsart: { ueberweisung: "58", lastschrift: "59", kreditkarte: "54" },   // SEPA-Überweisung, SEPA-Lastschrift, Kreditkarte
   befreiungscode: { AE: "VATEX-EU-AE" },
 };
 
@@ -1426,7 +1453,7 @@ ${zeitraum.einTag ? `    <ram:ApplicableHeaderTradeDelivery>
 ${lastschrift ? `      <ram:CreditorReferenceID>${x(r.absender.glaeubigerId)}</ram:CreditorReferenceID>
 ` : ""}      <ram:PaymentReference>${x(r.nummer)}</ram:PaymentReference>
       <ram:InvoiceCurrencyCode>${r.waehrung}</ram:InvoiceCurrencyCode>
-${lastschrift ? lastschriftXml(r) : ueberweisungXml(r)}${gruppen.map((g) => steuerXml(g, r.steuerfall)).join("")}${zeitraum.einTag || !zeitraum.von ? "" : `      <ram:BillingSpecifiedPeriod>
+${{ lastschrift: lastschriftXml, kreditkarte: kreditkarteXml }[r.zahlungsart]?.(r) || ueberweisungXml(r)}${gruppen.map((g) => steuerXml(g, r.steuerfall)).join("")}${zeitraum.einTag || !zeitraum.von ? "" : `      <ram:BillingSpecifiedPeriod>
         <ram:StartDateTime>${datum102(zeitraum.von)}</ram:StartDateTime>
         <ram:EndDateTime>${datum102(zeitraum.bis)}</ram:EndDateTime>
       </ram:BillingSpecifiedPeriod>
@@ -1469,12 +1496,24 @@ function lastschriftXml(r) {
 `;
 }
 
+/** Zahlung per Kreditkarte (BG-18): nur die letzten 4 Ziffern der Karte (BT-87) */
+function kreditkarteXml(r) {
+  return `      <ram:SpecifiedTradeSettlementPaymentMeans>
+        <ram:TypeCode>${XRECHNUNG.zahlungsart.kreditkarte}</ram:TypeCode>
+        <ram:ApplicableTradeSettlementFinancialCard>
+          <ram:ID>${x(r.empfaenger.karte)}</ram:ID>
+        </ram:ApplicableTradeSettlementFinancialCard>
+      </ram:SpecifiedTradeSettlementPaymentMeans>
+`;
+}
+
 /** Zahlungsbedingungen (BT-20), Fälligkeit bzw. Einzugsdatum (BT-9), Mandatsreferenz (BT-89) */
 function zahlungsbedingungXml(r) {
   const lastschrift = r.zahlungsart === "lastschrift";
-  const text = lastschrift
-    ? r.zahlungsbedingungen || TEXTE.lastschrift(r.faellig && alsDatum(r.faellig))
-    : TEXTE.zahlbarBis(alsDatum(r.faellig));
+  const datum = r.faellig && alsDatum(r.faellig);
+  const text = lastschrift ? r.zahlungsbedingungen || TEXTE.lastschrift(datum)
+    : r.zahlungsart === "kreditkarte" ? r.zahlungsbedingungen || TEXTE.kreditkarte(datum)
+      : TEXTE.zahlbarBis(datum);
   return `      <ram:SpecifiedTradePaymentTerms>
         <ram:Description>${x(text)}</ram:Description>
 ${r.faellig ? `        <ram:DueDateDateTime>${datum102(r.faellig)}</ram:DueDateDateTime>
@@ -1510,7 +1549,14 @@ ${p.beschreibung ? `        <ram:Description>${x(p.beschreibung)}</ram:Descripti
           <ram:StartDateTime>${datum102(p.von)}</ram:StartDateTime>
           <ram:EndDateTime>${datum102(p.bis)}</ram:EndDateTime>
         </ram:BillingSpecifiedPeriod>
-        <ram:SpecifiedTradeSettlementLineMonetarySummation>
+${p.nachlass ? `        <ram:SpecifiedTradeAllowanceCharge>
+          <ram:ChargeIndicator>
+            <udt:Indicator>false</udt:Indicator>
+          </ram:ChargeIndicator>
+          <ram:ActualAmount>${betrag(p.nachlass)}</ram:ActualAmount>
+          <ram:Reason>${x(p.nachlassGrund || TEXTE.nachlass)}</ram:Reason>
+        </ram:SpecifiedTradeAllowanceCharge>
+` : ""}        <ram:SpecifiedTradeSettlementLineMonetarySummation>
           <ram:LineTotalAmount>${betrag(p.gesamt)}</ram:LineTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
@@ -1596,7 +1642,8 @@ function steuergruppen(positionen) {
   for (const p of positionen) {
     let g = gruppen.find((gr) => gr.kategorie === p.kategorie && gr.satz === p.satz);
     if (!g) gruppen.push(g = { kategorie: p.kategorie, satz: p.satz, basis: 0 });
-    g.basis = runde(g.basis + p.gesamt);
+    // Jede Position auf Cent, wie in der XML: so geht die Summe der Positionen auf (BR-CO-10)
+    g.basis = runde(g.basis + runde(p.gesamt));
   }
   for (const g of gruppen) g.betrag = runde(g.basis * g.satz / 100);
   return gruppen;
@@ -1766,7 +1813,7 @@ const GEDAECHTNIS = {
   logbuchMaximal: 1000,
   // Diese Angaben werden gemerkt, wenn der Nutzer sie ergänzt hat
   absenderFelder: ["email", "telefon", "kontakt", "ustId", "steuernummer", "glaeubigerId"],
-  kundenFelder: ["email", "ustId", "iban", "mandatsreferenz"],
+  kundenFelder: ["email", "ustId", "iban", "mandatsreferenz", "karte"],
 };
 
 function leeresGedaechtnis() {
@@ -2237,6 +2284,7 @@ const darstellung = {
   datum: (w) => alsDatum(w),
   zahl: (w) => w.toLocaleString("de-DE", { maximumFractionDigits: 4 }),
   betrag: (w) => alsBetrag(w),
+  preis: (w) => `${w.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} €`,
   satz: (w) => `${w.toLocaleString("de-DE")} %`,
   iban: (w) => w.replace(/\s/g, "").replace(/(.{4})/g, "$1 ").trim(),
 };
@@ -2248,6 +2296,7 @@ const einlesen = {
   datum: (t) => (!t ? null : Number(t.slice(0, 4)) >= 1900 ? t : undefined),
   zahl: zahlAusEingabe,
   betrag: zahlAusEingabe,
+  preis: zahlAusEingabe,
   satz: zahlAusEingabe,
   iban: (t) => t.replace(/\s/g, "").toUpperCase() || null,
 };
@@ -2272,7 +2321,7 @@ function feld({ pfad, wert, art = "text", hinweise: hinweisFelder = [pfad], klas
       size: Math.max(8, Math.min(40, String(leer ? platzhalter || "" : darstellung[art](wert)).length + 2)),
     });
     eingabe.value = leer ? "" : art === "datum" ? wert
-      : art === "betrag" || art === "zahl" || art === "satz" ? darstellung.zahl(wert) : String(wert);
+      : art === "betrag" || art === "preis" || art === "zahl" || art === "satz" ? darstellung.zahl(wert) : String(wert);
     let fertig = false;
     const uebernehmen = () => {
       if (fertig) return;
@@ -2402,17 +2451,20 @@ function positionen(r) {
         feld({ pfad: pfad("bis"), wert: p.bis, art: "datum", hinweise: [] }), hinweisMarken(zustand.hinweise, pfad("datum"))]
       : feld({ pfad: pfad("von"), wert: p.von, art: "datum", hinweise: [pfad("datum")] });
     // Die Hinweise zu Menge, Einheit, Preis und Betrag stehen gesammelt unter der Zeile; sie nennen deshalb ihr Feld
-    const spalten = { [pfad("menge")]: t.menge, [pfad("einheit")]: t.einheit, [pfad("einzelpreis")]: t.einzelpreis, [pfad("gesamt")]: t.gesamt };
+    const spalten = { [pfad("menge")]: t.menge, [pfad("einheit")]: t.einheit, [pfad("einzelpreis")]: t.einzelpreis,
+      [pfad("nachlass")]: TEXTE.nachlass, [pfad("gesamt")]: t.gesamt };
     const mitFeld = zustand.hinweise.map((h) => (spalten[h.feld] ? { ...h, text: `${spalten[h.feld]}: ${h.text}` } : h));
     const marken = hinweisMarken(mitFeld, ...Object.keys(spalten));
     rumpf.append(el("tr", { class: marken.length ? "mit-hinweis" : "" },
       el("td", { class: "datum" }, datum),
       el("td", {},
         el("div", { class: "name" }, feld({ pfad: pfad("name"), wert: p.name })),
-        p.beschreibung ? el("div", { class: "beschreibung" }, feld({ pfad: pfad("beschreibung"), wert: p.beschreibung })) : null),
+        p.beschreibung ? el("div", { class: "beschreibung" }, feld({ pfad: pfad("beschreibung"), wert: p.beschreibung })) : null,
+        p.nachlass ? el("div", { class: "beschreibung" }, `${p.nachlassGrund || TEXTE.nachlass}: −`,
+          feld({ pfad: pfad("nachlass"), wert: p.nachlass, art: "betrag", hinweise: [] })) : null),
       el("td", { class: "zahl" }, feld({ pfad: pfad("menge"), wert: p.menge, art: "zahl", hinweise: [] })),
       el("td", {}, einheit(p)),
-      el("td", { class: "zahl" }, feld({ pfad: pfad("einzelpreis"), wert: p.einzelpreis, art: "betrag", hinweise: [] })),
+      el("td", { class: "zahl" }, feld({ pfad: pfad("einzelpreis"), wert: p.einzelpreis, art: "preis", hinweise: [] })),
       el("td", { class: "zahl" }, p.kategorie === "S"
         ? feld({ pfad: pfad("satz"), wert: p.satz || null, art: "satz" }) : "–"),
       el("td", { class: "zahl" }, feld({ pfad: pfad("gesamt"), wert: p.gesamt, art: "betrag", hinweise: [] }))));
@@ -2465,12 +2517,15 @@ function summen(r) {
 function zahlung(r) {
   const a = TEXTE.ansicht;
   const angabe = (bezeichnung, inhalt) => el("span", {}, el("span", { class: "leise" }, `${bezeichnung} `), inhalt);
-  const lastschrift = r.zahlungsart === "lastschrift";
+  const zahlungsart = r.zahlungsart || "ueberweisung";
   const art = el("select", { class: "eingabe", "data-pfad": "zahlungsart", onchange: (ereignis) => setze("zahlungsart", ereignis.target.value) },
-    Object.entries(a.zahlungsarten).map(([wert, name]) => el("option", { value: wert, selected: (r.zahlungsart || "ueberweisung") === wert }, name)));
+    Object.entries(a.zahlungsarten).map(([wert, name]) => el("option", { value: wert, selected: zahlungsart === wert }, name)));
   return el("div", { class: "zahlung" },
     el("span", {}, art, hinweisMarken(zustand.hinweise, "zahlungsart")),
-    lastschrift
+    zahlungsart === "kreditkarte"
+      ? [angabe(a.belastungAm, feld({ pfad: "faellig", wert: r.faellig, art: "datum", optional: true })),
+        angabe(a.karte, feld({ pfad: "empfaenger.karte", wert: r.empfaenger.karte, platzhalter: "1234" }))]
+      : zahlungsart === "lastschrift"
       ? [angabe(a.einzugAm, feld({ pfad: "faellig", wert: r.faellig, art: "datum", optional: true })),
         angabe(a.glaeubigerId, feld({ pfad: "absender.glaeubigerId", wert: r.absender.glaeubigerId })),
         angabe(a.kundenIban, feld({ pfad: "empfaenger.iban", wert: r.empfaenger.iban, art: "iban" })),
@@ -2627,14 +2682,14 @@ function kundenTabelle(schluessel, firma, speichern) {
   if (!kunden.length) return el("div", { class: "leise" }, TEXTE.daten.keineKunden);
   const s = TEXTE.daten.kundenSpalten;
   const zeile = ([kundeSchl, kunde]) => {
-    const felder = ["email", "ustId", "leitwegId", "iban", "mandatsreferenz"].map((feld) => el("td", {},
+    const felder = ["email", "ustId", "leitwegId", "iban", "mandatsreferenz", "karte"].map((feld) => el("td", {},
       datenFeld(kunde[feld], (wert) => speichern((neu) => { setzeOderLoesche(neu.firmen[schluessel].kunden[kundeSchl], feld, wert); }))));
     const loeschen = loeschKnopf(() => speichern((neu) => { delete neu.firmen[schluessel].kunden[kundeSchl]; }));
     const name = el("td", {}, kunde.name, el("div", { class: "leise" }, [kunde.plz, kunde.ort].filter(Boolean).join(" ")));
     return el("tr", {}, name, felder, el("td", {}, loeschen));
   };
   const kopf = el("tr", {}, el("th", {}, s.name), el("th", {}, s.email), el("th", {}, s.ustId), el("th", {}, s.leitwegId),
-    el("th", {}, s.iban), el("th", {}, s.mandatsreferenz), el("th"));
+    el("th", {}, s.iban), el("th", {}, s.mandatsreferenz), el("th", {}, s.karte), el("th"));
   return el("table", { class: "liste" }, el("thead", {}, kopf), el("tbody", {}, kunden.map(zeile)));
 }
 

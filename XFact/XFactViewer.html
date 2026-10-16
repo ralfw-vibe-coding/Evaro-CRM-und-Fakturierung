@@ -236,12 +236,15 @@ h3 {
 /* Summen als Raster: Bezeichnung | Betrag */
 .summen {
   display: grid;
-  grid-template-columns: max-content max-content;
+  grid-template-columns: minmax(0, max-content) max-content;
   justify-content: end;
   gap: 4px 24px;
   margin: 0 0 var(--abstand);
 }
 .summe { display: contents; }
+.summe > span:first-child { text-align: right; }
+.steuerhinweis { margin: 0 0 var(--abstand); text-align: right; color: var(--farbe-text-leise); font-size: 0.9rem; }
+.steuerhinweis p { margin: 0; }
 .summe .zahl { font-family: var(--schrift-zahlen); text-align: right; white-space: nowrap; }
 .summe.gesamt > * { font-weight: 700; border-top: 1px solid var(--farbe-linie); padding-top: 4px; }
 
@@ -772,6 +775,7 @@ function zeigeRechnung(r) {
     zeigePositionen(r),
     zeigeNachlaesseZuschlaege(r),
     zeigeSummen(r),
+    zeigeSteuerhinweise(r),
     zeigeKontrolle(r),
     zeigeZahlung(r),
     r.bemerkungen.length ? el("div", { class: "abschnitt" },
@@ -864,12 +868,18 @@ function zeigeSummen(r) {
     s.nachlaesse ? zeile(t.nachlaesse, "BT-107", -s.nachlaesse) : null,
     s.zuschlaege ? zeile(t.zuschlaege, "BT-108", s.zuschlaege) : null,
     zeile(t.netto, "BT-109", s.netto ?? s.positionen),
-    r.steuer.map((g) => zeile(g.kategorie === "S" ? t.ust(alsZahl(g.satz)) : t.steuerfrei(g.befreiungsgrund || bedeutung("steuerkategorie", g.kategorie)),
+    r.steuer.map((g) => zeile(g.kategorie === "S" ? t.ust(alsZahl(g.satz)) : t.steuerfrei(bedeutung("steuerkategorie", g.kategorie)),
       "BT-117", g.betrag)),
     zeile(t.brutto, "BT-112", s.brutto, "gesamt"),
     s.gezahlt ? zeile(t.gezahlt, "BT-113", -s.gezahlt) : null,
     s.rundung ? zeile(t.rundung, "BT-114", s.rundung) : null,
     s.zahlbetrag !== s.brutto ? zeile(t.zahlbetrag, "BT-115", s.zahlbetrag, "gesamt") : null);
+}
+
+/** Der Grund einer Steuerbefreiung, wie ihn die Rechnung nennt (oft ein langer Satz) */
+function zeigeSteuerhinweise(r) {
+  const gruende = [...new Set(r.steuer.map((g) => g.befreiungsgrund).filter(Boolean))];
+  return gruende.length ? el("div", { class: "steuerhinweis" }, gruende.map((g) => el("p", { "data-bt": "BT-120" }, g))) : null;
 }
 
 function zeigeKontrolle(r) {

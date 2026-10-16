@@ -175,10 +175,12 @@ Ist keiner dieser Fälle erkennbar, kommt eine Rückfrage unter „Weitere Angab
 
 **Positionen:**
 - Negative Positionen wie „abzgl. Rabatt“ sind erlaubt.
+- **Rabatt auf eine Position** (z.B. eine Rabattzeile direkt unter der Position): als Nachlass der Position (BG-27, BT-136 Betrag, BT-139 Grund, Ersatz „Rabatt“ nach BR-42). Der Preis bleibt der Preis vor Rabatt; Betrag = Menge × Preis − Rabatt. Preise mit bis zu 4 Nachkommastellen bleiben erhalten; Positionsbeträge werden erst beim Summieren und in der XML auf Cent gerundet (BR-CO-10).
 - Rabatte oder Zuschläge auf Summenebene werden **nicht** unterstützt. Taucht so etwas auf, gibt es einen roter Hinweis.
 
 **Zahlung:**
 - **SEPA-Überweisung** (`58`, BG-17): Fälligkeitsdatum, IBAN und BIC des Rechnungsstellers.
+- **Kreditkarte** (`54`, BG-18): letzte 4 Ziffern der Karte des Kunden (BT-87, Pflicht; nach BR-51 höchstens die ersten 6 und letzten 4 Ziffern, KoSIT prüft die Länge). Keine eigene Bankverbindung (BR-DE-24-b), Fälligkeit optional; BT-20 nennt die Belastung. Gemerkt im Kundenprofil.
 - **SEPA-Lastschrift** (`59`, BG-19): Gläubiger-ID (BT-90, Pflicht nach BR-DE-30), IBAN des Kunden (BT-91, Pflicht nach BR-DE-31), Mandatsreferenz (BT-89, optional). Keine eigene Bankverbindung (BR-DE-25-b), Fälligkeit optional; die Zahlungsbedingungen (BT-20) nennen den Einzug (BR-CO-25). Die KI erkennt die Zahlungsart; eine maskierte Kunden-IBAN wird nicht übernommen. Gemerkt: Gläubiger-ID im Firmenprofil, IBAN und Mandatsreferenz im Kundenprofil.
 - Skontotexte werden als Freitext übernommen. Ein Text, der mit `#` beginnt, wird entschärft, weil XRechnung ihn sonst als strukturiertes Skonto auswertet.
 

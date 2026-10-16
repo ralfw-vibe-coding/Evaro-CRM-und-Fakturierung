@@ -57,7 +57,7 @@ XFactViewer läuft vollständig in Ihrem Browser, auch ohne Internet. **Die Rech
 | **Kopfdaten** | Fälligkeit, Leistungsdatum oder -zeitraum, Käuferreferenz bzw. Leitweg-ID, Bestell-, Auftrags-, Vertrags- und Projektnummer, Bezug auf eine frühere Rechnung |
 | **Positionen** | Nummer, Datum, Bezeichnung mit Beschreibung und Artikelnummer, Menge, Einheit, Preis, Umsatzsteuersatz, Betrag; Nachlässe und Zuschläge je Position |
 | **Nachlässe und Zuschläge** | auf die ganze Rechnung, falls vorhanden |
-| **Summen** | Netto, Umsatzsteuer je Satz bzw. Grund der Steuerbefreiung, Gesamtbetrag, bereits gezahlt, zu zahlen |
+| **Summen** | Netto, Umsatzsteuer je Satz bzw. Art der Steuerbefreiung, Gesamtbetrag, bereits gezahlt, zu zahlen; darunter der Text der Rechnung zur Steuerbefreiung |
 | **Nachrechnen** | ✓, wenn alles aufgeht, sonst gelb, wo die Abweichung liegt |
 | **Zahlung** | Zahlungsart; bei Überweisung IBAN, BIC und Kontoinhaber; bei Lastschrift Gläubiger-ID, Mandatsreferenz und das Konto, von dem abgebucht wird; Verwendungszweck, Fälligkeit, Zahlungsbedingungen. Skonto, das in der XRechnung als `#SKONTO#TAGE=14#PROZENT=2.00#` steht, erscheint als „2,00 % Skonto bei Zahlung innerhalb von 14 Tagen“. |
 | **Bemerkungen, Lieferanschrift, Anhänge** | wenn die Rechnung welche enthält |
