@@ -1,0 +1,314 @@
+{
+ "modell": "google/gemini-3.8-flash",
+ "befund": {
+  "text": "Work With Ease EOOD                              Rechnung Nr. 0000000742\n                                                                                    17.7.2026\nRECHNUNG AN                                      RECHNUNGSSTELLER\nHumboldt-Universität zu Berlin                   Work With Ease EOOD\nUnter den Linden 6                               ul Bor 4\n10099 Berlin                                     2777 Dobrinishte\nDeutschland                                      Bulgaria\nUSt-ID: DE137176824                              USt-Nr.: BG205889057\nLEISTUNGSDATUM    BESCHREIBUNG                        MENGE   EINHEIT  EINZELPREIS   GESAMT\n                  Online Seminar                           6  Std         150,00 €  900,00 €\n                  2.7. & 16.7.26: EI001 ChatGPT & Co:\n                  Ein Einstieg in die KI-Nutzung im\n                  Office\n                  Online Seminar                           6  Std         150,00 €  900,00 €\n                  2.7. & 16.7.26: EI002 Prompting like a\n                  Pro - Ein KI-Aufbaukurs\nZAHLUNGSBEDINGUNGEN\n                                                       Netto                     1.800,00  €\nDer Rechnungsbetrag ist ohne Abzug zahlbar bis:\n                                                       USt. (0%)                     0,00  €\n31.7.2026\n                                                       Rechnungsbetrag         1.800,00    €\nSteuerschuldnerschaft des Leistungsempfängers (reverse charge).\nRegistrierung                   Bank                            Kontakt\nУър ĸ уит Ииз ЕООД              Bank: Revolut Business          Andrea Kaden\nBG-UIC: 205889057               IBAN: LT16 3250 0468 4871 0872  team@work-with-ease.eu\n                                BIC: REVOLT21                   +49 176 10335862\n                                                                https://work-with-ease.eu",
+  "rechnung": {
+   "nummer": "0000000742",
+   "datum": "2026-07-17",
+   "art": "380",
+   "faellig": "2026-07-31",
+   "zahlungsbedingungen": "Der Rechnungsbetrag ist ohne Abzug zahlbar bis: 31.7.2026",
+   "bestellnummer": null,
+   "leitwegId": null,
+   "leistungVon": "2026-07-02",
+   "leistungBis": "2026-07-16",
+   "bemerkung": null
+  },
+  "verkaeufer": {
+   "name": "Work With Ease EOOD",
+   "strasse": "ul Bor 4",
+   "zusatz": null,
+   "plz": "2777",
+   "ort": "Dobrinishte",
+   "land": "BG",
+   "ustId": "BG205889057",
+   "steuernummer": null,
+   "email": "team@work-with-ease.eu",
+   "telefon": "+49 176 10335862",
+   "kontakt": "Andrea Kaden"
+  },
+  "kaeufer": {
+   "name": "Humboldt-Universität zu Berlin",
+   "strasse": "Unter den Linden 6",
+   "zusatz": null,
+   "plz": "10099",
+   "ort": "Berlin",
+   "land": "DE",
+   "ustId": "DE137176824",
+   "steuernummer": null,
+   "email": null,
+   "telefon": null,
+   "kontakt": null,
+   "oeffentlich": true
+  },
+  "zahlung": {
+   "bic": "REVOLT21",
+   "verwendungszweck": null,
+   "iban": "LT163250046848710872"
+  },
+  "positionen": [
+   {
+    "nr": 1,
+    "name": "Online Seminar",
+    "beschreibung": "2.7. & 16.7.26: EI001 ChatGPT & Co: Ein Einstieg in die KI-Nutzung im Office",
+    "einheitText": "Std",
+    "einheitCode": "HUR",
+    "steuerkategorie": "AE",
+    "von": "2026-07-02",
+    "bis": "2026-07-16",
+    "menge": 6,
+    "einzelpreis": 150,
+    "gesamt": 900,
+    "steuersatz": 0
+   },
+   {
+    "nr": 2,
+    "name": "Online Seminar",
+    "beschreibung": "2.7. & 16.7.26: EI002 Prompting like a Pro - Ein KI-Aufbaukurs",
+    "einheitText": "Std",
+    "einheitCode": "HUR",
+    "steuerkategorie": "AE",
+    "von": "2026-07-02",
+    "bis": "2026-07-16",
+    "menge": 6,
+    "einzelpreis": 150,
+    "gesamt": 900,
+    "steuersatz": 0
+   }
+  ],
+  "steuer": [
+   {
+    "kategorie": "AE",
+    "befreiungsgrund": "Steuerschuldnerschaft des Leistungsempfängers (reverse charge).",
+    "satz": 0,
+    "basis": 1800,
+    "betrag": 0
+   }
+  ],
+  "summen": {
+   "netto": 1800,
+   "steuer": 0,
+   "brutto": 1800,
+   "zahlbetrag": 1800
+  },
+  "fehlt": [
+   {
+    "feld": "BT-10",
+    "grund": "Leitweg-ID / Käuferreferenz fehlt, obwohl der Empfänger eine öffentliche Einrichtung ist"
+   },
+   {
+    "feld": "BT-49",
+    "grund": "Elektronische Adresse des Käufers fehlt"
+   }
+  ]
+ },
+ "pruefung": {
+  "felder": {
+   "nummer": {
+    "pfad": "nummer",
+    "art": "noul"
+   },
+   "datum": {
+    "pfad": "datum",
+    "art": "noul"
+   },
+   "faellig": {
+    "pfad": "faellig",
+    "art": "noul"
+   },
+   "absender_name": {
+    "pfad": "absender.name",
+    "art": "noul"
+   },
+   "absender_ort": {
+    "pfad": "absender.plz",
+    "art": "noul"
+   },
+   "absender_ust": {
+    "pfad": "absender.ustId",
+    "art": "noul"
+   },
+   "empfaenger_name": {
+    "pfad": "empfaenger.name",
+    "art": "noul"
+   },
+   "empfaenger_ort": {
+    "pfad": "empfaenger.plz",
+    "art": "noul"
+   },
+   "empfaenger_ust": {
+    "pfad": "empfaenger.ustId",
+    "art": "noul"
+   },
+   "iban": {
+    "pfad": "iban",
+    "art": "noul"
+   },
+   "kontakt": {
+    "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "p1_menge": {
+    "pfad": "position.1.menge",
+    "art": "noul"
+   },
+   "p1_preis": {
+    "pfad": "position.1.einzelpreis",
+    "art": "noul"
+   },
+   "p1_gesamt": {
+    "pfad": "position.1.gesamt",
+    "art": "noul"
+   },
+   "p1_einheit": {
+    "pfad": "position.1.einheit",
+    "art": "choice",
+    "erwartet": "HUR"
+   },
+   "p2_menge": {
+    "pfad": "position.2.menge",
+    "art": "noul"
+   },
+   "p2_preis": {
+    "pfad": "position.2.einzelpreis",
+    "art": "noul"
+   },
+   "p2_gesamt": {
+    "pfad": "position.2.gesamt",
+    "art": "noul"
+   },
+   "p2_einheit": {
+    "pfad": "position.2.einheit",
+    "art": "choice",
+    "erwartet": "HUR"
+   },
+   "steuerfall": {
+    "pfad": "steuerfall",
+    "art": "choice",
+    "erwartet": "AE"
+   }
+  },
+  "antworten": {
+   "nummer": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "datum": {
+    "type": "noul",
+    "noul": 0.88
+   },
+   "faellig": {
+    "type": "noul",
+    "noul": 0.93
+   },
+   "absender_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ort": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "absender_ust": {
+    "type": "noul",
+    "noul": 0.94
+   },
+   "empfaenger_name": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_ort": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_ust": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "iban": {
+    "type": "noul",
+    "noul": 0.95
+   },
+   "kontakt": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p1_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_preis": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p1_gesamt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p1_einheit": {
+    "type": "choice",
+    "choice": "HUR",
+    "probabilities": {
+     "HUR": 1,
+     "DAY": 0,
+     "LS": 0,
+     "C62": 0,
+     "KMT": 0,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "p2_menge": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p2_preis": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p2_gesamt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p2_einheit": {
+    "type": "choice",
+    "choice": "HUR",
+    "probabilities": {
+     "HUR": 1,
+     "DAY": 0,
+     "LS": 0,
+     "C62": 0,
+     "KMT": 0,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "steuerfall": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S": 0,
+     "AE": 1,
+     "E": 0,
+     "K": 0,
+     "O": 0
+    },
+    "confidence": 1
+   }
+  }
+ }
+}

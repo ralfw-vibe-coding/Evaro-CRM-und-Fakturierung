@@ -1,65 +1,55 @@
-import { describe, expect, it, beforeAll } from "vitest";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
-import { ladeFachlogik } from "./fachlogik";
+import { describe, expect, it } from "vitest";
+import { beispiel, ladeFachlogik } from "./fachlogik";
 
 /** Gedächtnis: Firmen, Kunden, Einheiten, Logbuch, Export und Import. */
 
 const XFact = ladeFachlogik();
-const BEISPIELE = join(__dirname, "../../requirements/XRechnungen/Beispiel-PDFs");
+const befund: Record<string, any> = { 753: beispiel("INV753").befund, 747: beispiel("INV747").befund };
 
-const erkannt: Record<string, any> = {};
-beforeAll(async () => {
-  for (const [kurz, datei] of [["753", "INV 753 Berg GmbH & Co. KG.pdf"], ["747", "INV 747 ADG Forum Assistenz.pdf"]]) {
-    const pdf = await XFact.lesePdf(new Uint8Array(readFileSync(join(BEISPIELE, datei))), pdfjs);
-    erkannt[kurz] = XFact.erkenneRechnung(pdf);
-  }
-});
-
-const ergaenzt753 = { empfaenger: { email: "rechnung@berg.example" }, positionen: { 1: { einheit: "Fahrt" } }, einheiten: { fahrt: "C62" } };
+// E-Mail des Kunden ergänzt; "Pauschale" soll bei dieser Firma Stück heißen statt LS
+const ergaenzt753 = { empfaenger: { email: "rechnung@berg.example" }, einheiten: { pauschale: "C62" } };
 
 describe("Merken und wieder ergänzen", () => {
   it("ein leeres Gedächtnis ergänzt nichts", () => {
-    expect(XFact.vorgabenAusGedaechtnis(XFact.leeresGedaechtnis(), erkannt["753"])).toEqual({ ergaenzungen: {}, herkunft: {} });
+    expect(XFact.vorgabenAusGedaechtnis(XFact.leeresGedaechtnis(), befund["753"])).toEqual({ ergaenzungen: {}, herkunft: {} });
   });
 
   it("merkt sich, was im PDF fehlte, und sagt, was neu ist", () => {
-    const { gedaechtnis, gemerkt } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), erkannt["753"], ergaenzt753);
+    const { gedaechtnis, gemerkt } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), befund["753"], ergaenzt753);
     expect(gemerkt).toEqual([
-      "Einheit „fahrt“ = Stück",
+      "Einheit „pauschale“ = Stück",
       "Berg GmbH & Co. KG: E-Mail für Rechnungen rechnung@berg.example",
     ]);
     const firma = gedaechtnis.firmen.bg205889057;
     expect(firma.name).toBe("Work With Ease EOOD");
     expect(firma.kunden.de196047852).toEqual({ name: "Berg GmbH & Co. KG", plz: "51491", ort: "Overath", email: "rechnung@berg.example" });
     // Ein zweites Mal ist nichts mehr neu
-    expect(XFact.merkeRechnung(gedaechtnis, erkannt["753"], ergaenzt753).gemerkt).toEqual([]);
+    expect(XFact.merkeRechnung(gedaechtnis, befund["753"], ergaenzt753).gemerkt).toEqual([]);
   });
 
   it("geänderte Werte, die im PDF stehen, werden nicht gemerkt", () => {
-    const { gemerkt } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), erkannt["753"], { absender: { kontakt: "Ralf Westphal" } });
+    const { gemerkt } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), befund["753"], { absender: { kontakt: "Ralf Westphal" } });
     expect(gemerkt).toEqual([]);
   });
 
   it("bei der nächsten Rechnung desselben Kunden fehlt nichts mehr", () => {
-    const { gedaechtnis } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), erkannt["753"], ergaenzt753);
-    const { ergaenzungen, herkunft } = XFact.vorgabenAusGedaechtnis(gedaechtnis, erkannt["753"]);
-    expect(ergaenzungen).toEqual({ einheiten: { fahrt: "C62" }, empfaenger: { email: "rechnung@berg.example" } });
-    expect(herkunft).toEqual({ "empfaenger.email": "kunde" });
-    expect(XFact.pruefeRechnung(XFact.baueRechnung(erkannt["753"], ergaenzungen))).toEqual([]);
+    const { gedaechtnis } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), befund["753"], ergaenzt753);
+    const { ergaenzungen, herkunft } = XFact.vorgabenAusGedaechtnis(gedaechtnis, befund["753"]);
+    expect(ergaenzungen).toEqual({ einheiten: { pauschale: "C62" }, empfaenger: { email: "rechnung@berg.example" } });
+    expect(herkunft).toEqual({ "position.1.einheit": "firma", "empfaenger.email": "kunde" });
+    expect(XFact.pruefeRechnung(XFact.baueRechnung(befund["753"], ergaenzungen))).toEqual([]);
   });
 
   it("ein anderer Kunde derselben Firma: Einheiten ja, E-Mail nein", () => {
-    const { gedaechtnis } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), erkannt["753"], ergaenzt753);
-    const { ergaenzungen } = XFact.vorgabenAusGedaechtnis(gedaechtnis, erkannt["747"]);
-    expect(ergaenzungen).toEqual({ einheiten: { fahrt: "C62" } });
+    const { gedaechtnis } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), befund["753"], ergaenzt753);
+    const { ergaenzungen } = XFact.vorgabenAusGedaechtnis(gedaechtnis, befund["747"]);
+    expect(ergaenzungen).toEqual({ einheiten: { pauschale: "C62" } });
   });
 
   it("Leitweg-ID wird je Kunde gemerkt", () => {
-    const { gedaechtnis, gemerkt } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), erkannt["747"], { leitwegId: "11-0-22" });
+    const { gedaechtnis, gemerkt } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), befund["747"], { leitwegId: "11-0-22" });
     expect(gemerkt).toEqual(["Akademie Deutscher Genossenschaften e.V.: Leitweg-ID (nur bei Behörden) 11-0-22"]);
-    expect(XFact.vorgabenAusGedaechtnis(gedaechtnis, erkannt["747"]).ergaenzungen.leitwegId).toBe("11-0-22");
+    expect(XFact.vorgabenAusGedaechtnis(gedaechtnis, befund["747"]).ergaenzungen.leitwegId).toBe("11-0-22");
   });
 });
 
@@ -77,16 +67,16 @@ describe("Schlüssel", () => {
 
 describe("Logbuch", () => {
   it("trägt ein und warnt bei derselben Rechnungsnummer", () => {
-    const r = XFact.baueRechnung(erkannt["753"], ergaenzt753);
+    const r = XFact.baueRechnung(befund["753"], ergaenzt753);
     const g = XFact.insLogbuch(XFact.leeresGedaechtnis(), r, "INV 753 Berg GmbH & Co. KG.pdf", "2026-10-15T10:00:00.000Z");
     expect(g.logbuch).toEqual([{ zeitpunkt: "2026-10-15T10:00:00.000Z", dateiname: "INV 753 Berg GmbH & Co. KG.pdf",
       firma: "bg205889057", nummer: "0000000753", kunde: "Berg GmbH & Co. KG", betrag: 777 }]);
     expect(XFact.hinweiseAusGedaechtnis(g, r)).toEqual([{ feld: "nummer", stufe: "unsicher", text: "bereits am 15.10.2026 umgewandelt" }]);
-    expect(XFact.hinweiseAusGedaechtnis(g, XFact.baueRechnung(erkannt["747"], {}))).toEqual([]);
+    expect(XFact.hinweiseAusGedaechtnis(g, XFact.baueRechnung(befund["747"], {}))).toEqual([]);
   });
 
   it("zeigt grau, was aus dem Gedächtnis kommt – bis der Nutzer es bestätigt", () => {
-    const r = XFact.baueRechnung(erkannt["753"], {});
+    const r = XFact.baueRechnung(befund["753"], {});
     const herkunft = { "empfaenger.email": "kunde" };
     expect(XFact.hinweiseAusGedaechtnis(XFact.leeresGedaechtnis(), r, herkunft))
       .toEqual([{ feld: "empfaenger.email", stufe: "ergaenzt", text: "aus Kundenprofil" }]);
@@ -96,7 +86,7 @@ describe("Logbuch", () => {
 
 describe("Export und Import", () => {
   const gefuellt = () => {
-    const { gedaechtnis } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), erkannt["753"], ergaenzt753);
+    const { gedaechtnis } = XFact.merkeRechnung(XFact.leeresGedaechtnis(), befund["753"], ergaenzt753);
     gedaechtnis.einstellungen.ki = { endpunkt: "https://openrouter.ai/api/v1", schluessel: "geheim" };
     return gedaechtnis;
   };
@@ -130,7 +120,7 @@ describe("Speichern im Browser", () => {
 
   it("speichert und lädt", () => {
     const s = speicher();
-    const g = XFact.merkeRechnung(XFact.leeresGedaechtnis(), erkannt["753"], ergaenzt753).gedaechtnis;
+    const g = XFact.merkeRechnung(XFact.leeresGedaechtnis(), befund["753"], ergaenzt753).gedaechtnis;
     expect(XFact.speichereGedaechtnis(g, s)).toBe(true);
     expect(XFact.ladeGedaechtnis(s)).toEqual(g);
   });

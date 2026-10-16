@@ -1,0 +1,247 @@
+{
+ "modell": "google/gemini-3.8-flash",
+ "befund": {
+  "text": "Work With Ease EOOD                             Rechnung Nr. 0000000745\n                                                                                 31.07.2026\nRECHNUNG AN                                      RECHNUNGSSTELLER\nGLS ImmoWert GmbH                                Work With Ease EOOD\nLeipziger Platz 21                               ul Bor 4\n90491 Nürnberg                                   2777 Dobrinishte\nDeutschland                                      Bulgaria\nUst-ID: DE 133 51 09 45\n                                                 USt-Nr.: BG205889057\nLEISTUNGSDATUM    BESCHREIBUNG                       MENGE   EINHEIT  EINZELPREIS  GESAMT\n29.7.2026         Online Meeting                          2  Std         200,00 €  400,00 €\n                  Beratungsgespräch M365 optimaler\n                  einbinden\nZAHLUNGSBEDINGUNGEN\n                                                      Netto                       400,00  €\nDer Rechnungsbetrag ist ohne Abzug zahlbar bis:\n                                                      USt. (0%)                     0,00  €\n10.8.2026\n                                                      Rechnungsbetrag           400,00    €\nSteuerschuldnerschaft des Leistungsempfängers (reverse charge).\nRegistrierung                   Bank                           Kontakt\nУър ĸ уит Ииз ЕООД              Bank: Revolut Business         Andrea Kaden\nBG-UIC: 205889057               IBAN: LT16 3250 0468 4871 0872 team@work-with-ease.eu\n                                BIC: REVOLT21                  +49 176 10335862\n                                                               https://work-with-ease.eu",
+  "rechnung": {
+   "nummer": "0000000745",
+   "datum": "2026-07-31",
+   "art": "380",
+   "faellig": "2026-08-10",
+   "zahlungsbedingungen": "Der Rechnungsbetrag ist ohne Abzug zahlbar bis: 10.8.2026",
+   "bestellnummer": null,
+   "leitwegId": null,
+   "leistungVon": "2026-07-29",
+   "leistungBis": "2026-07-29",
+   "bemerkung": "Steuerschuldnerschaft des Leistungsempfängers (reverse charge)."
+  },
+  "verkaeufer": {
+   "name": "Work With Ease EOOD",
+   "strasse": "ul Bor 4",
+   "zusatz": null,
+   "plz": "2777",
+   "ort": "Dobrinishte",
+   "land": "BG",
+   "ustId": "BG205889057",
+   "steuernummer": null,
+   "email": "team@work-with-ease.eu",
+   "telefon": "+49 176 10335862",
+   "kontakt": "Andrea Kaden"
+  },
+  "kaeufer": {
+   "name": "GLS ImmoWert GmbH",
+   "strasse": "Leipziger Platz 21",
+   "zusatz": null,
+   "plz": "90491",
+   "ort": "Nürnberg",
+   "land": "DE",
+   "ustId": "DE133510945",
+   "steuernummer": null,
+   "email": null,
+   "telefon": null,
+   "kontakt": null,
+   "oeffentlich": false
+  },
+  "zahlung": {
+   "bic": "REVOLT21",
+   "verwendungszweck": null,
+   "iban": "LT163250046848710872"
+  },
+  "positionen": [
+   {
+    "nr": 1,
+    "name": "Online Meeting",
+    "beschreibung": "Beratungsgespräch M365 optimaler einbinden",
+    "einheitText": "Std",
+    "einheitCode": "HUR",
+    "steuerkategorie": "AE",
+    "von": "2026-07-29",
+    "bis": "2026-07-29",
+    "menge": 2,
+    "einzelpreis": 200,
+    "gesamt": 400,
+    "steuersatz": 0
+   }
+  ],
+  "steuer": [
+   {
+    "kategorie": "AE",
+    "befreiungsgrund": "Steuerschuldnerschaft des Leistungsempfängers (reverse charge).",
+    "satz": 0,
+    "basis": 400,
+    "betrag": 0
+   }
+  ],
+  "summen": {
+   "netto": 400,
+   "steuer": 0,
+   "brutto": 400,
+   "zahlbetrag": 400
+  },
+  "fehlt": [
+   {
+    "feld": "BT-49",
+    "grund": "Elektronische Adresse des Käufers nicht angegeben"
+   }
+  ]
+ },
+ "pruefung": {
+  "felder": {
+   "nummer": {
+    "pfad": "nummer",
+    "art": "noul"
+   },
+   "datum": {
+    "pfad": "datum",
+    "art": "noul"
+   },
+   "faellig": {
+    "pfad": "faellig",
+    "art": "noul"
+   },
+   "absender_name": {
+    "pfad": "absender.name",
+    "art": "noul"
+   },
+   "absender_ort": {
+    "pfad": "absender.plz",
+    "art": "noul"
+   },
+   "absender_ust": {
+    "pfad": "absender.ustId",
+    "art": "noul"
+   },
+   "empfaenger_name": {
+    "pfad": "empfaenger.name",
+    "art": "noul"
+   },
+   "empfaenger_ort": {
+    "pfad": "empfaenger.plz",
+    "art": "noul"
+   },
+   "empfaenger_ust": {
+    "pfad": "empfaenger.ustId",
+    "art": "noul"
+   },
+   "iban": {
+    "pfad": "iban",
+    "art": "noul"
+   },
+   "kontakt": {
+    "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "p1_menge": {
+    "pfad": "position.1.menge",
+    "art": "noul"
+   },
+   "p1_preis": {
+    "pfad": "position.1.einzelpreis",
+    "art": "noul"
+   },
+   "p1_gesamt": {
+    "pfad": "position.1.gesamt",
+    "art": "noul"
+   },
+   "p1_einheit": {
+    "pfad": "position.1.einheit",
+    "art": "choice",
+    "erwartet": "HUR"
+   },
+   "steuerfall": {
+    "pfad": "steuerfall",
+    "art": "choice",
+    "erwartet": "AE"
+   }
+  },
+  "antworten": {
+   "nummer": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "datum": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "faellig": {
+    "type": "noul",
+    "noul": 0.92
+   },
+   "absender_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ort": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "absender_ust": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "empfaenger_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "empfaenger_ort": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_ust": {
+    "type": "noul",
+    "noul": 0.94
+   },
+   "iban": {
+    "type": "noul",
+    "noul": 0.95
+   },
+   "kontakt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p1_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_preis": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p1_gesamt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p1_einheit": {
+    "type": "choice",
+    "choice": "HUR",
+    "probabilities": {
+     "HUR": 1,
+     "DAY": 0,
+     "LS": 0,
+     "C62": 0,
+     "KMT": 0,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "steuerfall": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S": 0,
+     "AE": 1,
+     "E": 0,
+     "K": 0,
+     "O": 0
+    },
+    "confidence": 1
+   }
+  }
+ }
+}

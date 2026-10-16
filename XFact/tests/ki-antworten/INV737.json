@@ -1,0 +1,251 @@
+{
+ "modell": "google/gemini-3.8-flash",
+ "befund": {
+  "text": "Work With Ease EOOD                             Rechnung Nr. 0000000737\n                                                                                   2.7.2026\nRECHNUNG AN                                      RECHNUNGSSTELLER\nInfraServ GmbH & Co. Wiesbaden KG                Work With Ease EOOD\nRechnungsprüfung                                 ul Bor 4\n65203 Wiesbaden                                  2777 Dobrinishte\nDeutschland                                      Bulgaria\nUSt-ID: DE812134836                              USt-Nr.: BG205889057\nLEISTUNGSDATUM    BESCHREIBUNG                     MENGE   EINHEIT  EINZELPREIS    GESAMT\n                  Online Meeting                        4  Std         250,00 €  1.000,00 €\n                  Digitale Ablage optimieren\nKOMMENTAR\n                                                      Netto                    1.000,00  €\nLeistungszeitraum: 1.05.26-31.07.25\n                                                      USt. (0%)                     0,00 €\nZAHLUNGSBEDINGUNGEN\nDer Rechnungsbetrag ist ohne Abzug zahlbar bis:\n                                                      Rechnungsbetrag        1.000,00    €\n11.7.2026\nSteuerschuldnerschaft des Leistungsempfängers (reverse charge).\nRegistrierung                   Bank                           Kontakt\nУър ĸ уит Ииз ЕООД              Bank: Revolut Business         Andrea Kaden\nBG-UIC: 205889057               IBAN: LT16 3250 0468 4871 0872 team@work-with-ease.eu\n                                BIC: REVOLT21                  +49 176 10335862\n                                                               https://work-with-ease.eu\n                                                                                              1/1",
+  "rechnung": {
+   "nummer": "0000000737",
+   "datum": "2026-07-02",
+   "art": "380",
+   "faellig": "2026-07-11",
+   "zahlungsbedingungen": "Der Rechnungsbetrag ist ohne Abzug zahlbar bis: 11.7.2026",
+   "bestellnummer": null,
+   "leitwegId": null,
+   "leistungVon": "2026-05-01",
+   "leistungBis": "2025-07-31",
+   "bemerkung": "Leistungszeitraum: 1.05.26-31.07.25\nSteuerschuldnerschaft des Leistungsempfängers (reverse charge)."
+  },
+  "verkaeufer": {
+   "name": "Work With Ease EOOD",
+   "strasse": "ul Bor 4",
+   "zusatz": null,
+   "plz": "2777",
+   "ort": "Dobrinishte",
+   "land": "BG",
+   "ustId": "BG205889057",
+   "steuernummer": null,
+   "email": "team@work-with-ease.eu",
+   "telefon": "+49 176 10335862",
+   "kontakt": "Andrea Kaden"
+  },
+  "kaeufer": {
+   "name": "InfraServ GmbH & Co. Wiesbaden KG",
+   "strasse": null,
+   "zusatz": "Rechnungsprüfung",
+   "plz": "65203",
+   "ort": "Wiesbaden",
+   "land": "DE",
+   "ustId": "DE812134836",
+   "steuernummer": null,
+   "email": null,
+   "telefon": null,
+   "kontakt": null,
+   "oeffentlich": false
+  },
+  "zahlung": {
+   "bic": "REVOLT21",
+   "verwendungszweck": "Rechnung Nr. 0000000737",
+   "iban": "LT163250046848710872"
+  },
+  "positionen": [
+   {
+    "nr": 1,
+    "name": "Online Meeting",
+    "beschreibung": "Digitale Ablage optimieren",
+    "einheitText": "Std",
+    "einheitCode": "HUR",
+    "steuerkategorie": "AE",
+    "von": "2026-05-01",
+    "bis": "2025-07-31",
+    "menge": 4,
+    "einzelpreis": 250,
+    "gesamt": 1000,
+    "steuersatz": 0
+   }
+  ],
+  "steuer": [
+   {
+    "kategorie": "AE",
+    "befreiungsgrund": "Steuerschuldnerschaft des Leistungsempfängers (reverse charge).",
+    "satz": 0,
+    "basis": 1000,
+    "betrag": 0
+   }
+  ],
+  "summen": {
+   "netto": 1000,
+   "steuer": 0,
+   "brutto": 1000,
+   "zahlbetrag": 1000
+  },
+  "fehlt": [
+   {
+    "feld": "BT-50",
+    "grund": "Straße des Käufers fehlt in der Anschrift"
+   },
+   {
+    "feld": "BT-49",
+    "grund": "Elektronische Adresse des Käufers fehlt"
+   }
+  ]
+ },
+ "pruefung": {
+  "felder": {
+   "nummer": {
+    "pfad": "nummer",
+    "art": "noul"
+   },
+   "datum": {
+    "pfad": "datum",
+    "art": "noul"
+   },
+   "faellig": {
+    "pfad": "faellig",
+    "art": "noul"
+   },
+   "absender_name": {
+    "pfad": "absender.name",
+    "art": "noul"
+   },
+   "absender_ort": {
+    "pfad": "absender.plz",
+    "art": "noul"
+   },
+   "absender_ust": {
+    "pfad": "absender.ustId",
+    "art": "noul"
+   },
+   "empfaenger_name": {
+    "pfad": "empfaenger.name",
+    "art": "noul"
+   },
+   "empfaenger_ort": {
+    "pfad": "empfaenger.plz",
+    "art": "noul"
+   },
+   "empfaenger_ust": {
+    "pfad": "empfaenger.ustId",
+    "art": "noul"
+   },
+   "iban": {
+    "pfad": "iban",
+    "art": "noul"
+   },
+   "kontakt": {
+    "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "p1_menge": {
+    "pfad": "position.1.menge",
+    "art": "noul"
+   },
+   "p1_preis": {
+    "pfad": "position.1.einzelpreis",
+    "art": "noul"
+   },
+   "p1_gesamt": {
+    "pfad": "position.1.gesamt",
+    "art": "noul"
+   },
+   "p1_einheit": {
+    "pfad": "position.1.einheit",
+    "art": "choice",
+    "erwartet": "HUR"
+   },
+   "steuerfall": {
+    "pfad": "steuerfall",
+    "art": "choice",
+    "erwartet": "AE"
+   }
+  },
+  "antworten": {
+   "nummer": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "datum": {
+    "type": "noul",
+    "noul": 0.76
+   },
+   "faellig": {
+    "type": "noul",
+    "noul": 0.87
+   },
+   "absender_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ort": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "absender_ust": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "empfaenger_name": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_ort": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_ust": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "iban": {
+    "type": "noul",
+    "noul": 0.95
+   },
+   "kontakt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p1_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_preis": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p1_gesamt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p1_einheit": {
+    "type": "choice",
+    "choice": "HUR",
+    "probabilities": {
+     "HUR": 1,
+     "DAY": 0,
+     "LS": 0,
+     "C62": 0,
+     "KMT": 0,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "steuerfall": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S": 0,
+     "AE": 1,
+     "E": 0,
+     "K": 0,
+     "O": 0
+    },
+    "confidence": 1
+   }
+  }
+ }
+}

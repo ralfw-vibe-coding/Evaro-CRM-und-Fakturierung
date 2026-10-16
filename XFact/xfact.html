@@ -14,12 +14,12 @@
     LAYOUT                 Aussehen der Bausteine (CSS)
     SEITE                  Aufbau der Oberfläche (HTML)
     TEXTE                  alle Texte, die der Nutzer sieht
-    ERKENNUNGSREGELN       wonach in der Rechnung gesucht wird
+    REGELN                 formale Regeln: USt-IdNr., IBAN, Einheiten, Steuerfälle
     PRÜFUNGEN              was rot oder gelb markiert wird
-    KI                     Voreinstellungen für die optionale KI
+    KI                     Anweisung an die KI, Antwortschema, Prüfer Jev
+    RECHNUNG               aus dem Ergebnis der KI wird die Rechnung
     XML-ERZEUGUNG          wie die XRechnung entsteht
-    PDF LESEN              Text und Zeilen aus dem PDF holen
-    ERKENNUNG              wendet die Erkennungsregeln auf den Text an
+    PDF LESEN              Text aus dem PDF holen
     GEDÄCHTNIS             was sich XFact merkt: Firmen, Kunden, Einheiten, Logbuch
     ABLAUF                 die drei Schritte: Hochladen, Prüfen, Fertig
     BIBLIOTHEKEN           eingebettete Fremdbibliotheken – nicht ändern
@@ -372,6 +372,22 @@ a.knopf { text-decoration: none; }
 .knoepfe { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .meldung.gut { background: transparent; color: var(--farbe-ok); padding-left: 0; }
 
+.einrichtung h2 { margin: 0 0 8px; font-size: 1.15rem; }
+.einrichtung h3 { margin: var(--abstand) 0 6px; font-size: 1rem; }
+.einrichtung ul { margin: 0 0 var(--abstand); padding-left: 20px; }
+.ki-formular { display: grid; grid-template-columns: max-content 1fr; gap: 8px 12px; align-items: center; max-width: 42em; margin: var(--abstand) 0; }
+.ki-formular .eingabe { width: 100%; }
+.ki-formular .ganz { grid-column: 1 / -1; }
+.ablage[hidden], .karte[hidden] { display: none; }
+.ablage.beschaeftigt { opacity: 0.5; pointer-events: none; }
+.fortschritt { margin-top: var(--abstand); color: var(--farbe-text-leise); }
+.fortschritt::before {
+  content: ""; display: inline-block; width: 0.9em; height: 0.9em; margin-right: 8px; vertical-align: -2px;
+  border: 2px solid var(--farbe-linie); border-top-color: var(--farbe-akzent); border-radius: 50%;
+  animation: dreht 0.8s linear infinite;
+}
+@keyframes dreht { to { transform: rotate(360deg); } }
+
 .gelesen summary { cursor: pointer; color: var(--farbe-text-leise); margin-bottom: 8px; }
 
 .rohtext {
@@ -400,12 +416,15 @@ a.knopf { text-decoration: none; }
 <main>
   <!-- Schritt 1: Hochladen -->
   <section class="schritt" id="schritt-hochladen">
+    <!-- Beim ersten Start: Hinweise und KI einrichten -->
+    <div class="karte einrichtung" id="einrichtung" hidden></div>
     <label class="ablage" id="ablage">
       <svg class="symbol" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 18v-6M9 15l3-3 3 3"/></svg>
       <div class="titel" data-text="ablageTitel"></div>
       <div class="leise" data-text="ablageHinweis"></div>
       <input type="file" id="datei-eingabe" accept="application/pdf,.pdf" hidden>
     </label>
+    <div class="fortschritt" id="fortschritt" hidden></div>
     <div class="meldung" id="meldung-hochladen" hidden></div>
   </section>
 
@@ -468,9 +487,9 @@ a.knopf { text-decoration: none; }
 <footer class="fuss" data-text="fusszeile"></footer>
 
 <script type="module" id="xfact-fachlogik">
-// Dieser Teil enthält die Fachlogik: Regeln, Erkennung, Prüfungen.
-// Er greift nicht auf die Seite zu und ist deshalb auch ohne Browser testbar.
-// Alles, was die Oberfläche braucht, steht am Ende unter window.XFact.
+// Dieser Teil enthält die Fachlogik: KI-Anbindung, Regeln, Prüfungen,
+// XML-Erzeugung, Gedächtnis. Er greift nicht auf die Seite zu und ist deshalb
+// auch ohne Browser testbar. Was die Oberfläche braucht, steht am Ende unter window.XFact.
 
 // === TEXTE ===================================================================
 // Alle Texte, die der Nutzer sieht. Zum Umformulieren nur hier ändern.
@@ -479,7 +498,7 @@ const TEXTE = {
   ablageTitel: "PDF-Rechnung hier ablegen",
   ablageHinweis: "oder klicken, um eine Datei zu wählen",
   andereDatei: "Andere Datei",
-  fusszeile: "XFact · Open Source (MIT) · ohne Gewähr · Ihre Rechnungen bleiben in diesem Browser",
+  fusszeile: "XFact · Open Source (MIT) · ohne Gewähr",
   keinPdf: "Das ist keine PDF-Datei. Bitte wählen Sie eine PDF-Rechnung.",
   keinText: "Dieses PDF enthält keinen Text, vermutlich ist es ein Scan. Scans werden nicht unterstützt.",
   lesefehler: "Das PDF konnte nicht gelesen werden.",
@@ -488,8 +507,63 @@ const TEXTE = {
 
   // Hinweise der Prüfungen
   fehlt: "nicht gefunden",
-  ohneBeschriftung: "ohne Beschriftung gefunden, bitte prüfen",
   ibanPruefziffer: "Prüfziffer stimmt nicht, bitte prüfen",
+
+  // Hinweise der Prüfungen auf die Werte der KI
+  pruefer: {
+    nichtBestaetigt: "vom Prüfer nicht bestätigt",
+    eher: (name) => `Prüfer meint: ${name}`,
+    nichtImText: "steht so nicht in der Rechnung",
+    datumUngueltig: "kein gültiges Datum",
+    zeitraumVerkehrt: "endet vor seinem Beginn",
+    faelligVorDatum: "liegt vor dem Rechnungsdatum",
+    ustIdAufbau: "Aufbau der USt-IdNr. stimmt nicht",
+    leitwegIdAufbau: "Aufbau oder Prüfziffer der Leitweg-ID stimmt nicht",
+    leitwegIdBehoerde: "Empfänger ist vermutlich eine Behörde – dann meist Pflicht",
+    steuerfallNicht: (kategorie) => `Steuerkategorie „${kategorie}“ unterstützt XFact nicht`,
+  },
+
+  // KI: Einrichtung, Fortschritt, Fehler
+  ki: {
+    titel: "KI einrichten",
+    erklaerung: "XFact liest Ihre Rechnungen mit einer KI. Voreingestellt ist OpenRouter: Legen Sie auf openrouter.ai ein Konto an, laden Sie Guthaben auf, erzeugen Sie einen API-Schlüssel und tragen Sie ihn hier ein. Eine Rechnung kostet etwa 1 Cent.",
+    lokal: "KI auf dem eigenen Rechner, z.B. LM Studio: Endpunkt http://localhost:1234/v1, Modellname aus LM Studio, Schlüssel leer lassen und in LM Studio CORS einschalten. Dann verlässt die Rechnung Ihren Rechner nicht; die Prüfung durch Jev entfällt.",
+    endpunkt: "Endpunkt",
+    modell: "Modell",
+    schluessel: "API-Schlüssel",
+    jev: "Erkannte Werte zusätzlich vom Prüfer Jev kontrollieren lassen (nur über OpenRouter, ca. 0,02 Cent je Rechnung)",
+    testen: "Verbindung testen",
+    testLaeuft: "Teste die Verbindung …",
+    testOk: (modell) => `Verbindung steht, ${modell} antwortet.`,
+    speichern: "Speichern",
+    gespeichert: "Gespeichert.",
+    liest: (sekunden) => `Die KI liest die Rechnung … ${sekunden} s`,
+    prueft: "Der Prüfer kontrolliert die erkannten Werte …",
+    jevNichtMoeglich: "Die Kontrolle durch den Prüfer war nicht möglich, die Werte sind ungeprüft.",
+    nichtEingerichtet: "Bitte richten Sie zuerst die KI ein (Menü).",
+    fehler: {
+      netz: "Keine Verbindung zur KI. Sind Sie online, und stimmt der Endpunkt?",
+      schluessel: "Der API-Schlüssel wird nicht akzeptiert.",
+      guthaben: "Beim KI-Anbieter ist kein Guthaben mehr vorhanden.",
+      modell: "Dieses Modell kennt der KI-Anbieter nicht.",
+      zuViele: "Der KI-Anbieter ist gerade ausgelastet. Bitte gleich noch einmal versuchen.",
+      zeit: "Die KI hat nicht rechtzeitig geantwortet. Bitte noch einmal versuchen.",
+      antwort: "Die Antwort der KI war nicht lesbar. Bitte noch einmal versuchen, sonst ein anderes Modell wählen.",
+      allgemein: (status) => `Die KI meldet einen Fehler (${status}).`,
+    },
+  },
+
+  // Hinweise beim ersten Start
+  hinweise: {
+    titel: "Bevor Sie loslegen",
+    punkte: [
+      "Der Text Ihrer Rechnungen wird an den KI-Anbieter geschickt, den Sie unten wählen. Ihr API-Schlüssel wird in diesem Browser gespeichert.",
+      "Gemerkte Angaben (Ihre Firma, Kunden, Einstellungen) liegen nur in diesem Browser. Sichern Sie sie über „Daten exportieren“ im Menü.",
+      "Die XML-Datei ist die maßgebliche Rechnung. Prüfen Sie die Angaben vor dem Versand und bewahren Sie die XML auf.",
+      "XFact wird ohne Gewähr bereitgestellt.",
+    ],
+    verstanden: "Verstanden, loslegen",
+  },
 
   // Absender und Empfänger
   parteien: { absender: "Von", empfaenger: "An" },
@@ -508,7 +582,6 @@ const TEXTE = {
   spaltenTitel: { datum: "Datum", beschreibung: "Beschreibung", menge: "Menge", einheit: "Einheit",
     einzelpreis: "Preis", steuersatz: "USt", gesamt: "Gesamt" },
   mengeMalPreis: (soll) => `Menge × Preis ergibt ${soll}`,
-  mengeAngenommen: "Menge fehlt, 1 angenommen",
 
   // Steuerfälle: Hinweistexte, falls auf der Rechnung keiner zu finden ist
   steuerfallText: {
@@ -543,8 +616,9 @@ const TEXTE = {
 
   // Menü: gemerkte Angaben
   daten: {
-    titel: "Gemerkte Angaben",
+    titel: "Menü",
     zurueck: "Zurück",
+    ki: "KI",
     firmen: "Meine Firmen",
     keineFirmen: "Noch nichts gemerkt. XFact merkt sich ergänzte Angaben, sobald Sie eine XML erzeugen.",
     eigeneAngaben: "Eigene Angaben",
@@ -619,6 +693,7 @@ const TEXTE = {
     datum: "Rechnungsdatum",
     faellig: "Fälligkeit (zahlbar bis)",
     iban: "IBAN",
+    steuerfall: "Steuerfall (normal, § 13b oder § 19)",
     positionen: "mindestens eine Position",
     absender: {
       name: "Name des Rechnungsstellers", plz: "PLZ des Rechnungsstellers", ort: "Ort des Rechnungsstellers",
@@ -630,100 +705,19 @@ const TEXTE = {
       email: "E-Mail des Empfängers für Rechnungen",
       ustId: "USt-IdNr. des Empfängers (nötig bei Steuerschuldnerschaft des Leistungsempfängers)",
     },
-    einheit: (nr, einheit) => `Position ${nr}: Einheit „${einheit || "?"}“ zuordnen`,
+    einheit: (nr, einheit) => `Position ${nr}: Einheit${einheit ? ` „${einheit}“` : ""} zuordnen`,
     leistungsdatum: (nr) => `Position ${nr}: Leistungsdatum`,
+    zeitraumVerkehrt: (nr) => `Position ${nr}: Leistungszeitraum endet vor seinem Beginn`,
     steuersatz: (nr) => `Position ${nr}: USt-Satz`,
   },
 };
 
-// === ERKENNUNGSREGELN =========================================================
-// Wonach in der Rechnung gesucht wird. Steht auf Ihren Rechnungen etwas
-// anders, ergänzen Sie hier die Beschriftung. Groß-/Kleinschreibung ist egal.
-// Reihenfolge zählt: Die erste Beschriftung, die passt, gewinnt.
+// === REGELN ===================================================================
+// Formale Regeln, mit denen XFact die Werte der KI kontrolliert: Aufbau von
+// USt-IdNr. und IBAN, erlaubte Einheiten, unterstützte Steuerfälle.
 // =============================================================================
-const ERKENNUNGSREGELN = {
-  beschriftungen: {
-    rechnungsnummer: ["Rechnungsnummer", "Rechnungs-Nr.", "Rechnung Nr.", "Rechnung-Nr.", "Rechnungsnr.",
-      "Rg.-Nr.", "Rg-Nr.", "Rg.Nr.", "RE-Nr.", "Belegnummer", "Beleg-Nr.", "Invoice No."],
-    rechnungsdatum: ["Rechnungsdatum", "Belegdatum", "Datum"],
-    faellig: ["zahlbar bis", "fällig am", "fällig bis", "Fälligkeit", "Fälligkeitsdatum"],
-    netto: ["Nettobetrag", "Summe netto", "Gesamt netto", "Netto", "Zwischensumme"],
-    umsatzsteuer: ["Umsatzsteuer", "Mehrwertsteuer", "USt.", "USt", "MwSt.", "MwSt"],
-    gesamt: ["Rechnungsbetrag", "Gesamtbetrag", "Gesamtsumme", "Endbetrag", "Summe brutto",
-      "Bruttobetrag", "Brutto", "Zahlbetrag", "Zu zahlen", "Gesamt"],
-    bic: ["BIC", "SWIFT"],
-    // Überschriften über den Anschriften
-    empfaenger: ["Rechnungsempfänger", "Rechnung an", "Rechnungsadresse", "Empfänger", "Kunde", "An"],
-    absender: ["Rechnungssteller", "Rechnungsaussteller", "Absender", "Lieferant", "Auftragnehmer", "Von"],
-    telefon: ["Telefon", "Tel.", "Tel", "Fon", "Mobil", "Handy", "Phone"],
-    steuernummer: ["Steuernummer", "Steuer-Nr.", "St.-Nr.", "St-Nr.", "StNr."],
-    ansprechpartner: ["Ansprechpartner", "Ansprechpartnerin", "Ihr Ansprechpartner", "Ihre Ansprechpartnerin",
-      "Kontakt", "Ihr Kontakt", "Bearbeiter", "Bearbeiterin", "Sachbearbeiter", "Sachbearbeiterin"],
-  },
-
-  // Woran die Steuerfälle erkannt werden (Hinweistext auf der Rechnung)
-  steuerfaelle: {
-    reverse_charge: ["Steuerschuldnerschaft des Leistungsempfängers", "reverse charge", "§ 13b", "§13b"],
-    kleinunternehmer: ["§ 19 UStG", "§19 UStG", "§ 19 Abs", "Kleinunternehmer"],
-  },
-
-  // Einheiten auf der Rechnung und ihr Code in der XRechnung (UN/ECE Rec. 20).
-  // Schreibweise klein, ohne Punkt am Ende.
-  einheiten: {
-    std: "HUR", stunde: "HUR", stunden: "HUR", h: "HUR",
-    tag: "DAY", tage: "DAY", tg: "DAY", pt: "DAY", personentag: "DAY", personentage: "DAY",
-    pauschale: "LS", pausch: "LS", pauschal: "LS", psch: "LS", pschl: "LS",
-    km: "KMT", stk: "C62", "stück": "C62", st: "C62", x: "C62",
-    monat: "MON", monate: "MON", woche: "WEE", wochen: "WEE", min: "MIN", minute: "MIN", minuten: "MIN",
-    m: "MTR", "m²": "MTK", qm: "MTK", "m³": "MTQ", kg: "KGM", l: "LTR", liter: "LTR",
-  },
-
-  // Auswahl, wenn eine Einheit unbekannt ist
-  einheitenListe: [
-    { code: "HUR", name: "Stunde" }, { code: "DAY", name: "Tag" }, { code: "LS", name: "Pauschale" },
-    { code: "C62", name: "Stück" }, { code: "KMT", name: "Kilometer" }, { code: "MON", name: "Monat" },
-    { code: "WEE", name: "Woche" }, { code: "MIN", name: "Minute" }, { code: "MTR", name: "Meter" },
-    { code: "MTK", name: "Quadratmeter" }, { code: "MTQ", name: "Kubikmeter" }, { code: "KGM", name: "Kilogramm" },
-    { code: "LTR", name: "Liter" },
-  ],
-
-  // Spaltenüberschriften der Positionstabelle. Ein Tabellenkopf braucht
-  // mindestens drei davon, darunter "gesamt".
-  spalten: {
-    pos: ["Pos", "Pos.", "Position", "Nr", "Nr."],
-    datum: ["Leistungsdatum", "Datum", "Lieferdatum", "Zeitraum", "Leistungszeitraum"],
-    beschreibung: ["Beschreibung", "Bezeichnung", "Leistung", "Leistungsbeschreibung", "Artikel",
-      "Artikelbezeichnung", "Text", "Tätigkeit"],
-    menge: ["Menge", "Anzahl", "Anz.", "Stück", "Std.", "Stunden"],
-    einheit: ["Einheit", "Einh.", "ME"],
-    einzelpreis: ["Einzelpreis", "E-Preis", "EP", "Preis", "Stückpreis", "Preis/Einheit", "Satz", "Stundensatz"],
-    steuersatz: ["USt", "USt.", "USt %", "MwSt", "MwSt.", "MwSt %", "Steuer"],
-    gesamt: ["Gesamt", "Gesamtpreis", "Betrag", "Summe", "GP", "Netto", "Gesamt netto", "Nettobetrag"],
-  },
-
-  // Erste Zeile einer Anschrift, die nicht zum Namen gehört
-  anrede: ["Firma", "Herrn", "Herr", "Frau"],
-
-  // Kleine Absenderzeile über dem Anschriftfeld: "Muster GmbH · Hauptstr. 1 · 20095 Hamburg"
-  absenderzeileTrenner: /\s*[·•|]\s*|\s+[–-]\s+/,
-
-  // Ländernamen in Anschriften und ihr Code
-  laender: {
-    deutschland: "DE", germany: "DE", "österreich": "AT", austria: "AT", schweiz: "CH", switzerland: "CH",
-    bulgarien: "BG", bulgaria: "BG", niederlande: "NL", netherlands: "NL", belgien: "BE", belgium: "BE",
-    luxemburg: "LU", luxembourg: "LU", frankreich: "FR", france: "FR", italien: "IT", italy: "IT",
-    spanien: "ES", spain: "ES", polen: "PL", poland: "PL", "dänemark": "DK", denmark: "DK",
-  },
-
-  // In Zeilen mit diesen Wörtern steht kein Rechnungsdatum (sondern z.B. das Leistungsdatum).
-  keinRechnungsdatum: ["Leistung", "Liefer", "zahlbar", "fällig", "Zeitraum", "Auftrag", "Bestell"],
-
-  // Eine Steuerzeile, in der eines dieser Wörter steht, ist keine Steuerzeile,
-  // sondern z.B. "Gesamtbetrag inkl. USt" oder "USt-IdNr."
-  keineSteuerzeile: ["Rechnungsbetrag", "Gesamtbetrag", "Gesamtsumme", "Endbetrag", "brutto", "Zu zahlen",
-    "Zahlbetrag", "USt-Id", "USt.-Id", "UStId", "USt-Nr", "Steuernummer", "Steuer-Nr"],
-
-  // Ländercodes, für die USt-IdNrn. erkannt werden (EU), und ihr Aufbau nach dem Ländercode
+const REGELN = {
+  // Aufbau der USt-IdNr. nach dem Ländercode (EU)
   ustIdAufbau: {
     DE: /^\d{9}$/, AT: /^U\d{8}$/, BE: /^\d{10}$/, BG: /^\d{9,10}$/, CY: /^\d{8}[A-Z]$/,
     CZ: /^\d{8,10}$/, DK: /^\d{8}$/, EE: /^\d{9}$/, EL: /^\d{9}$/, ES: /^[0-9A-Z]\d{7}[0-9A-Z]$/,
@@ -735,7 +729,67 @@ const ERKENNUNGSREGELN = {
 
   // Länge einer IBAN je Land (die häufigsten). Andere Länder: 15 bis 34 Zeichen.
   ibanLaenge: { DE: 22, AT: 20, CH: 21, NL: 18, BE: 16, FR: 27, IT: 27, ES: 24, LU: 20, LT: 20, BG: 22, PL: 28 },
+
+  // Einheiten der XRechnung (UN/ECE Rec. 20), die XFact anbietet
+  einheiten: [
+    { code: "HUR", name: "Stunde" }, { code: "DAY", name: "Tag" }, { code: "LS", name: "Pauschale" },
+    { code: "C62", name: "Stück" }, { code: "KMT", name: "Kilometer" }, { code: "MON", name: "Monat" },
+    { code: "WEE", name: "Woche" }, { code: "MIN", name: "Minute" }, { code: "MTR", name: "Meter" },
+    { code: "MTK", name: "Quadratmeter" }, { code: "MTQ", name: "Kubikmeter" }, { code: "KGM", name: "Kilogramm" },
+    { code: "LTR", name: "Liter" },
+  ],
+
+  // Aufbau der Leitweg-ID: Grobadressierung (2–12 Ziffern), optional
+  // Feinadressierung (bis 30 Buchstaben/Ziffern), Prüfziffer (2 Ziffern)
+  leitwegId: /^(\d{2,12})(?:-([0-9A-Z]{1,30}))?-(\d{2})$/,
+
+  // Steuerkategorien (BT-151), die XFact unterstützt, und ihr Steuerfall
+  steuerfaelle: { S: "standard", AE: "reverse_charge", E: "kleinunternehmer" },
+
+  // Ländernamen für die Anzeige
+  laender: {
+    DE: "Deutschland", AT: "Österreich", CH: "Schweiz", BG: "Bulgarien", NL: "Niederlande", BE: "Belgien",
+    LU: "Luxemburg", FR: "Frankreich", IT: "Italien", ES: "Spanien", PL: "Polen", DK: "Dänemark", CZ: "Tschechien",
+  },
 };
+
+function ibanPruefzifferOk(iban) {
+  const zeichen = String(iban).replace(/\s/g, "").toUpperCase();
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(zeichen)) return false;
+  const laenge = REGELN.ibanLaenge[zeichen.slice(0, 2)];
+  if (laenge && zeichen.length !== laenge) return false;
+  const umgestellt = (zeichen.slice(4) + zeichen.slice(0, 4)).replace(/[A-Z]/g, (b) => String(b.charCodeAt(0) - 55));
+  let rest = 0;
+  for (const ziffer of umgestellt) rest = (rest * 10 + Number(ziffer)) % 97;
+  return rest === 1;
+}
+
+function ustIdAufbauOk(ustId) {
+  const aufbau = REGELN.ustIdAufbau[String(ustId).slice(0, 2)];
+  return Boolean(aufbau && aufbau.test(String(ustId).slice(2)));
+}
+
+/** Aufbau und Prüfziffer der Leitweg-ID (ISO 7064 Mod 97-10, wie bei der IBAN) */
+function leitwegIdOk(leitwegId) {
+  const teile = REGELN.leitwegId.exec(String(leitwegId).replace(/\s/g, "").toUpperCase());
+  if (!teile) return false;
+  const ziffern = (teile[1] + (teile[2] || "") + teile[3]).replace(/[A-Z]/g, (b) => String(b.charCodeAt(0) - 55));
+  let rest = 0;
+  for (const ziffer of ziffern) rest = (rest * 10 + Number(ziffer)) % 97;
+  return rest === 1;
+}
+
+function datumGueltig(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || "")) return false;
+  const datum = new Date(`${iso}T00:00:00Z`);
+  return !Number.isNaN(datum.getTime()) && datum.toISOString().slice(0, 10) === iso;
+}
+
+/** Steht der Wert (ohne Leerzeichen, Groß/klein egal) wörtlich im Rechnungstext? */
+function stehtImText(wert, text) {
+  const rein = (t) => String(t).replace(/\s/g, "").toLowerCase();
+  return rein(text).includes(rein(wert));
+}
 
 // === PRÜFUNGEN ================================================================
 // Was rot (fehlt) oder gelb (unsicher) markiert wird.
@@ -745,21 +799,21 @@ const PRUEFUNGEN = {
   rundungstoleranz: 0.01,
 };
 
-
-
-
 /**
- * Was fehlt noch für eine gültige XRechnung? Liste von { feld, text }.
+ * Was fehlt noch für eine gültige XRechnung? Liste von { feld, text, kurz? }.
+ * "text" steht in der Liste über dem Knopf, "kurz" (sonst "nicht gefunden") am Feld.
  * Ist sie leer, kann die XML erzeugt werden.
  */
 function pruefeRechnung(r) {
   const fehlt = [];
   const p = TEXTE.pflicht;
   const pflicht = (feld, wert, text) => { if (!wert) fehlt.push({ feld, text }); };
+  const codes = REGELN.einheiten.map((x) => x.code);
   pflicht("nummer", r.nummer, p.nummer);
   pflicht("datum", r.datum, p.datum);
   pflicht("faellig", r.faellig, p.faellig);
   pflicht("iban", r.bank.iban, p.iban);
+  pflicht("steuerfall", r.steuerfall.kategorie, p.steuerfall);
   for (const feld of ["name", "plz", "ort"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
   pflicht("absender.ustId", r.absender.ustId || r.absender.steuernummer, p.absender.ustId);
   for (const feld of ["kontakt", "telefon", "email"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
@@ -767,8 +821,12 @@ function pruefeRechnung(r) {
   if (r.steuerfall.art === "reverse_charge") pflicht("empfaenger.ustId", r.empfaenger.ustId, p.empfaenger.ustId);
   pflicht("positionen", r.positionen.length, p.positionen);
   for (const pos of r.positionen) {
-    pflicht(`position.${pos.nr}.einheit`, pos.einheitCode, p.einheit(pos.nr, pos.einheit));
+    pflicht(`position.${pos.nr}.einheit`, codes.includes(pos.einheitCode), p.einheit(pos.nr, pos.einheit));
     pflicht(`position.${pos.nr}.datum`, pos.von, p.leistungsdatum(pos.nr));
+    // Ein Zeitraum, der vor seinem Beginn endet, lehnt die XRechnung ab (Regel BR-30)
+    if (pos.von && pos.bis && pos.bis < pos.von) {
+      fehlt.push({ feld: `position.${pos.nr}.datum`, text: p.zeitraumVerkehrt(pos.nr), kurz: TEXTE.pruefer.zeitraumVerkehrt });
+    }
     pflicht(`position.${pos.nr}.satz`, pos.kategorie !== "S" || pos.satz > 0, p.steuersatz(pos.nr));
   }
   return fehlt;
@@ -776,36 +834,61 @@ function pruefeRechnung(r) {
 
 /**
  * Hinweise zur (ggf. bearbeiteten) Rechnung, für die Prüfansicht. Liste von
- * { feld, stufe: "fehlt" | "unsicher" | "ok", text }. "bestaetigt" enthält die
- * Felder, die der Nutzer geändert oder bestätigt hat; dort entfallen die
- * gelben Hinweise aus der Erkennung.
+ * { feld, stufe: "fehlt" | "unsicher" | "ok", text }. Quellen:
+ *   - pruefeRechnung (rot)
+ *   - formale Regeln und Nachrechnen (gelb)
+ *   - die Urteile des Prüfers Jev, falls vorhanden (gelb)
+ * "bestaetigt" enthält die Felder, die der Nutzer mit "Stimmt" bestätigt hat;
+ * dort entfallen alle gelben Hinweise. "geaendert" enthält die Felder, die er
+ * selbst eingegeben hat; dort entfallen die Zweifel an der KI, die formalen
+ * Regeln (Prüfziffer, Aufbau, Datum) prüfen aber auch seine Eingabe.
  */
-function hinweiseZurRechnung(r, erkannt, bestaetigt = new Set()) {
-  const hinweise = pruefeRechnung(r).map(({ feld }) => ({ feld, stufe: "fehlt", text: TEXTE.fehlt }));
-  const unsicher = (feld, text) => { if (!bestaetigt.has(feld)) hinweise.push({ feld, stufe: "unsicher", text }); };
-  const { kopf, positionen } = erkannt;
+function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null, geaendert = new Set()) {
+  const hinweise = pruefeRechnung(r).map(({ feld, kurz }) => ({ feld, stufe: "fehlt", text: kurz || TEXTE.fehlt }));
+  const regel = (feld, text) => {
+    if (!bestaetigt.has(feld) && !hinweise.some((h) => h.feld === feld && h.text === text)) {
+      hinweise.push({ feld, stufe: "unsicher", text });
+    }
+  };
+  const unsicher = (feld, text) => { if (!geaendert.has(feld)) regel(feld, text); };
+  const t = TEXTE.pruefer;
 
-  if (kopf.rechnungsdatum?.unsicher && r.datum) unsicher("datum", kopf.rechnungsdatum.unsicher);
-  if (r.bank.iban && !ibanPruefzifferOk(r.bank.iban.replace(/\s/g, ""))) unsicher("iban", TEXTE.ibanPruefziffer);
+  // Formale Regeln
+  if (r.steuerfall.art === null) unsicher("steuerfall", t.steuerfallNicht(befund.positionen[0]?.steuerkategorie || "?"));
+  if (r.bank.iban && !ibanPruefzifferOk(r.bank.iban)) regel("iban", TEXTE.ibanPruefziffer);
   for (const rolle of ["absender", "empfaenger"]) {
-    if (r[rolle].land && r[rolle].land !== "DE") {
-      hinweise.push({ feld: `${rolle}.land`, stufe: "unsicher", text: TEXTE.nichtDeutschland });
+    const p = r[rolle];
+    if (p.ustId && !ustIdAufbauOk(p.ustId)) regel(`${rolle}.ustId`, t.ustIdAufbau);
+    if (p.land && p.land !== "DE") hinweise.push({ feld: `${rolle}.land`, stufe: "unsicher", text: TEXTE.nichtDeutschland });
+  }
+  if (r.leitwegId && !leitwegIdOk(r.leitwegId)) regel("leitwegId", t.leitwegIdAufbau);
+  if (!r.leitwegId && r.empfaenger.oeffentlich) unsicher("leitwegId", t.leitwegIdBehoerde);
+  for (const [feld, wert] of [["datum", r.datum], ["faellig", r.faellig]]) {
+    if (wert && !datumGueltig(wert)) regel(feld, t.datumUngueltig);
+  }
+  if (datumGueltig(r.datum) && datumGueltig(r.faellig) && r.faellig < r.datum) regel("faellig", t.faelligVorDatum);
+
+  // Steht es wörtlich in der Rechnung? (gegen erfundene Werte)
+  if (befund.text) {
+    for (const [feld, wert] of [["nummer", r.nummer], ["iban", r.bank.iban], ["absender.ustId", r.absender.ustId], ["empfaenger.ustId", r.empfaenger.ustId]]) {
+      if (wert && !stehtImText(wert, befund.text)) unsicher(feld, t.nichtImText);
     }
   }
+
+  // Nachrechnen
   for (const p of r.positionen) {
-    if (positionen.find((q) => q.nr === p.nr)?.mengeAngenommen) unsicher(`position.${p.nr}.menge`, TEXTE.mengeAngenommen);
+    if (p.von && !datumGueltig(p.von)) regel(`position.${p.nr}.datum`, t.datumUngueltig);
     const soll = runde(p.menge * p.einzelpreis);
     if (Math.abs(soll - p.gesamt) > PRUEFUNGEN.rundungstoleranz) {
-      unsicher(`position.${p.nr}.gesamt`, TEXTE.mengeMalPreis(alsBetrag(soll)));
+      regel(`position.${p.nr}.gesamt`, TEXTE.mengeMalPreis(alsBetrag(soll)));
     }
   }
-
-  // Stimmen die Summen mit denen auf der Rechnung überein?
   const summen = summenDerRechnung(r);
   const vergleiche = [];
-  if (kopf.netto) vergleiche.push(["netto", summen.netto, kopf.netto.wert]);
-  if (kopf.gesamt) vergleiche.push(["brutto", summen.brutto, kopf.gesamt.wert]);
-  for (const s of kopf.umsatzsteuer) {
+  if (befund.summen.netto) vergleiche.push(["netto", summen.netto, befund.summen.netto]);
+  if (befund.summen.brutto) vergleiche.push(["brutto", summen.brutto, befund.summen.brutto]);
+  for (const s of befund.steuer) {
+    if (s.kategorie !== "S") continue;
     const gruppe = summen.gruppen.find((g) => g.satz === s.satz);
     vergleiche.push([`steuer.${s.satz}`, gruppe ? gruppe.betrag : 0, s.betrag]);
   }
@@ -814,19 +897,411 @@ function hinweiseZurRechnung(r, erkannt, bestaetigt = new Set()) {
       hinweise.push({ feld: `summe.${feld}`, stufe: "unsicher", text: TEXTE.aufDerRechnung(alsBetrag(aufRechnung)) });
     }
   }
-  if (kopf.gesamt && !hinweise.some((h) => h.feld.startsWith("summe."))) {
+  if (befund.summen.brutto && !hinweise.some((h) => h.feld.startsWith("summe."))) {
     hinweise.push({ feld: "summe.brutto", stufe: "ok", text: TEXTE.summenWieAufRechnung });
+  }
+
+  // Urteile des Prüfers
+  if (pruefung?.fehler) hinweise.push({ feld: "pruefer", stufe: "unsicher", text: TEXTE.ki.jevNichtMoeglich });
+  for (const [id, frage] of Object.entries(pruefung?.felder || {})) {
+    const antwort = pruefung.antworten[id];
+    if (!antwort) continue;
+    if (frage.art === "noul" && antwort.noul < KI.jevSchwelle) unsicher(frage.pfad, t.nichtBestaetigt);
+    if (frage.art === "choice" && antwort.choice && antwort.choice !== frage.erwartet) {
+      const name = REGELN.einheiten.find((x) => x.code === antwort.choice)?.name
+        || TEXTE.ansicht.steuerfaelle[REGELN.steuerfaelle[antwort.choice]] || antwort.choice;
+      unsicher(frage.pfad, t.eher(name));
+    }
   }
   return hinweise;
 }
 
 // === KI =======================================================================
-// Voreinstellungen für die optionale KI. (Folgt.)
+// Eine Sprach-KI liest die Rechnung und bildet sie auf die Felder der
+// XRechnung ab. Jev (ein Entscheidungsmodell) prüft danach die erkannten
+// Werte gegen den Rechnungstext. Beides läuft über eine OpenAI-kompatible
+// Schnittstelle, voreingestellt OpenRouter.
 // =============================================================================
+
 const KI = {
   endpunkt: "https://openrouter.ai/api/v1",
-  modell: "anthropic/claude-sonnet-5.5",
+  modell: "google/gemini-3.8-flash",
+  jevEndpunkt: "https://openrouter.ai/api/alpha/decisions",
+  jevModell: "typesafe/jev-1.13",
+  zeitlimitSekunden: 180,
+  // Unter diesem Wert gilt eine Antwort des Prüfers als "nicht bestätigt"
+  jevSchwelle: 0.5,
 };
+
+/**
+ * Die Anweisung an die KI. Hier lässt sich das Verhalten der Erkennung
+ * anpassen, z.B. wenn eine bestimmte Angabe auf Ihren Rechnungen immer
+ * gleich lautet.
+ */
+const KI_ANWEISUNG = `Du bist Experte für elektronische Rechnungen nach EN 16931 / XRechnung 3.0.
+Du erhältst den Text einer PDF-Rechnung. Er wurde aus dem PDF extrahiert: Spalten stehen ungefähr untereinander, manche Wörter können doppelt vorkommen (z.B. "Total Total"), Zeilen aus nebeneinander stehenden Blöcken können vermischt sein.
+
+Aufgabe: Bilde die Rechnung auf die Felder der XRechnung ab (Schema). Die BT-Nummern im Schema sind die Felder der Norm.
+
+Vorgehen:
+1. Lies die ganze Rechnung und erkenne ihre Teile: Rechnungssteller (meist Briefkopf, Absenderzeile oder Fußzeile), Rechnungsempfänger (Anschriftfeld), Kopfdaten, Positionen, Summen, Steuerhinweise, Zahlungsangaben.
+2. Übernimm Werte, die auf der Rechnung stehen. Ein Layout ist nicht vorgegeben; Beschriftungen können beliebig lauten ("Ausgangsrechnung", "Beleg-Nr.", "Invoice No.", ...).
+3. Leite ab, was eindeutig ableitbar ist:
+   - Einheitencode (UN/ECE Rec. 20): Stunde HUR, Tag DAY, Pauschale LS, Stück C62, Kilometer KMT, Monat MON, Woche WEE, Minute MIN, Meter MTR, Quadratmeter MTK, Kubikmeter MTQ, Kilogramm KGM, Liter LTR.
+   - Steuerkategorie: S = Umsatzsteuer wird ausgewiesen (19 %, 7 %); AE = Steuerschuldnerschaft des Leistungsempfängers / Reverse Charge (§ 13b UStG, auch EU-Reverse-Charge), Satz 0; E = steuerbefreit, z.B. Kleinunternehmer § 19 UStG, Satz 0; K = innergemeinschaftliche Lieferung von Waren; Z = Nullsatz; G = Ausfuhr außerhalb der EU; O = nicht steuerbar.
+   - Leistungsdatum einer Position: aus der Datumsspalte, sonst aus der Beschreibung (z.B. "06.02.26, 10-12 Uhr" → 2026-02-06), sonst aus einem Leistungszeitraum der ganzen Rechnung. Ein einzelner Tag: von = bis.
+   - Fälligkeit: aus "zahlbar bis" oder Rechnungsdatum + Zahlungsziel in Tagen.
+   - Zweistellige Jahre: 26 = 2026.
+   - Öffentliche Stelle: Ist der Rechnungsempfänger eine Behörde oder ein öffentlicher Auftraggeber (Bund, Land, Kommune, Amt, öffentliche Hochschule, Anstalt oder Körperschaft des öffentlichen Rechts)? Firmen in Privatrechtsform (GmbH, AG, KG, e.V., …) sind es nicht, auch wenn sie der öffentlichen Hand gehören.
+4. Nichts erfinden. Was weder steht noch eindeutig ableitbar ist: leerer Text "" bzw. Zahl 0.
+5. Liste unter "fehlt" die Pflichtangaben der XRechnung, die nicht auf der Rechnung stehen, z.B. BT-49 (elektronische Adresse des Käufers), BT-41 (Ansprechpartner Verkäufer), BT-72/BT-134 (Leistungsdatum).
+
+Formate: Datum JJJJ-MM-TT. Zahlen als JSON-Zahl mit Punkt ("1.080" = 1080, "1.500,00" = 1500, "10,5" = 10.5). USt-IdNr. und IBAN ohne Leerzeichen. Ländercode zweistellig (DE, BG, AT, ...).`;
+
+/**
+ * Das Antwortschema: die Felder der XRechnung. Alle Felder sind Pflicht und
+ * haben einen einfachen Typ – fehlende Werte kommen als "" bzw. 0. So
+ * akzeptieren es alle Anbieter (manche lehnen viele optionale Felder ab).
+ */
+const KI_SCHEMA = (() => {
+  const T = (description) => ({ type: "string", description });
+  const Z = (description) => ({ type: "number", description });
+  const K = (description) => ({ type: "string", enum: ["S", "Z", "E", "AE", "K", "G", "O", "L", "M"], description });
+  const objekt = (properties) => ({ type: "object", additionalProperties: false, required: Object.keys(properties), properties });
+  const liste = (properties) => ({ type: "array", items: objekt(properties) });
+  const partei = (wer, weitere = {}) => objekt({
+    name: T(`${wer}: Name (BT-27 bzw. BT-44)`),
+    strasse: T("Straße und Hausnummer oder Postfach (BT-35 bzw. BT-50)"),
+    zusatz: T("Adresszusatz, z.B. Abteilung (BT-36 bzw. BT-51)"),
+    plz: T("Postleitzahl (BT-38 bzw. BT-53)"),
+    ort: T("Ort (BT-37 bzw. BT-52)"),
+    land: T("Ländercode ISO 3166-1 alpha-2 (BT-40 bzw. BT-55)"),
+    ustId: T("Umsatzsteuer-Identifikationsnummer ohne Leerzeichen (BT-31 bzw. BT-48)"),
+    steuernummer: T("Deutsche Steuernummer (BT-32), nur Verkäufer"),
+    email: T("E-Mail (Verkäufer: BT-34/BT-43, Käufer: BT-49)"),
+    telefon: T("Telefon (BT-42), nur Verkäufer"),
+    kontakt: T("Ansprechpartner, Name einer Person (BT-41), nur Verkäufer"),
+    ...weitere,
+  });
+  return objekt({
+    rechnung: objekt({
+      nummer: T("Rechnungsnummer (BT-1)"),
+      datum: T("Rechnungsdatum JJJJ-MM-TT (BT-2)"),
+      art: { type: "string", enum: ["380", "381", "384", "389", "875", "876", "877"],
+        description: "Rechnungsart (BT-3): 380 Rechnung, 381 Gutschrift, 384 Korrekturrechnung, 875/876/877 Teil-/Schlussrechnung" },
+      faellig: T("Fälligkeitsdatum JJJJ-MM-TT (BT-9); aus 'zahlbar bis' oder Rechnungsdatum + Zahlungsziel"),
+      zahlungsbedingungen: T("Zahlungsbedingungen als Text (BT-20)"),
+      bestellnummer: T("Bestell- oder Auftragsnummer des Käufers (BT-13), Projekt- oder Referenzangabe"),
+      leitwegId: T("Leitweg-ID öffentlicher Auftraggeber (BT-10), Muster wie 04011000-1234512345-06"),
+      leistungVon: T("Beginn des Leistungszeitraums der ganzen Rechnung JJJJ-MM-TT (BT-73)"),
+      leistungBis: T("Ende des Leistungszeitraums der ganzen Rechnung JJJJ-MM-TT (BT-74)"),
+      bemerkung: T("Sonstiger Hinweis/Kommentar zur Rechnung (BT-22)"),
+    }),
+    verkaeufer: partei("Rechnungssteller"),
+    kaeufer: partei("Rechnungsempfänger", {
+      oeffentlich: { type: "boolean", description: "Ist der Rechnungsempfänger eine Behörde bzw. ein öffentlicher Auftraggeber? (dann braucht er meist eine Leitweg-ID)" },
+    }),
+    zahlung: objekt({
+      iban: T("IBAN des Rechnungsstellers ohne Leerzeichen (BT-84)"),
+      bic: T("BIC (BT-86)"),
+      verwendungszweck: T("Verwendungszweck (BT-83)"),
+    }),
+    positionen: liste({
+      name: T("Bezeichnung der Leistung (BT-153)"),
+      beschreibung: T("Weitere Beschreibung (BT-154)"),
+      menge: Z("Menge (BT-129)"),
+      einheitText: T("Einheit, wie sie auf der Rechnung steht"),
+      einheitCode: T("Einheit als UN/ECE-Rec.-20-Code (BT-130)"),
+      einzelpreis: Z("Nettopreis je Einheit (BT-146)"),
+      gesamt: Z("Nettobetrag der Position (BT-131)"),
+      steuerkategorie: K("Umsatzsteuerkategorie (BT-151)"),
+      steuersatz: Z("Steuersatz in Prozent (BT-152)"),
+      von: T("Leistungsdatum bzw. Beginn JJJJ-MM-TT (BT-134)"),
+      bis: T("Leistungsdatum bzw. Ende JJJJ-MM-TT (BT-135)"),
+    }),
+    steuer: liste({
+      kategorie: K("BT-118"),
+      satz: Z("BT-119"),
+      basis: Z("Steuerbasis (BT-116)"),
+      betrag: Z("Steuerbetrag (BT-117)"),
+      befreiungsgrund: T("Befreiungsgrund wörtlich von der Rechnung (BT-120), bei AE/E/K/G/Z"),
+    }),
+    summen: objekt({
+      netto: Z("Summe der Positionen (BT-106)"),
+      steuer: Z("Summe Umsatzsteuer (BT-110)"),
+      brutto: Z("Gesamtbetrag (BT-112)"),
+      zahlbetrag: Z("Fälliger Betrag (BT-115)"),
+    }),
+    fehlt: liste({
+      feld: T("BT-Nummer des fehlenden Pflichtfelds, z.B. BT-49"),
+      grund: T("kurz, warum es fehlt"),
+    }),
+  });
+})();
+
+/** Ist die KI eingerichtet? (Endpunkt und Modell; der Schlüssel darf bei lokalen KIs fehlen) */
+function kiEingerichtet(einstellungen) {
+  return Boolean(einstellungen && einstellungen.endpunkt && einstellungen.modell);
+}
+
+/** Läuft die KI über OpenRouter? Nur dann gibt es den Prüfer Jev. */
+function ueberOpenRouter(einstellungen) {
+  try { return new URL(einstellungen.endpunkt).hostname.endsWith("openrouter.ai"); } catch { return false; }
+}
+
+/**
+ * Schickt eine Anfrage an die KI und gibt die Antwort als JSON zurück.
+ * Wirft bei Problemen einen Fehler mit verständlichem Text.
+ * "holen" ist fetch – Tests geben eine eigene Fassung hinein.
+ */
+async function kiAnfrage(adresse, einstellungen, inhalt, holen = globalThis.fetch) {
+  const abbruch = new AbortController();
+  const wecker = setTimeout(() => abbruch.abort(), KI.zeitlimitSekunden * 1000);
+  const kopf = { "Content-Type": "application/json", "X-Title": "XFact" };
+  if (einstellungen.schluessel) kopf.Authorization = `Bearer ${einstellungen.schluessel}`;
+  let antwort;
+  try {
+    antwort = await holen(adresse, { method: "POST", headers: kopf, body: JSON.stringify(inhalt), signal: abbruch.signal });
+  } catch (fehler) {
+    throw new Error(fehler.name === "AbortError" ? TEXTE.ki.fehler.zeit : TEXTE.ki.fehler.netz);
+  } finally {
+    clearTimeout(wecker);
+  }
+  if (!antwort.ok) {
+    const f = TEXTE.ki.fehler;
+    const text = { 401: f.schluessel, 402: f.guthaben, 404: f.modell, 429: f.zuViele }[antwort.status];
+    throw new Error(text || f.allgemein(antwort.status));
+  }
+  return antwort.json();
+}
+
+/** Lässt die KI die Rechnung lesen. Ergebnis: der Befund (siehe befundAusKi). */
+async function frageKi(text, einstellungen, holen) {
+  const antwort = await kiAnfrage(`${einstellungen.endpunkt.replace(/\/$/, "")}/chat/completions`, einstellungen, {
+    model: einstellungen.modell,
+    messages: [{ role: "system", content: KI_ANWEISUNG }, { role: "user", content: text }],
+    response_format: { type: "json_schema", json_schema: { name: "xrechnung", strict: true, schema: KI_SCHEMA } },
+    temperature: 0,
+  }, holen);
+  const inhalt = antwort?.choices?.[0]?.message?.content || "";
+  const json = /\{[\s\S]*\}/.exec(inhalt);
+  let daten;
+  try { daten = JSON.parse(json[0]); } catch { throw new Error(TEXTE.ki.fehler.antwort); }
+  return befundAusKi(daten, text);
+}
+
+/** Kleine Probeanfrage, um Endpunkt, Modell und Schlüssel zu prüfen. */
+async function pruefeVerbindung(einstellungen, holen) {
+  await kiAnfrage(`${einstellungen.endpunkt.replace(/\/$/, "")}/chat/completions`, einstellungen, {
+    model: einstellungen.modell, messages: [{ role: "user", content: "Antworte nur mit OK." }], max_tokens: 5,
+  }, holen);
+  return true;
+}
+
+/**
+ * Bringt die Antwort der KI in eine feste Form, den "Befund": leere Texte
+ * werden null, Zahlen werden Zahlen, fehlende Listen leere Listen. Der
+ * Rechnungstext wird mitgemerkt, damit die Prüfungen darauf zugreifen können.
+ */
+function befundAusKi(daten, text) {
+  const t = (wert) => (typeof wert === "string" && wert.trim() ? wert.trim() : null);
+  const z = (wert) => (Number.isFinite(Number(wert)) ? Number(wert) : 0);
+  const felder = (quelle, namen, umwandeln = t) => Object.fromEntries(namen.map((n) => [n, umwandeln((quelle || {})[n])]));
+  const partei = ["name", "strasse", "zusatz", "plz", "ort", "land", "ustId", "steuernummer", "email", "telefon", "kontakt"];
+  const ohneLeerzeichen = (wert) => (wert ? wert.replace(/\s/g, "").toUpperCase() : null);
+  const verkaeufer = felder(daten.verkaeufer, partei);
+  const kaeufer = felder(daten.kaeufer, partei);
+  for (const p of [verkaeufer, kaeufer]) { p.ustId = ohneLeerzeichen(p.ustId); p.land = p.land ? p.land.toUpperCase() : null; }
+  kaeufer.oeffentlich = daten.kaeufer?.oeffentlich === true;
+  return {
+    text,
+    rechnung: felder(daten.rechnung, ["nummer", "datum", "art", "faellig", "zahlungsbedingungen", "bestellnummer",
+      "leitwegId", "leistungVon", "leistungBis", "bemerkung"]),
+    verkaeufer,
+    kaeufer,
+    zahlung: { ...felder(daten.zahlung, ["bic", "verwendungszweck"]), iban: ohneLeerzeichen(t(daten.zahlung?.iban)) },
+    positionen: (daten.positionen || []).map((p, i) => ({
+      nr: i + 1,
+      ...felder(p, ["name", "beschreibung", "einheitText", "einheitCode", "steuerkategorie", "von", "bis"]),
+      ...felder(p, ["menge", "einzelpreis", "gesamt", "steuersatz"], z),
+    })),
+    steuer: (daten.steuer || []).map((s) => ({ ...felder(s, ["kategorie", "befreiungsgrund"]), ...felder(s, ["satz", "basis", "betrag"], z) })),
+    summen: felder(daten.summen, ["netto", "steuer", "brutto", "zahlbetrag"], z),
+    fehlt: (daten.fehlt || []).map((f) => felder(f, ["feld", "grund"])),
+  };
+}
+
+// --- Prüfer Jev --------------------------------------------------------------------
+
+/**
+ * Die Fragen an den Prüfer zu einer Rechnung. Jev beantwortet sie alle in
+ * einer Anfrage. Ergebnis: { fragen: { id: Frage }, felder: { id: { pfad, art, erwartet } } }
+ * "pfad" ist das Feld der Prüfansicht, bei dem ein Zweifel angezeigt wird.
+ */
+function jevFragen(r) {
+  const fragen = {};
+  const felder = {};
+  const stimmt = (id, pfad, was, wert) => {
+    if (wert === null || wert === undefined || wert === "") return;
+    fragen[id] = {
+      type: "noul",
+      instructions: `Steht in der Rechnung \`rechnung\`, dass ${was} „${wert}“ ist?`,
+      criteria: {
+        true: `Die Rechnung nennt „${wert}“ als ${was}, auch wenn es anders geschrieben ist (Leerzeichen, Datumsformat, Zahlenformat).`,
+        false: `Die Rechnung nennt einen anderen Wert als ${was}, oder ${was} steht nicht in der Rechnung.`,
+      },
+    };
+    felder[id] = { pfad, art: "noul" };
+  };
+  const auswahl = (id, pfad, was, optionen, erwartet) => {
+    fragen[id] = { type: "choice", instructions: `${was} in der Rechnung \`rechnung\`?`, criteria: optionen };
+    felder[id] = { pfad, art: "choice", erwartet };
+  };
+
+  stimmt("nummer", "nummer", "die Rechnungsnummer", r.nummer);
+  stimmt("datum", "datum", "das Rechnungsdatum", r.datum && alsDatum(r.datum));
+  stimmt("faellig", "faellig", "das Fälligkeitsdatum (zahlbar bis, ggf. aus dem Zahlungsziel errechnet)", r.faellig && alsDatum(r.faellig));
+  for (const [rolle, wer] of [["absender", "des Rechnungsstellers (Verkäufer, Absender)"], ["empfaenger", "des Rechnungsempfängers (Käufer, Kunde)"]]) {
+    const p = r[rolle];
+    stimmt(`${rolle}_name`, `${rolle}.name`, `der Name ${wer}`, p.name);
+    stimmt(`${rolle}_ort`, `${rolle}.plz`, `PLZ und Ort ${wer}`, p.plz && p.ort ? `${p.plz} ${p.ort}` : null);
+    stimmt(`${rolle}_ust`, `${rolle}.ustId`, `die USt-IdNr. ${wer}`, p.ustId);
+  }
+  stimmt("iban", "iban", "die IBAN des Rechnungsstellers", r.bank.iban);
+  stimmt("kontakt", "absender.kontakt", "der Ansprechpartner beim Rechnungssteller", r.absender.kontakt);
+  const einheiten = Object.fromEntries(REGELN.einheiten.map((x) => [x.code, x.name]));
+  for (const p of r.positionen) {
+    const bez = `die Position ${p.nr} („${p.name}“)`;
+    stimmt(`p${p.nr}_menge`, `position.${p.nr}.menge`, `die Menge von ${bez}`, p.menge);
+    stimmt(`p${p.nr}_preis`, `position.${p.nr}.einzelpreis`, `der Einzelpreis von ${bez}`, p.einzelpreis);
+    stimmt(`p${p.nr}_gesamt`, `position.${p.nr}.gesamt`, `der Gesamtbetrag von ${bez}`, p.gesamt);
+    if (p.einheitCode) auswahl(`p${p.nr}_einheit`, `position.${p.nr}.einheit`, `Welche Einheit hat ${bez}`, einheiten, p.einheitCode);
+  }
+  if (r.steuerfall.kategorie) {
+    auswahl("steuerfall", "steuerfall", "Welcher Umsatzsteuerfall liegt vor", {
+      S: "Normale Umsatzsteuer wird ausgewiesen (z.B. 19 % oder 7 %).",
+      AE: "Steuerschuldnerschaft des Leistungsempfängers / Reverse Charge, keine Steuer ausgewiesen.",
+      E: "Steuerbefreit, z.B. Kleinunternehmer nach § 19 UStG.",
+      K: "Innergemeinschaftliche Lieferung von Waren.",
+      O: "Nicht steuerbar.",
+    }, r.steuerfall.kategorie);
+  }
+  return { fragen, felder };
+}
+
+/**
+ * Lässt Jev die erkannten Werte prüfen. Ergebnis: { felder, antworten } oder
+ * { fehler } – ein Fehler hier hält niemanden auf, die Werte gelten dann als ungeprüft.
+ */
+async function frageJev(r, text, einstellungen, holen) {
+  if (!einstellungen.jev || !ueberOpenRouter(einstellungen)) return null;
+  const { fragen, felder } = jevFragen(r);
+  try {
+    const antwort = await kiAnfrage(KI.jevEndpunkt, einstellungen, { model: KI.jevModell, state: { rechnung: text }, questions: fragen }, holen);
+    return { felder, antworten: antwort.answers || {} };
+  } catch (fehler) {
+    return { fehler: fehler.message };
+  }
+}
+
+// === RECHNUNG =================================================================
+// Aus dem Befund der KI und den Ergänzungen des Nutzers wird die Rechnung,
+// wie sie in die XRechnung geht. Prüfansicht, Gedächtnis und XML-Erzeugung
+// arbeiten nur mit dieser Rechnung.
+// =============================================================================
+
+/**
+ * "ergaenzungen" enthält, was der Nutzer ergänzt oder geändert hat; es hat
+ * immer Vorrang, auch ein bewusst geleertes Feld (null):
+ *   { nummer, datum, faellig, iban, bic, steuerfall: "standard" | "reverse_charge" | "kleinunternehmer",
+ *     absender: { name, adresse: [...], plz, ort, ustId, steuernummer, email, telefon, kontakt },
+ *     empfaenger: { …wie absender },
+ *     positionen: { 1: { name, beschreibung, menge, einheitCode, einzelpreis, gesamt, satz, von, bis } },
+ *     kaeuferreferenz, leitwegId, leistungsdatum, einheiten: { "pauschale": "LS" } }
+ */
+function baueRechnung(befund, ergaenzungen = {}) {
+  const e = ergaenzungen;
+  const partei = (p, geaendert = {}) => ({
+    name: p.name, adresse: [p.zusatz, p.strasse].filter(Boolean), plz: p.plz, ort: p.ort, land: p.land || "DE",
+    ustId: p.ustId, steuernummer: p.steuernummer, email: p.email, telefon: p.telefon, kontakt: p.kontakt,
+    ...geaendert,
+  });
+  const kiArt = steuerfallAusBefund(befund);
+  const art = waehle(e, "steuerfall", kiArt);
+  const kategorie = Object.entries(REGELN.steuerfaelle).find(([, a]) => a === art)?.[0] || null;
+  const grund = befund.steuer.find((s) => s.befreiungsgrund)?.befreiungsgrund;
+  const text = art === kiArt && grund ? grund : TEXTE.steuerfallText[art] || null;
+  const leistungsdatum = e.leistungsdatum || null;
+  const referenz = waehle(e, "kaeuferreferenz", befund.rechnung.bestellnummer);
+  const leitwegId = waehle(e, "leitwegId", befund.rechnung.leitwegId);
+
+  return {
+    nummer: waehle(e, "nummer", befund.rechnung.nummer),
+    datum: waehle(e, "datum", befund.rechnung.datum),
+    faellig: waehle(e, "faellig", befund.rechnung.faellig),
+    waehrung: "EUR",
+    referenz, leitwegId, leistungsdatum,
+    // BT-10: bei Behörden die Leitweg-ID, sonst die Referenz des Kunden
+    kaeuferreferenz: leitwegId || referenz || TEXTE.keineKaeuferreferenz,
+    bestellreferenz: leitwegId ? referenz : null,
+    steuerfall: { art, kategorie, text },
+    absender: partei(befund.verkaeufer, e.absender),
+    empfaenger: {
+      ...partei({ ...befund.kaeufer, telefon: null, kontakt: null, steuernummer: null }, e.empfaenger),
+      // Behörde laut KI: dann wird nach der Leitweg-ID gefragt
+      oeffentlich: Boolean(befund.kaeufer.oeffentlich),
+    },
+    bank: { iban: waehle(e, "iban", befund.zahlung.iban), bic: waehle(e, "bic", befund.zahlung.bic) },
+    positionen: befund.positionen.map((p) => {
+      const g = (e.positionen || {})[p.nr] || {};
+      const eigeneEinheit = p.einheitText ? (e.einheiten || {})[einheitSchluessel(p.einheitText)] : null;
+      // Leistungsdatum: eigenes der Position, sonst das ergänzte, sonst der Zeitraum der ganzen Rechnung
+      const [von, bis] = p.von ? [p.von, p.bis || p.von]
+        : leistungsdatum ? [leistungsdatum, leistungsdatum]
+          : [befund.rechnung.leistungVon, befund.rechnung.leistungBis || befund.rechnung.leistungVon];
+      return {
+        nr: p.nr,
+        name: waehle(g, "name", p.name),
+        beschreibung: waehle(g, "beschreibung", p.beschreibung),
+        menge: waehle(g, "menge", p.menge),
+        einheit: p.einheitText,
+        einheitCode: waehle(g, "einheitCode", eigeneEinheit || p.einheitCode),
+        einzelpreis: waehle(g, "einzelpreis", p.einzelpreis),
+        gesamt: waehle(g, "gesamt", p.gesamt),
+        kategorie,
+        satz: kategorie === "S" ? waehle(g, "satz", p.steuersatz || null) : 0,
+        von: waehle(g, "von", von),
+        bis: waehle(g, "bis", bis),
+      };
+    }),
+  };
+}
+
+/** Steuerfall nach der Kategorie, die die KI am häufigsten vergeben hat; null, wenn XFact sie nicht kennt. */
+function steuerfallAusBefund(befund) {
+  const kategorien = [...befund.positionen.map((p) => p.steuerkategorie), ...befund.steuer.map((s) => s.kategorie)].filter(Boolean);
+  if (!kategorien.length) return "standard";
+  const haeufigste = kategorien.sort((a, b) => kategorien.filter((k) => k === b).length - kategorien.filter((k) => k === a).length)[0];
+  return REGELN.steuerfaelle[haeufigste] || null;
+}
+
+/** Wert aus den Ergänzungen, wenn der Nutzer ihn gesetzt hat (auch null), sonst der erkannte. */
+function waehle(ergaenzungen, schluessel, erkannt) {
+  return ergaenzungen && Object.hasOwn(ergaenzungen, schluessel) ? ergaenzungen[schluessel] : erkannt ?? null;
+}
+
+/** Summen, wie sie in die XRechnung gehen: Netto, Steuer je Satz, Gesamt. */
+function summenDerRechnung(r) {
+  const gruppen = steuergruppen(r.positionen);
+  const netto = runde(gruppen.reduce((s, g) => s + g.basis, 0));
+  const steuer = runde(gruppen.reduce((s, g) => s + g.betrag, 0));
+  return { gruppen, netto, steuer, brutto: runde(netto + steuer) };
+}
+
+/** "Std." → "std": so wird eine Einheit nachgeschlagen und gemerkt. */
+function einheitSchluessel(einheit) {
+  return einheit.trim().toLowerCase().replace(/\.$/, "");
+}
 
 // === XML-ERZEUGUNG ============================================================
 // Wie aus den Rechnungsdaten die XRechnung entsteht: XRechnung 3.0 in der
@@ -1059,8 +1534,8 @@ function xmlDateiname(pdfName) {
 }
 
 // === PDF LESEN ================================================================
-// Holt den Text aus dem PDF und setzt ihn zu Zeilen zusammen. Jede Zeile kennt
-// die Position ihrer Textstücke, damit später Spalten erkannt werden können.
+// Holt den Text aus dem PDF und setzt ihn zu Zeilen zusammen, so dass Spalten
+// ungefähr untereinander stehen. Diesen Text bekommt die KI.
 // =============================================================================
 
 let pdfjs = null;
@@ -1106,10 +1581,23 @@ async function lesePdf(daten, bibliothek = null) {
         y: ansicht.height - teil.transform[5],
         groesse: Math.hypot(teil.transform[2], teil.transform[3]) || teil.height || 10,
       }));
-    seiten.push({ breite: ansicht.width, hoehe: ansicht.height, zeilen: zuZeilen(stuecke) });
+    seiten.push({ breite: ansicht.width, hoehe: ansicht.height, zeilen: zuZeilen(ohneDoppelte(stuecke)) });
   }
   await ladeauftrag.destroy();
   return { seiten };
+}
+
+/**
+ * Manche Programme drucken Fettschrift, indem sie denselben Text zweimal fast
+ * an dieselbe Stelle setzen. Solche Doppel werden entfernt.
+ */
+function ohneDoppelte(stuecke) {
+  const ergebnis = [];
+  for (const s of stuecke) {
+    const doppelt = ergebnis.some((e) => e.text.trim() === s.text.trim() && Math.abs(e.x - s.x) < 2 && Math.abs(e.y - s.y) < 2);
+    if (!doppelt) ergebnis.push(s);
+  }
+  return ergebnis;
 }
 
 /** Fasst Textstücke, die auf gleicher Höhe liegen, zu Zeilen zusammen. */
@@ -1130,7 +1618,7 @@ function zuZeilen(stuecke) {
 
 /**
  * Gibt die Seiten als Text aus, bei dem die Spalten wie im PDF untereinander
- * stehen. Diese Form bekommt später auch die KI.
+ * stehen. Diese Form bekommt die KI.
  */
 function alsLayoutText(pdf) {
   return pdf.seiten.map((seite) => {
@@ -1159,774 +1647,6 @@ function typischeZeichenbreite(seite) {
 
 function hatText(pdf) {
   return pdf.seiten.some((seite) => seite.zeilen.length > 0);
-}
-
-// === ERKENNUNG ================================================================
-// Wendet die ERKENNUNGSREGELN auf die gelesenen Zeilen an.
-// Jeder Fund merkt sich, in welcher Zeile er stand:
-//   { wert, seite, zeile, unsicher? }
-// "unsicher" enthält den Grund, wenn der Fund geprüft werden sollte.
-// =============================================================================
-
-/** Alle Erkennungen auf einmal: { kopf, parteien, positionen, steuerfall } */
-function erkenneRechnung(pdf) {
-  const kopf = erkenneKopfdaten(pdf);
-  return {
-    kopf,
-    parteien: erkenneParteien(pdf, kopf),
-    positionen: erkennePositionen(pdf),
-    steuerfall: erkenneSteuerfall(pdf),
-  };
-}
-
-/** Erkennt die Kopfdaten einer Rechnung. */
-function erkenneKopfdaten(pdf) {
-  const zeilen = alleZeilen(pdf);
-  const regeln = ERKENNUNGSREGELN.beschriftungen;
-  const iban = findeIban(zeilen);
-  // Ein Wert wird nur bis zur nächsten Beschriftung gelesen: In
-  // "zahlbar bis:  Netto 1.800,00 €" gehört der Betrag nicht zu "zahlbar bis".
-  // Beim Gesamtbetrag zählt die Steuer nicht als Grenze ("Gesamt inkl. USt 702,00").
-  const { netto, umsatzsteuer, gesamt, faellig } = regeln;
-  return {
-    rechnungsnummer: findeNachBeschriftung(zeilen, regeln.rechnungsnummer, rechnungsnummerIn),
-    rechnungsdatum: findeNachBeschriftung(zeilen, regeln.rechnungsdatum, ersterWert(datumsangaben))
-      || findeDatumOhneBeschriftung(pdf, zeilen),
-    faellig: findeNachBeschriftung(zeilen, faellig, ersterWert(datumsangaben),
-      { bisZu: [...netto, ...umsatzsteuer, ...gesamt] }),
-    netto: findeNachBeschriftung(zeilen, netto, letzterWert(betraege),
-      { nurGleicheZeile: true, bisZu: [...umsatzsteuer, ...gesamt, ...faellig] }),
-    umsatzsteuer: findeUmsatzsteuer(zeilen),
-    gesamt: findeNachBeschriftung(zeilen, gesamt, letzterWert(betraege),
-      { nurGleicheZeile: true, bisZu: [...netto, ...faellig] }),
-    iban,
-    bic: findeNachBeschriftung(zeilen, regeln.bic, bicIn),
-    ustIds: findeUstIds(zeilen, iban),
-  };
-}
-
-/** Alle Zeilen aller Seiten in einer Liste, jede mit Seiten- und Zeilennummer. */
-function alleZeilen(pdf) {
-  return pdf.seiten.flatMap((seite, s) =>
-    seite.zeilen.map((zeile, z) => ({ ...zeile, seite: s + 1, nr: z + 1 })));
-}
-
-/**
- * Sucht eine Beschriftung und liest den Wert dahinter, höchstens bis zur
- * nächsten Beschriftung aus bisZu. Steht dort nichts, wird in den nächsten
- * Zeilen darunter gesucht (bis zu drei, solange sie nah beieinander liegen):
- * zuerst genau unter der Beschriftung (Tabellenkopf), und wenn die
- * Beschriftung am Zeilenende steht, auch links darunter (Zeilenumbruch).
- * finder(text) gibt { wert, ... } oder null zurück.
- */
-function findeNachBeschriftung(zeilen, beschriftungen, finder, { nurGleicheZeile = false, bisZu = [] } = {}) {
-  for (const beschriftung of beschriftungen) {
-    for (let i = 0; i < zeilen.length; i++) {
-      const zeile = zeilen[i];
-      const stelle = findeBeschriftung(zeile.text, beschriftung);
-      if (stelle < 0) continue;
-      const rest = textBisZurNaechsten(zeile.text.slice(stelle + beschriftung.length), bisZu);
-      const nachher = finder(rest);
-      if (nachher) return fund(nachher.wert, zeile);
-      if (nurGleicheZeile) continue;
-      const x = xVonStelle(zeile, stelle);
-      const amZeilenende = !/[\p{L}\d]/u.test(rest);
-      const abstand = 3 * zeile.stuecke[0].groesse;
-      for (let j = i + 1; j <= i + 3 && j < zeilen.length; j++) {
-        const darunter = zeilen[j];
-        if (darunter.seite !== zeile.seite || darunter.y - zeile.y > abstand) break;
-        const kandidaten = [textUnter(darunter, x)];
-        if (amZeilenende) kandidaten.push(textLinksVon(darunter, x));
-        for (const text of kandidaten) {
-          const unten = text && finder(text);
-          if (unten) return fund(unten.wert, darunter);
-        }
-      }
-    }
-  }
-  return null;
-}
-
-function textBisZurNaechsten(text, beschriftungen) {
-  let ende = text.length;
-  for (const beschriftung of beschriftungen) {
-    const stelle = findeBeschriftung(text, beschriftung);
-    if (stelle >= 0 && stelle < ende) ende = stelle;
-  }
-  return text.slice(0, ende);
-}
-
-/**
- * Stelle einer Beschriftung im Text, oder -1. Die Beschriftung muss für sich
- * stehen: "Datum" passt nicht in "Leistungsdatum", "USt" nicht in "UStG".
- */
-function findeBeschriftung(text, beschriftung) {
-  const muster = new RegExp(`(^|[^\\p{L}])${maskiere(beschriftung)}(?![\\p{L}])`, "iu");
-  const treffer = muster.exec(text);
-  return treffer ? treffer.index + treffer[1].length : -1;
-}
-
-function maskiere(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s*");
-}
-
-/** Ungefähre x-Position eines Zeichens in einer Zeile. */
-function xVonStelle(zeile, stelle) {
-  let laenge = 0;
-  for (const stueck of zeile.stuecke) {
-    const text = stueck.text.trim();
-    if (stelle <= laenge + text.length) {
-      const anteil = (stelle - laenge) / Math.max(text.length, 1);
-      return stueck.x + anteil * (stueck.x2 - stueck.x);
-    }
-    laenge += text.length + 1;
-  }
-  return zeile.stuecke.at(-1).x;
-}
-
-/** Text der Stücke einer Zeile, die etwa unter der x-Position beginnen. */
-function textUnter(zeile, x) {
-  const stuecke = zeile.stuecke.filter((s) => s.x2 >= x - 2 && s.x <= x + 80);
-  return stuecke.map((s) => s.text.trim()).join(" ");
-}
-
-/** Text der Stücke einer Zeile, die links von der x-Position beginnen. */
-function textLinksVon(zeile, x) {
-  return zeile.stuecke.filter((s) => s.x < x).map((s) => s.text.trim()).join(" ");
-}
-
-function fund(wert, zeile, unsicher) {
-  const ergebnis = { wert, seite: zeile.seite, zeile: zeile.nr, y: zeile.y };
-  if (unsicher) ergebnis.unsicher = unsicher;
-  return ergebnis;
-}
-
-const ersterWert = (alle) => (text) => alle(text)[0] || null;
-const letzterWert = (alle) => (text) => alle(text).at(-1) || null;
-
-/** Rechnungsnummer: das erste Wort nach der Beschriftung, das eine Ziffer enthält. */
-function rechnungsnummerIn(text) {
-  const treffer = /^[\s:#.]*([A-Z0-9][A-Z0-9\-\/._]*)/i.exec(text);
-  return treffer && /\d/.test(treffer[1]) ? { wert: treffer[1].replace(/[.]$/, "") } : null;
-}
-
-/** Alle Beträge in deutscher Schreibweise: 1.234,56 oder 1234,56 oder -12,00 */
-function betraege(text) {
-  const muster = /(?<![\d.,])(-?)(\d{1,3}(?:\.\d{3})+|\d+),(\d{2})(?![\d.,]*\d)/g;
-  return [...text.matchAll(muster)].map((t) => ({
-    wert: Number(`${t[1]}${t[2].replace(/\./g, "")}.${t[3]}`),
-    stelle: t.index,
-  }));
-}
-
-/** Alle Datumsangaben wie 7.9.2026, 07.09.26 oder 07.09.2026, als JJJJ-MM-TT. */
-function datumsangaben(text) {
-  const muster = /(?<![\d.])(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})(?![\d])/g;
-  const ergebnis = [];
-  for (const t of text.matchAll(muster)) {
-    const jahr = t[3].length === 2 ? 2000 + Number(t[3]) : Number(t[3]);
-    const monat = Number(t[2]);
-    const tag = Number(t[1]);
-    const datum = new Date(Date.UTC(jahr, monat - 1, tag));
-    if (datum.getUTCMonth() !== monat - 1 || datum.getUTCDate() !== tag) continue;
-    ergebnis.push({ wert: datum.toISOString().slice(0, 10), stelle: t.index });
-  }
-  return ergebnis;
-}
-
-/**
- * Rechnungsdatum ohne Beschriftung: das erste Datum im oberen Drittel der
- * ersten Seite, das nicht in einer Zeile wie "Leistungsdatum" steht.
- */
-function findeDatumOhneBeschriftung(pdf, zeilen) {
-  const grenze = pdf.seiten[0].hoehe / 3;
-  for (const zeile of zeilen) {
-    if (zeile.seite !== 1 || zeile.y > grenze) continue;
-    if (ERKENNUNGSREGELN.keinRechnungsdatum.some((wort) => zeile.text.toLowerCase().includes(wort.toLowerCase()))) continue;
-    const datum = datumsangaben(zeile.text)[0];
-    if (datum) return fund(datum.wert, zeile, TEXTE.ohneBeschriftung);
-  }
-  return null;
-}
-
-/** Steuerzeilen wie "zzgl. 19 % USt 147,63" oder "USt. (0%) 0,00 €". */
-function findeUmsatzsteuer(zeilen) {
-  const ergebnis = [];
-  const ausschluss = ERKENNUNGSREGELN.keineSteuerzeile.map((w) => w.toLowerCase());
-  for (const zeile of zeilen) {
-    const text = zeile.text.toLowerCase();
-    if (ausschluss.some((wort) => text.includes(wort.toLowerCase()))) continue;
-    const beschriftung = ERKENNUNGSREGELN.beschriftungen.umsatzsteuer
-      .find((b) => findeBeschriftung(zeile.text, b) >= 0);
-    if (!beschriftung) continue;
-    const satz = /(\d{1,2}(?:,\d{1,2})?)\s*%/.exec(zeile.text);
-    const betrag = betraege(zeile.text).at(-1);
-    if (!satz || !betrag) continue;
-    const prozent = Number(satz[1].replace(",", "."));
-    if (ergebnis.some((s) => s.satz === prozent)) continue;
-    ergebnis.push({ satz: prozent, betrag: betrag.wert, seite: zeile.seite, zeile: zeile.nr });
-  }
-  return ergebnis;
-}
-
-/** Erste IBAN mit gültiger Prüfziffer; sonst die erste Kandidatin als unsicher. */
-function findeIban(zeilen) {
-  let kandidat = null;
-  for (const zeile of zeilen) {
-    for (const t of zeile.text.matchAll(/\b([A-Z]{2}\d{2}(?:\s?[A-Z0-9]){11,32})/g)) {
-      const zeichen = t[1].replace(/\s/g, "");
-      const iban = gueltigeIbanAm(zeichen);
-      if (iban) return fund(iban, zeile);
-      if (!kandidat) kandidat = fund(zeichen.slice(0, ERKENNUNGSREGELN.ibanLaenge[zeichen.slice(0, 2)] || 22), zeile, TEXTE.ibanPruefziffer);
-    }
-  }
-  return kandidat;
-}
-
-/**
- * Hinter einer IBAN steht oft noch Text ("... 0872 BIC ..."). Deshalb wird die
- * längste Anfangsfolge gesucht, deren Prüfziffer stimmt.
- */
-function gueltigeIbanAm(zeichen) {
-  const laenge = ERKENNUNGSREGELN.ibanLaenge[zeichen.slice(0, 2)];
-  const laengen = laenge ? [laenge] : Array.from({ length: 20 }, (_, i) => 34 - i);
-  for (const l of laengen) {
-    if (zeichen.length >= l && ibanPruefzifferOk(zeichen.slice(0, l))) return zeichen.slice(0, l);
-  }
-  return null;
-}
-
-function ibanPruefzifferOk(iban) {
-  const umgestellt = (iban.slice(4) + iban.slice(0, 4))
-    .replace(/[A-Z]/g, (b) => String(b.charCodeAt(0) - 55));
-  let rest = 0;
-  for (const ziffer of umgestellt) rest = (rest * 10 + Number(ziffer)) % 97;
-  return rest === 1;
-}
-
-function bicIn(text) {
-  const treffer = /^[\s:]*([A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?)\b/.exec(text);
-  return treffer ? { wert: treffer[1] } : null;
-}
-
-/** Alle USt-IdNrn. (EU), ohne Leerzeichen. Teile der IBAN zählen nicht. */
-function findeUstIds(zeilen, iban) {
-  const ergebnis = [];
-  const laender = Object.keys(ERKENNUNGSREGELN.ustIdAufbau).join("|");
-  const muster = new RegExp(`\\b(${laender})\\s?([0-9A-Z](?:\\s?[0-9A-Z]){1,13})(?![0-9A-Z])(?!\\s\\d)`, "g");
-  for (const zeile of zeilen) {
-    for (const t of zeile.text.matchAll(muster)) {
-      const land = t[1];
-      // Die Nummer darf in Gruppen geschrieben sein ("DE 133 51 09 45"). Folgt
-      // direkt weiterer Text ("DE812134836 USt-Nr."), zählen nur die ersten Gruppen.
-      const gruppen = t[2].split(/\s/);
-      const passend = gruppen.map((_, i) => gruppen.slice(0, gruppen.length - i).join(""))
-        .find((rest) => ERKENNUNGSREGELN.ustIdAufbau[land].test(rest));
-      if (!passend) continue;
-      const nummer = land + passend;
-      if (iban && iban.wert.includes(nummer)) continue;
-      if (ergebnis.some((u) => u.wert === nummer)) continue;
-      // x der Spalte merken, damit die Nummer einer Anschrift zugeordnet werden kann
-      ergebnis.push({ ...fund(nummer, zeile), x: zelleAnStelle(zeile, t.index).x });
-    }
-  }
-  return ergebnis;
-}
-
-// --- Positionen ----------------------------------------------------------------
-
-/**
- * Erkennt die Positionen. Ergebnis: Liste von
- *   { nr, datumVon, datumBis, name, beschreibung, menge, einheit, einzelpreis,
- *     steuersatz, gesamt, mengeAngenommen?, seite, zeile }
- * Eine Position beginnt mit einer Zeile, in der ein Gesamtbetrag steht. Die
- * Zeilen darunter (weitere Beschreibung, Datum) gehören dazu, bis eine Lücke
- * oder die Summen kommen.
- */
-function erkennePositionen(pdf) {
-  const zeilen = alleZeilen(pdf);
-  const summen = [...ERKENNUNGSREGELN.beschriftungen.netto, ...ERKENNUNGSREGELN.beschriftungen.gesamt,
-    ...ERKENNUNGSREGELN.beschriftungen.umsatzsteuer];
-  const positionen = [];
-
-  for (let i = 0; i < zeilen.length; i++) {
-    const spalten = tabellenkopf(zeilen[i]);
-    if (!spalten) continue;
-    let aktuell = null;
-    let vorher = zeilen[i];
-    const offen = [];   // Text vor der ersten Position, gehört zur nächsten
-    for (let j = i + 1; j < zeilen.length; j++) {
-      const zeile = zeilen[j];
-      if (zeile.seite !== vorher.seite || tabellenkopf(zeile)) break;
-      const zellen = inSpalten(zeile, spalten);
-      const gesamt = zellen.gesamt && betraege(zellen.gesamt).at(-1);
-      const abstand = zeile.y - vorher.y;
-      if (gesamt) {
-        // Summenzeilen ("Netto 777,00 €") stehen oft in denselben Spalten
-        if (summen.some((b) => findeBeschriftung(zeile.text, b) >= 0) && !zellen.beschreibung) break;
-        aktuell = neuePosition(positionen.length + 1, zeile, gesamt.wert);
-        for (const z of offen.splice(0)) ergaenze(aktuell, z);
-        ergaenze(aktuell, zellen);
-        positionen.push(aktuell);
-      } else {
-        if (abstand > 2.5 * zeile.stuecke[0].groesse) break;
-        if (summen.some((b) => findeBeschriftung(zeile.text, b) >= 0)) break;
-        if (!zellen.beschreibung && !zellen.datum) break;
-        if (aktuell) ergaenze(aktuell, zellen);
-        else offen.push(zellen);
-      }
-      vorher = zeile;
-    }
-  }
-  return positionen.map(vervollstaendige);
-}
-
-/**
- * Ist diese Zeile ein Tabellenkopf? Dann die Spalten mit x-Bereich, sonst null.
- * Spalte: { art: "menge" | "gesamt" | …, x, x2 }
- */
-function tabellenkopf(zeile) {
-  const spalten = [];
-  for (const stueck of zeile.stuecke) {
-    const text = stueck.text.replace(/\(?\s*(in\s*)?(€|EUR)\s*\)?/gi, "").trim();
-    const art = Object.entries(ERKENNUNGSREGELN.spalten).find(([, namen]) => passtGenau(text, namen))?.[0];
-    if (art && !spalten.some((s) => s.art === art)) spalten.push({ art, x: stueck.x, x2: stueck.x2 });
-  }
-  const genug = spalten.length >= 3 && spalten.some((s) => s.art === "gesamt");
-  return genug ? spalten : null;
-}
-
-/**
- * Verteilt die Textstücke einer Zeile auf die Spalten. Text steht linksbündig:
- * Er gehört in die Spalte, unter deren Überschrift er beginnt. Zahlen stehen
- * oft rechtsbündig und beginnen links von ihrer Überschrift: Sie gehören in
- * die Spalte, mit der sie sich am meisten überlappen.
- * Ergebnis: { beschreibung: "…", menge: "…", … }
- */
-function inSpalten(zeile, spalten) {
-  const zellen = {};
-  for (const stueck of zeile.stuecke) {
-    const istZahl = /^-?[\d.]+(,\d+)?\s*(€|EUR|%)?$/.test(stueck.text.trim());
-    let beste = istZahl ? null : spalten.find((s) => stueck.x >= s.x - 3 && stueck.x <= s.x2);
-    let besteUeberlappung = 0;
-    for (const spalte of beste ? [] : spalten) {
-      const ueberlappung = Math.min(stueck.x2, spalte.x2) - Math.max(stueck.x, spalte.x);
-      if (ueberlappung > besteUeberlappung) { beste = spalte; besteUeberlappung = ueberlappung; }
-    }
-    if (!beste) {
-      // Keine Überlappung: die nächste Spalte links davon (Text beginnt unter der Überschrift)
-      beste = spalten.filter((s) => s.x <= stueck.x + 2).sort((a, b) => b.x - a.x)[0];
-    }
-    if (!beste || beste.art === "pos") continue;
-    zellen[beste.art] = [zellen[beste.art], stueck.text.trim()].filter(Boolean).join(" ");
-  }
-  return zellen;
-}
-
-function neuePosition(nr, zeile, gesamt) {
-  return { nr, datumText: "", zeilenText: [], menge: null, einheit: null, einzelpreis: null,
-    steuersatz: null, gesamt, seite: zeile.seite, zeile: zeile.nr };
-}
-
-/** Übernimmt die Zellen einer Zeile in die Position. */
-function ergaenze(position, zellen) {
-  if (zellen.datum) position.datumText = [position.datumText, zellen.datum].filter(Boolean).join(" ");
-  if (zellen.beschreibung) position.zeilenText.push(zellen.beschreibung);
-  if (zellen.menge && position.menge === null) {
-    // "4", "1.080", "2,5" – manchmal mit Einheit in derselben Spalte: "8 Std"
-    const treffer = /^(-?\d{1,3}(?:\.\d{3})+|-?\d+(?:,\d+)?)\s*(.*)$/.exec(zellen.menge);
-    if (treffer) {
-      position.menge = Number(treffer[1].replace(/\./g, "").replace(",", "."));
-      if (treffer[2] && !zellen.einheit) position.einheit = treffer[2];
-    }
-  }
-  if (zellen.einheit && !position.einheit) position.einheit = zellen.einheit;
-  if (zellen.einzelpreis && position.einzelpreis === null) {
-    const preis = betraege(zellen.einzelpreis).at(-1);
-    if (preis) position.einzelpreis = preis.wert;
-  }
-  if (zellen.steuersatz && position.steuersatz === null) {
-    const satz = /(\d{1,2}(?:,\d{1,2})?)\s*%?/.exec(zellen.steuersatz);
-    if (satz) position.steuersatz = Number(satz[1].replace(",", "."));
-  }
-}
-
-/** Name, Beschreibung, Leistungszeitraum; fehlende Menge und fehlenden Preis ergänzen. */
-function vervollstaendige(position) {
-  const [name = "", ...rest] = position.zeilenText;
-  const { von, bis } = leistungszeitraum(position.datumText);
-  const ergebnis = { ...position, name, beschreibung: verbindeZeilen(rest), datumVon: von, datumBis: bis };
-  delete ergebnis.zeilenText;
-  if (ergebnis.menge === null) {
-    ergebnis.menge = 1;
-    ergebnis.mengeAngenommen = true;
-  }
-  if (ergebnis.einzelpreis === null) ergebnis.einzelpreis = runde(ergebnis.gesamt / ergebnis.menge);
-  return ergebnis;
-}
-
-/** Fügt umbrochene Zeilen zusammen; "Prozess-" + "optimierung" wird "Prozessoptimierung". */
-function verbindeZeilen(zeilen) {
-  return zeilen.reduce((text, zeile) => {
-    if (!text) return zeile;
-    if (/\p{Ll}-$/u.test(text) && /^\p{Ll}/u.test(zeile)) return text.slice(0, -1) + zeile;
-    return `${text} ${zeile}`;
-  }, "");
-}
-
-/**
- * Leistungsdatum oder -zeitraum aus Texten wie
- *   "7.9.2026", "26.-28.08.26", "01.01.-25.08.26", "01.09.2026 - 15.09.2026"
- * Ergebnis: { von, bis } als JJJJ-MM-TT, oder beides null.
- */
-function leistungszeitraum(text) {
-  const daten = datumsangaben(text);
-  if (daten.length >= 2) return { von: daten[0].wert, bis: daten.at(-1).wert };
-  // Erst "01.01.-25.08.26" (Tag.Monat bis Tag.Monat.Jahr), dann "26.-28.08.26"
-  const monatBisDatum = /(\d{1,2})\.(\d{1,2})\.?\s*[-–]\s*(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})/.exec(text);
-  if (monatBisDatum) {
-    const [, tag1, monat1, tag2, monat2, jahr] = monatBisDatum;
-    const von = datumsangaben(`${tag1}.${monat1}.${jahr}`)[0];
-    const bis = datumsangaben(`${tag2}.${monat2}.${jahr}`)[0];
-    if (von && bis) return { von: von.wert, bis: bis.wert };
-  }
-  const tagBisTag = /(\d{1,2})\.?\s*[-–]\s*(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})/.exec(text);
-  if (tagBisTag) {
-    const [, tag1, tag2, monat, jahr] = tagBisTag;
-    const bis = datumsangaben(`${tag2}.${monat}.${jahr}`)[0];
-    const von = datumsangaben(`${tag1}.${monat}.${jahr}`)[0];
-    if (von && bis) return { von: von.wert, bis: bis.wert };
-  }
-  if (daten.length === 1) return { von: daten[0].wert, bis: daten[0].wert };
-  return { von: null, bis: null };
-}
-
-// --- Steuerfall ------------------------------------------------------------------
-
-/**
- * Normal besteuert, Steuerschuldnerschaft des Leistungsempfängers (§13b) oder
- * Kleinunternehmer (§19)? Ergebnis: { art, text } – text ist der Hinweis von
- * der Rechnung, der in die XRechnung übernommen wird.
- */
-function erkenneSteuerfall(pdf) {
-  for (const zeile of alleZeilen(pdf)) {
-    for (const [art, merkmale] of Object.entries(ERKENNUNGSREGELN.steuerfaelle)) {
-      if (merkmale.some((m) => zeile.text.toLowerCase().includes(m.toLowerCase()))) {
-        return { ...fund(art, zeile), art, text: zeile.text.trim() };
-      }
-    }
-  }
-  return { art: "standard", text: null };
-}
-
-// --- Rechnung zusammensetzen -------------------------------------------------------
-
-/**
- * Setzt aus allem Erkannten die Rechnung zusammen, wie sie in die XRechnung
- * geht. "ergaenzungen" enthält, was der Nutzer ergänzt oder geändert hat; es
- * hat immer Vorrang, auch ein bewusst geleertes Feld (null):
- *   { nummer, datum, faellig, iban, bic, steuerfall: "standard" | "reverse_charge" | "kleinunternehmer",
- *     absender: { name, adresse: [...], plz, ort, ustId, steuernummer, email, telefon, kontakt },
- *     empfaenger: { …wie absender },
- *     positionen: { 1: { name, beschreibung, menge, einheit, einzelpreis, gesamt, satz, von, bis } },
- *     kaeuferreferenz, leitwegId, leistungsdatum, einheiten: { "std": "HUR" } }
- * Alle Werte sind hier schlichte Werte, keine Funde mehr.
- */
-function baueRechnung({ kopf, parteien, positionen, steuerfall }, ergaenzungen = {}) {
-  const e = ergaenzungen;
-  const w = (fund) => (fund ? fund.wert : null);
-  const partei = (p, geaendert = {}) => ({
-    name: w(p.name), adresse: p.adresse.map(w), plz: w(p.plz), ort: w(p.ort), land: w(p.land) || "DE",
-    ustId: w(p.ustId), steuernummer: w(p.steuernummer), email: w(p.email), telefon: w(p.telefon),
-    kontakt: w(p.kontakt),
-    ...geaendert,
-  });
-  const art = waehle(e, "steuerfall", steuerfall.art);
-  const kategorie = { standard: "S", reverse_charge: "AE", kleinunternehmer: "E" }[art];
-  const text = art === steuerfall.art && steuerfall.text ? steuerfall.text : TEXTE.steuerfallText[art] || null;
-  const einSatz = kopf.umsatzsteuer.length === 1 ? kopf.umsatzsteuer[0].satz : null;
-  const leistungsdatum = e.leistungsdatum || null;
-  const referenz = e.kaeuferreferenz || null;
-  const leitwegId = e.leitwegId || null;
-
-  return {
-    nummer: waehle(e, "nummer", w(kopf.rechnungsnummer)),
-    datum: waehle(e, "datum", w(kopf.rechnungsdatum)),
-    faellig: waehle(e, "faellig", w(kopf.faellig)),
-    waehrung: "EUR",
-    referenz, leitwegId, leistungsdatum,
-    // BT-10: bei Behörden die Leitweg-ID, sonst die Referenz des Kunden
-    kaeuferreferenz: leitwegId || referenz || TEXTE.keineKaeuferreferenz,
-    bestellreferenz: leitwegId ? referenz : null,
-    steuerfall: { art, kategorie, text },
-    absender: partei(parteien.absender, e.absender),
-    empfaenger: partei(parteien.empfaenger, e.empfaenger),
-    bank: { iban: waehle(e, "iban", w(kopf.iban)), bic: waehle(e, "bic", w(kopf.bic)) },
-    positionen: positionen.map((p) => {
-      const g = (e.positionen || {})[p.nr] || {};
-      const einheit = waehle(g, "einheit", p.einheit);
-      return {
-        nr: p.nr,
-        name: waehle(g, "name", p.name),
-        beschreibung: waehle(g, "beschreibung", p.beschreibung || null),
-        menge: waehle(g, "menge", p.menge),
-        einheit,
-        einheitCode: einheitCode(einheit, e.einheiten),
-        einzelpreis: waehle(g, "einzelpreis", p.einzelpreis),
-        gesamt: waehle(g, "gesamt", p.gesamt),
-        kategorie,
-        satz: kategorie === "S" ? waehle(g, "satz", p.steuersatz ?? einSatz) : 0,
-        von: waehle(g, "von", p.datumVon || leistungsdatum),
-        bis: waehle(g, "bis", p.datumBis || p.datumVon || leistungsdatum),
-      };
-    }),
-  };
-}
-
-/** Wert aus den Ergänzungen, wenn der Nutzer ihn gesetzt hat (auch null), sonst der erkannte. */
-function waehle(ergaenzungen, schluessel, erkannt) {
-  return ergaenzungen && Object.hasOwn(ergaenzungen, schluessel) ? ergaenzungen[schluessel] : erkannt;
-}
-
-/** Summen, wie sie in die XRechnung gehen: Netto, Steuer je Satz, Gesamt. */
-function summenDerRechnung(r) {
-  const gruppen = steuergruppen(r.positionen);
-  const netto = runde(gruppen.reduce((s, g) => s + g.basis, 0));
-  const steuer = runde(gruppen.reduce((s, g) => s + g.betrag, 0));
-  return { gruppen, netto, steuer, brutto: runde(netto + steuer) };
-}
-
-
-/** Code einer Einheit: zuerst die Zuordnung des Nutzers, dann die Erkennungsregeln. */
-function einheitCode(einheit, eigene = {}) {
-  if (!einheit) return null;
-  const schluessel = einheitSchluessel(einheit);
-  return (eigene || {})[schluessel] || ERKENNUNGSREGELN.einheiten[schluessel] || null;
-}
-
-/** "Std." → "std": so wird eine Einheit nachgeschlagen und gemerkt. */
-function einheitSchluessel(einheit) {
-  return einheit.trim().toLowerCase().replace(/\.$/, "");
-}
-
-
-// --- Absender und Empfänger ---------------------------------------------------
-
-// "65203 Wiesbaden", "D-20095 Hamburg", "2777 Dobrinishte"
-const PLZ_ORT = /^(?:D-|DE-)?(\d{5}|\d{4})\s+(\p{Lu}[\p{L}\p{M} .\-\/()]*)$/u;
-
-/**
- * Erkennt Absender (Rechnungssteller) und Empfänger.
- * Ergebnis: { absender, empfaenger }, jede Partei mit
- *   name, adresse (Liste der Zeilen zwischen Name und PLZ), plz, ort, land,
- *   ustId, steuernummer, email, telefon – jeweils als Fund oder null.
- */
-function erkenneParteien(pdf, kopf) {
-  const zeilen = alleZeilen(pdf);
-  const regeln = ERKENNUNGSREGELN.beschriftungen;
-  const bloecke = findeAdressbloecke(zeilen);
-  const mitBeschriftung = (liste) => bloecke.find((b) => b.beschriftung && passtGenau(b.beschriftung, liste));
-
-  let empfaengerBlock = mitBeschriftung(regeln.empfaenger);
-  let absenderBlock = mitBeschriftung(regeln.absender);
-  if (!empfaengerBlock) {
-    // Ohne Überschrift: das Anschriftfeld oben links auf der ersten Seite
-    const halbe = pdf.seiten[0].breite / 2;
-    empfaengerBlock = bloecke
-      .filter((b) => b !== absenderBlock && b.seite === 1)
-      .sort((a, b) => (a.x < halbe ? 0 : 1) - (b.x < halbe ? 0 : 1) || a.y - b.y)[0];
-  }
-  const empfaenger = parteiAus(empfaengerBlock);
-  const absender = absenderBlock ? parteiAus(absenderBlock)
-    : absenderAusAbsenderzeile(zeilen, empfaengerBlock)
-      || parteiAus(bloecke.find((b) => b !== empfaengerBlock));
-
-  // USt-IdNrn.: die in der Spalte einer Anschrift gehört zu ihr, die übrigen zum Absender
-  const bei = (f, block) => block && f.seite === block.seite && Math.abs(f.x - block.x) <= 4
-    && f.y >= block.y - 1 && f.y <= block.yUnten + 5 * block.groesse;
-  for (const ustId of kopf.ustIds) {
-    if (!empfaenger.ustId && bei(ustId, empfaengerBlock)) empfaenger.ustId = ustId;
-    else if (!absender.ustId && (bei(ustId, absenderBlock) || !bei(ustId, empfaengerBlock))) absender.ustId = ustId;
-  }
-
-  // Steuernummer, E-Mail und Telefon stehen fast immer beim Absender (Briefkopf, Fußzeile)
-  absender.steuernummer = findeNachBeschriftung(zeilen, regeln.steuernummer, steuernummerIn);
-  const nichtBeimEmpfaenger = (f) => f && !(empfaengerBlock && f.seite === empfaengerBlock.seite
-    && f.y >= empfaengerBlock.y - 1 && f.y <= empfaengerBlock.yUnten);
-  absender.email = findeEmails(zeilen).find(nichtBeimEmpfaenger) || null;
-  const telefon = findeNachBeschriftung(zeilen, regeln.telefon, telefonIn) || findeTelefonOhneBeschriftung(zeilen);
-  absender.telefon = nichtBeimEmpfaenger(telefon) ? telefon : null;
-  const kontakt = findeNachBeschriftung(zeilen, regeln.ansprechpartner, personIn);
-  absender.kontakt = nichtBeimEmpfaenger(kontakt) ? kontakt : null;
-
-  return { absender, empfaenger };
-}
-
-/**
- * Sucht Anschriften: eine Zeile "PLZ Ort" und darüber, in derselben Spalte,
- * Name und Straße. Steht darüber eine Überschrift wie "Rechnung an", wird sie
- * gemerkt. Darunter darf ein Land stehen.
- */
-function findeAdressbloecke(zeilen) {
-  const bloecke = [];
-  const ueberschriften = [...ERKENNUNGSREGELN.beschriftungen.empfaenger, ...ERKENNUNGSREGELN.beschriftungen.absender];
-  for (let i = 0; i < zeilen.length; i++) {
-    for (const zelle of zellenDerZeile(zeilen[i])) {
-      const treffer = PLZ_ORT.exec(zelle.text);
-      if (!treffer) continue;
-      const block = {
-        seite: zelle.seite, x: zelle.x, y: zelle.y, yUnten: zelle.y, groesse: zelle.groesse,
-        beschriftung: null, zellen: [], plzZelle: zelle, plz: treffer[1], ort: treffer[2].trim(), land: null,
-      };
-      // nach oben: Name, Straße, Zusätze – bis zur Überschrift oder Lücke
-      let oben = zelle;
-      for (let j = i - 1; j >= 0 && j >= i - 6; j--) {
-        const darueber = zelleBei(zeilen[j], zelle.x);
-        if (!darueber || darueber.seite !== zelle.seite || oben.y - darueber.y > 2.6 * zelle.groesse) break;
-        if (passtGenau(darueber.text, ueberschriften)) { block.beschriftung = darueber.text; break; }
-        if (istAbsenderzeile(darueber.text)) break;
-        block.zellen.unshift(darueber);
-        oben = darueber;
-      }
-      if (!block.zellen.length) continue;
-      block.y = oben.y;
-      // nach unten: Land
-      const darunter = zeilen[i + 1] && zelleBei(zeilen[i + 1], zelle.x);
-      const land = darunter && ERKENNUNGSREGELN.laender[darunter.text.trim().toLowerCase()];
-      if (land) { block.land = { ...fundAusZelle(land, darunter), text: darunter.text }; block.yUnten = darunter.y; }
-      bloecke.push(block);
-    }
-  }
-  return bloecke;
-}
-
-function parteiAus(block) {
-  const leer = { name: null, adresse: [], plz: null, ort: null, land: null,
-    ustId: null, steuernummer: null, email: null, telefon: null, kontakt: null };
-  if (!block) return leer;
-  const zellen = block.zellen.filter((z, i) => !(i === 0 && passtGenau(z.text, ERKENNUNGSREGELN.anrede)));
-  const [name, ...adresse] = zellen;
-  return {
-    ...leer,
-    name: name ? fundAusZelle(name.text, name) : null,
-    adresse: adresse.map((z) => fundAusZelle(z.text, z)),
-    plz: fundAusZelle(block.plz, block.plzZelle),
-    ort: fundAusZelle(block.ort, block.plzZelle),
-    land: block.land || { ...fundAusZelle("DE", block.plzZelle), angenommen: true },
-  };
-}
-
-/** "Muster Handwerk GmbH · Hauptstr. 1 · 20095 Hamburg" über dem Anschriftfeld */
-function absenderAusAbsenderzeile(zeilen, empfaengerBlock) {
-  for (const zeile of zeilen) {
-    if (zeile.seite !== 1) continue;
-    if (empfaengerBlock && zeile.y >= empfaengerBlock.y) break;
-    for (const zelle of zellenDerZeile(zeile)) {
-      if (!istAbsenderzeile(zelle.text)) continue;
-      const teile = zelle.text.split(ERKENNUNGSREGELN.absenderzeileTrenner).map((t) => t.trim()).filter(Boolean);
-      const stelle = teile.findIndex((t) => PLZ_ORT.test(t));
-      const [, plz, ort] = PLZ_ORT.exec(teile[stelle]);
-      const block = { seite: zelle.seite, x: zelle.x, y: zelle.y, yUnten: zelle.y, groesse: zelle.groesse,
-        zellen: teile.slice(0, stelle).map((text) => ({ ...zelle, text })), plzZelle: zelle, plz, ort: ort.trim() };
-      return parteiAus(block);
-    }
-  }
-  return null;
-}
-
-function istAbsenderzeile(text) {
-  const teile = text.split(ERKENNUNGSREGELN.absenderzeileTrenner);
-  return teile.length >= 3 && teile.some((t) => PLZ_ORT.test(t.trim()));
-}
-
-/** Passt der Text genau zu einer der Beschriftungen? (ohne Doppelpunkt, Groß/klein egal) */
-function passtGenau(text, liste) {
-  const rein = text.replace(/[:\s]+$/, "").trim().toLowerCase();
-  return liste.some((b) => b.toLowerCase() === rein);
-}
-
-/**
- * Teilt eine Zeile in Zellen: Textstücke, zwischen denen kaum Abstand ist,
- * gehören zusammen. Jede Zelle hat x, x2, y, text, groesse, seite, zeile.
- */
-function zellenDerZeile(zeile) {
-  const zellen = [];
-  for (const stueck of zeile.stuecke) {
-    const letzte = zellen.at(-1);
-    if (letzte && stueck.x - letzte.x2 < 1.5 * stueck.groesse) {
-      letzte.text += (stueck.x - letzte.x2 > 0.15 * stueck.groesse ? " " : "") + stueck.text.trim();
-      letzte.x2 = stueck.x2;
-      letzte.stuecke.push(stueck);
-    } else {
-      zellen.push({ text: stueck.text.trim(), x: stueck.x, x2: stueck.x2, y: zeile.y, groesse: stueck.groesse,
-        seite: zeile.seite, zeile: zeile.nr, stuecke: [stueck] });
-    }
-  }
-  return zellen;
-}
-
-function zelleBei(zeile, x) {
-  return zellenDerZeile(zeile).find((z) => Math.abs(z.x - x) <= 4) || null;
-}
-
-/** Die Zelle, in der das Zeichen an dieser Stelle des Zeilentexts steht. */
-function zelleAnStelle(zeile, stelle) {
-  let laenge = 0;
-  let stueck = zeile.stuecke.at(-1);
-  for (const s of zeile.stuecke) {
-    laenge += s.text.trim().length + 1;
-    if (stelle < laenge) { stueck = s; break; }
-  }
-  return zellenDerZeile(zeile).find((z) => z.stuecke.includes(stueck));
-}
-
-function fundAusZelle(wert, zelle) {
-  return { wert, seite: zelle.seite, zeile: zelle.zeile, y: zelle.y };
-}
-
-function steuernummerIn(text) {
-  const treffer = /^[\s:.]*(\d{2,3}\/\d{3,4}\/\d{4,5}|\d{10,13})(?!\d)/.exec(text);
-  return treffer ? { wert: treffer[1] } : null;
-}
-
-/** Name einer Person: "Andrea Kaden", "Frau Dr. Müller-Lüdenscheidt" */
-function personIn(text) {
-  const treffer = /^[\s:]*((?:(?:Frau|Herr|Dr\.|Prof\.)\s+)*\p{Lu}[\p{Ll}\p{M}]+(?:[ -]\p{Lu}[\p{Ll}\p{M}]+)+)/u.exec(text);
-  return treffer ? { wert: treffer[1] } : null;
-}
-
-function telefonIn(text) {
-  const treffer = /^[\s:.]*(\+?\d[\d \/\-()]{5,}\d)/.exec(text);
-  return treffer ? { wert: treffer[1].trim() } : null;
-}
-
-/** Telefonnummer ohne Beschriftung: nur in internationaler Schreibweise (+49 …). */
-function findeTelefonOhneBeschriftung(zeilen) {
-  for (const zeile of zeilen) {
-    const treffer = /(?<![\w])(\+\d{2}[\d \/\-()]{6,}\d)/.exec(zeile.text);
-    if (treffer) return fund(treffer[1].trim(), zeile);
-  }
-  return null;
-}
-
-function findeEmails(zeilen) {
-  return zeilen.flatMap((zeile) =>
-    [...zeile.text.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map((t) => fund(t[0], zeile)));
-}
-
-// --- Darstellung -------------------------------------------------------------
-
-function runde(betrag) {
-  return Math.round(betrag * 100) / 100;
-}
-
-function alsBetrag(betrag) {
-  return betrag.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
-}
-
-function alsDatum(iso) {
-  const [jahr, monat, tag] = iso.split("-");
-  return `${tag}.${monat}.${jahr}`;
 }
 
 // === GEDÄCHTNIS ===============================================================
@@ -1964,22 +1684,22 @@ const kopie = (daten) => JSON.parse(JSON.stringify(daten));
 
 const schluesselText = (text) => String(text).toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
-/** Woran eine Firma wiedererkannt wird: USt-IdNr., sonst Steuernummer, sonst Name. */
+/** Woran eine Firma wiederbefund wird: USt-IdNr., sonst Steuernummer, sonst Name. */
 function firmaSchluessel(partei) {
   if (partei.ustId) return schluesselText(partei.ustId);
   if (partei.steuernummer) return `st:${schluesselText(partei.steuernummer)}`;
   return partei.name ? `name:${schluesselText(partei.name)}` : null;
 }
 
-/** Woran ein Kunde wiedererkannt wird: USt-IdNr., sonst Name und PLZ. */
+/** Woran ein Kunde wiederbefund wird: USt-IdNr., sonst Name und PLZ. */
 function kundeSchluessel(partei) {
   if (partei.ustId) return schluesselText(partei.ustId);
   return partei.name ? `name:${schluesselText(partei.name)}|${partei.plz || ""}` : null;
 }
 
-/** Firma und Kunde dieser Rechnung im Gedächtnis (oder null), erkannt am PDF selbst. */
-function imGedaechtnis(gedaechtnis, erkannt) {
-  const r = baueRechnung(erkannt, {});
+/** Firma und Kunde dieser Rechnung im Gedächtnis (oder null), befund am PDF selbst. */
+function imGedaechtnis(gedaechtnis, befund) {
+  const r = baueRechnung(befund, {});
   const firma = gedaechtnis.firmen[firmaSchluessel(r.absender)] || null;
   const kunde = firma ? firma.kunden[kundeSchluessel(r.empfaenger)] || null : null;
   return { r, firma, kunde };
@@ -1989,8 +1709,8 @@ function imGedaechtnis(gedaechtnis, erkannt) {
  * Was das Gedächtnis zu dieser Rechnung beitragen kann – nur für Lücken.
  * Ergebnis: { ergaenzungen (für baueRechnung), herkunft: { pfad: "firma" | "kunde" } }
  */
-function vorgabenAusGedaechtnis(gedaechtnis, erkannt) {
-  const { r, firma, kunde } = imGedaechtnis(gedaechtnis, erkannt);
+function vorgabenAusGedaechtnis(gedaechtnis, befund) {
+  const { r, firma, kunde } = imGedaechtnis(gedaechtnis, befund);
   const ergaenzungen = {};
   const herkunft = {};
   if (!firma) return { ergaenzungen, herkunft };
@@ -2004,9 +1724,8 @@ function vorgabenAusGedaechtnis(gedaechtnis, erkannt) {
   if (Object.keys(firma.einheiten).length) {
     ergaenzungen.einheiten = { ...firma.einheiten };
     for (const p of r.positionen) {
-      if (!p.einheitCode && p.einheit && firma.einheiten[einheitSchluessel(p.einheit)]) {
-        herkunft[`position.${p.nr}.einheit`] = "firma";
-      }
+      const gemerkt = p.einheit && firma.einheiten[einheitSchluessel(p.einheit)];
+      if (gemerkt && gemerkt !== p.einheitCode) herkunft[`position.${p.nr}.einheit`] = "firma";
     }
   }
   if (kunde) {
@@ -2031,11 +1750,11 @@ function vorgabenAusGedaechtnis(gedaechtnis, erkannt) {
  * Gedächtnis zurück und die Liste dessen, was neu oder geändert ist
  * (Texte für die Anzeige "Wird gemerkt: …").
  */
-function merkeRechnung(gedaechtnis, erkannt, ergaenzungen) {
+function merkeRechnung(gedaechtnis, befund, ergaenzungen) {
   const neu = kopie(gedaechtnis);
   const gemerkt = [];
-  const vorher = baueRechnung(erkannt, {});
-  const r = baueRechnung(erkannt, ergaenzungen);
+  const vorher = baueRechnung(befund, {});
+  const r = baueRechnung(befund, ergaenzungen);
   const schluessel = firmaSchluessel(vorher.absender) || firmaSchluessel(r.absender);
   if (!schluessel) return { gedaechtnis: neu, gemerkt };
 
@@ -2052,7 +1771,7 @@ function merkeRechnung(gedaechtnis, erkannt, ergaenzungen) {
   for (const [einheit, code] of Object.entries(ergaenzungen.einheiten || {})) {
     if (firma.einheiten[einheit] === code) continue;
     firma.einheiten[einheit] = code;
-    gemerkt.push(m.einheit(einheit, ERKENNUNGSREGELN.einheitenListe.find((x) => x.code === code)?.name || code));
+    gemerkt.push(m.einheit(einheit, REGELN.einheiten.find((x) => x.code === code)?.name || code));
   }
 
   const kundeSchl = kundeSchluessel(vorher.empfaenger) || kundeSchluessel(r.empfaenger);
@@ -2141,16 +1860,31 @@ function speichereGedaechtnis(gedaechtnis, speicher = globalThis.localStorage) {
   }
 }
 
+// --- Darstellung -------------------------------------------------------------
+
+function runde(betrag) {
+  return Math.round(betrag * 100) / 100;
+}
+
+function alsBetrag(betrag) {
+  return betrag.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+}
+
+function alsDatum(iso) {
+  const [jahr, monat, tag] = iso.split("-");
+  return `${tag}.${monat}.${jahr}`;
+}
+
 // Für die Oberfläche, für Tests und für Neugierige.
 window.XFact = {
-  TEXTE, ERKENNUNGSREGELN, PRUEFUNGEN, KI,
-  lesePdf, zuZeilen, alsLayoutText, hatText,
-  erkenneKopfdaten, erkenneParteien, erkennePositionen,
-  leistungszeitraum, erkenneSteuerfall, erkenneRechnung, baueRechnung, pruefeRechnung, erzeugeXml, xmlDateiname, einheitCode,
-  summenDerRechnung, hinweiseZurRechnung, einheitSchluessel, ibanPruefzifferOk,
+  TEXTE, REGELN, PRUEFUNGEN, KI, KI_ANWEISUNG, KI_SCHEMA,
+  lesePdf, zuZeilen, ohneDoppelte, alsLayoutText, hatText,
+  kiEingerichtet, ueberOpenRouter, frageKi, pruefeVerbindung, befundAusKi, jevFragen, frageJev,
+  baueRechnung, steuerfallAusBefund, summenDerRechnung, einheitSchluessel,
+  pruefeRechnung, hinweiseZurRechnung, ibanPruefzifferOk, ustIdAufbauOk, leitwegIdOk, datumGueltig, stehtImText,
+  erzeugeXml, xmlDateiname,
   GEDAECHTNIS, leeresGedaechtnis, firmaSchluessel, kundeSchluessel, vorgabenAusGedaechtnis, merkeRechnung,
   insLogbuch, hinweiseAusGedaechtnis, exportiereGedaechtnis, importiereGedaechtnis, ladeGedaechtnis, speichereGedaechtnis,
-  betraege, datumsangaben, ibanPruefzifferOk,
   alsBetrag, alsDatum,
 };
 </script>
@@ -2160,7 +1894,8 @@ window.XFact = {
 // Die drei Schritte und die Bedienung der Seite.
 // =============================================================================
 
-const { TEXTE, ERKENNUNGSREGELN, lesePdf, alsLayoutText, hatText, erkenneRechnung, baueRechnung,
+const { TEXTE, REGELN, lesePdf, alsLayoutText, hatText, kiEingerichtet, ueberOpenRouter, frageKi, frageJev,
+  pruefeVerbindung, KI, baueRechnung,
   pruefeRechnung, hinweiseZurRechnung, summenDerRechnung, erzeugeXml, xmlDateiname, einheitSchluessel,
   alsBetrag, alsDatum, GEDAECHTNIS, leeresGedaechtnis, vorgabenAusGedaechtnis, merkeRechnung, insLogbuch,
   hinweiseAusGedaechtnis, exportiereGedaechtnis, importiereGedaechtnis, ladeGedaechtnis, speichereGedaechtnis,
@@ -2172,7 +1907,7 @@ const { TEXTE, ERKENNUNGSREGELN, lesePdf, alsLayoutText, hatText, erkenneRechnun
  * oder bestätigt hat.
  */
 const zustand = {
-  dateiname: null, erkannt: null, ergaenzungen: {}, bestaetigt: new Set(), xml: null,
+  dateiname: null, befund: null, pruefung: null, ergaenzungen: {}, bestaetigt: new Set(), geaendert: new Set(), xml: null,
   herkunft: {},                       // was aus dem Gedächtnis ergänzt wurde (pfad → "firma" | "kunde")
   gedaechtnis: ladeGedaechtnis(),
   schrittVorDemMenue: "hochladen",
@@ -2212,10 +1947,14 @@ function zeigeMeldung(text) {
   meldung.hidden = !text;
 }
 
+/** Die KI-Einstellungen aus dem Gedächtnis */
+const kiEinstellungen = () => zustand.gedaechtnis.einstellungen.ki || {};
+
 /** Wird aufgerufen, sobald der Nutzer eine Datei abgelegt oder gewählt hat. */
 async function dateiGewaehlt(datei) {
   zeigeMeldung("");
   if (!datei) return;
+  if (!kiEingerichtet(kiEinstellungen())) return zeigeMeldung(TEXTE.ki.nichtEingerichtet);
   const istPdf = datei.type === "application/pdf" || /\.pdf$/i.test(datei.name);
   if (!istPdf) return zeigeMeldung(TEXTE.keinPdf);
 
@@ -2227,16 +1966,116 @@ async function dateiGewaehlt(datei) {
     return zeigeMeldung(`${TEXTE.lesefehler} (${fehler.message})`);
   }
   if (!hatText(pdf)) return zeigeMeldung(TEXTE.keinText);
+  const text = alsLayoutText(pdf);
+
+  // Die KI liest die Rechnung, danach kontrolliert der Prüfer
+  let befund, pruefung;
+  const ende = zeigeFortschritt();
+  try {
+    befund = await frageKi(text, kiEinstellungen());
+    zeigeFortschritt.text(TEXTE.ki.prueft);
+    pruefung = await frageJev(baueRechnung(befund, {}), text, kiEinstellungen());
+  } catch (fehler) {
+    console.error(fehler);
+    return zeigeMeldung(fehler.message);
+  } finally {
+    ende();
+  }
 
   const zeilen = pdf.seiten.reduce((summe, seite) => summe + seite.zeilen.length, 0);
-  const erkannt = erkenneRechnung(pdf);
-  const { ergaenzungen, herkunft } = vorgabenAusGedaechtnis(zustand.gedaechtnis, erkannt);
-  Object.assign(zustand, { dateiname: datei.name, erkannt, ergaenzungen, herkunft, bestaetigt: new Set(), xml: null });
+  const { ergaenzungen, herkunft } = vorgabenAusGedaechtnis(zustand.gedaechtnis, befund);
+  Object.assign(zustand, { dateiname: datei.name, befund, pruefung, ergaenzungen, herkunft, bestaetigt: new Set(), geaendert: new Set(), xml: null });
   $("pruefen-dateiname").textContent = datei.name;
   $("pruefen-info").textContent = TEXTE.seitenUndZeilen(pdf.seiten.length, zeilen);
-  $("rohtext").textContent = alsLayoutText(pdf);
+  $("rohtext").textContent = text;
   zeigeRechnung();
   zeigeSchritt("pruefen");
+}
+
+/** Zeigt, dass die KI arbeitet, mit mitlaufenden Sekunden. Gibt eine Funktion zum Beenden zurück. */
+function zeigeFortschritt() {
+  const anzeige = $("fortschritt");
+  const start = Date.now();
+  let eigenerText = null;
+  const aktualisieren = () => { anzeige.textContent = eigenerText || TEXTE.ki.liest(Math.round((Date.now() - start) / 1000)); };
+  zeigeFortschritt.text = (text) => { eigenerText = text; aktualisieren(); };
+  aktualisieren();
+  anzeige.hidden = false;
+  $("ablage").classList.add("beschaeftigt");
+  const uhr = setInterval(aktualisieren, 1000);
+  return () => {
+    clearInterval(uhr);
+    anzeige.hidden = true;
+    $("ablage").classList.remove("beschaeftigt");
+  };
+}
+
+// --- KI einrichten ----------------------------------------------------------------
+
+/**
+ * Formular für Endpunkt, Modell, Schlüssel und Prüfer. Beim ersten Start
+ * stehen die Hinweise davor, und der Knopf heißt "Verstanden, loslegen".
+ */
+function kiFormular({ ersterStart }) {
+  const k = TEXTE.ki;
+  const jetzt = { endpunkt: KI.endpunkt, modell: KI.modell, schluessel: "", jev: true, ...kiEinstellungen() };
+  const eingabe = (wert, typ = "text") => { const e = el("input", { class: "eingabe", type: typ, autocomplete: "off" }); e.value = wert || ""; return e; };
+  const endpunkt = eingabe(jetzt.endpunkt);
+  const modell = eingabe(jetzt.modell);
+  const schluessel = eingabe(jetzt.schluessel, "password");
+  const jev = el("input", { type: "checkbox", checked: jetzt.jev !== false });
+  const rueckmeldung = el("div", { class: "leise ganz" });
+  const werte = () => ({ endpunkt: endpunkt.value.trim(), modell: modell.value.trim(), schluessel: schluessel.value.trim(), jev: jev.checked });
+
+  const testen = async () => {
+    rueckmeldung.textContent = k.testLaeuft;
+    try {
+      await pruefeVerbindung(werte());
+      rueckmeldung.textContent = k.testOk(werte().modell);
+    } catch (fehler) {
+      rueckmeldung.textContent = fehler.message;
+    }
+  };
+  const speichern = () => {
+    const neu = JSON.parse(JSON.stringify(zustand.gedaechtnis));
+    neu.einstellungen.ki = werte();
+    if (ersterStart) neu.einstellungen.hinweiseBestaetigt = true;
+    aendereGedaechtnis(neu);
+    if (ersterStart) zeigeStart();
+    else rueckmeldung.textContent = k.gespeichert;
+  };
+
+  return el("div", {},
+    el("p", {}, k.erklaerung),
+    el("div", { class: "ki-formular" },
+      el("label", {}, k.endpunkt), endpunkt,
+      el("label", {}, k.modell), modell,
+      el("label", {}, k.schluessel), schluessel,
+      el("label", { class: "wahl ganz" }, jev, k.jev),
+      rueckmeldung),
+    el("p", { class: "leise" }, k.lokal),
+    el("div", { class: "knoepfe" },
+      el("button", { class: "knopf", onclick: testen }, k.testen),
+      el("button", { class: "knopf haupt", onclick: speichern }, ersterStart ? TEXTE.hinweise.verstanden : k.speichern)));
+}
+
+/** Die Hinweise, die beim ersten Start bestätigt werden */
+function hinweisListe() {
+  return el("ul", {}, TEXTE.hinweise.punkte.map((punkt) => el("li", {}, punkt)));
+}
+
+/** Schritt 1: beim ersten Start Hinweise und Einrichtung, sonst die Ablagefläche. */
+function zeigeStart() {
+  const einstellungen = zustand.gedaechtnis.einstellungen;
+  const einrichten = !einstellungen.hinweiseBestaetigt || !kiEingerichtet(einstellungen.ki);
+  $("einrichtung").hidden = !einrichten;
+  $("ablage").hidden = einrichten;
+  if (einrichten) {
+    $("einrichtung").replaceChildren(
+      el("h2", {}, TEXTE.hinweise.titel), hinweisListe(),
+      el("h3", {}, TEXTE.ki.titel), kiFormular({ ersterStart: true }));
+  }
+  zeigeSchritt("hochladen");
 }
 
 // --- Ändern -------------------------------------------------------------------
@@ -2253,7 +2092,7 @@ function setze(pfad, wert) {
     const position = (e.positionen[a] ??= {});
     position[b] = wert;
     // Ein einzelnes Datum gilt als Tag: von = bis
-    if (b === "von") { position.bis = wert; zustand.bestaetigt.add(`position.${a}.datum`); }
+    if (b === "von") { position.bis = wert; zustand.geaendert.add(`position.${a}.datum`); }
   } else if (bereich === "absender" || bereich === "empfaenger") {
     e[bereich] ??= {};
     if (a === "adresse") {
@@ -2269,7 +2108,9 @@ function setze(pfad, wert) {
   } else {
     e[bereich] = wert;
   }
-  zustand.bestaetigt.add(pfad);
+  // Eine neue Eingabe wird wieder geprüft, auch wenn der alte Wert bestätigt war
+  zustand.geaendert.add(pfad);
+  zustand.bestaetigt.delete(pfad);
   neuZeichnen();
 }
 
@@ -2286,7 +2127,7 @@ function neuZeichnen() {
 }
 
 function aktuelleRechnung() {
-  return baueRechnung(zustand.erkannt, zustand.ergaenzungen);
+  return baueRechnung(zustand.befund, zustand.ergaenzungen);
 }
 
 /** "1.080,50" oder "1080.5" → 1080.5; Unlesbares → undefined */
@@ -2308,7 +2149,9 @@ const darstellung = {
 
 const einlesen = {
   text: (t) => t.trim() || null,
-  datum: (t) => t || null,
+  // Ein Datumsfeld liefert schon während der Eingabe Werte wie "0002-07-31";
+  // ein Jahr vor 1900 gilt als unfertig und wird nicht übernommen.
+  datum: (t) => (!t ? null : Number(t.slice(0, 4)) >= 1900 ? t : undefined),
   zahl: zahlAusEingabe,
   betrag: zahlAusEingabe,
   satz: zahlAusEingabe,
@@ -2346,7 +2189,9 @@ function feld({ pfad, wert, art = "text", hinweise: hinweisFelder = [pfad], klas
       if (neu === wert) { bestaetige(...hinweisFelder); return; }
       setze(pfad, neu);
     };
-    eingabe.addEventListener("change", uebernehmen);
+    // Datumsfelder melden "change" schon bei jeder Ziffer des Jahres;
+    // sie werden deshalb erst beim Verlassen oder mit Enter übernommen.
+    if (art !== "datum") eingabe.addEventListener("change", uebernehmen);
     eingabe.addEventListener("blur", uebernehmen);
     eingabe.addEventListener("keydown", (ereignis) => {
       if (ereignis.key === "Enter") eingabe.blur();
@@ -2403,8 +2248,8 @@ function bestaetige(...felder) {
 function zeigeRechnung() {
   const r = aktuelleRechnung();
   zustand.hinweise = [
-    ...hinweiseZurRechnung(r, zustand.erkannt, zustand.bestaetigt),
-    ...hinweiseAusGedaechtnis(zustand.gedaechtnis, r, zustand.herkunft, zustand.bestaetigt),
+    ...hinweiseZurRechnung(r, zustand.befund, zustand.bestaetigt, zustand.pruefung, zustand.geaendert),
+    ...hinweiseAusGedaechtnis(zustand.gedaechtnis, r, zustand.herkunft, new Set([...zustand.bestaetigt, ...zustand.geaendert])),
   ];
   const a = TEXTE.ansicht;
 
@@ -2427,12 +2272,12 @@ function partei(rolle, r) {
   const a = TEXTE.ansicht;
   const pf = TEXTE.parteiFelder;
   const pfad = (name) => `${rolle}.${name}`;
-  const land = zustand.erkannt.parteien[rolle].land;
+  const land = p.land;
   const zeilen = [
     el("div", { class: "zeile name" }, feld({ pfad: pfad("name"), wert: p.name })),
     ...p.adresse.map((zeile, i) => el("div", { class: "zeile" }, feld({ pfad: pfad(`adresse.${i}`), wert: zeile, hinweise: [] }))),
     el("div", { class: "zeile" }, feld({ pfad: pfad("plz"), wert: p.plz }), " ", feld({ pfad: pfad("ort"), wert: p.ort })),
-    land && !land.angenommen ? el("div", { class: "zeile" }, land.text, ...hinweisMarken(zustand.hinweise, pfad("land"))) : null,
+    land ? el("div", { class: "zeile" }, REGELN.laender[land] || land, ...hinweisMarken(zustand.hinweise, pfad("land"))) : null,
   ];
   const eintrag = (bezeichnung, name, optionen = {}) => [
     el("dt", {}, bezeichnung),
@@ -2457,11 +2302,12 @@ function positionen(r) {
   const rumpf = el("tbody");
   for (const p of r.positionen) {
     const pfad = (name) => `position.${p.nr}.${name}`;
+    // Ein Zeitraum zeigt seine Hinweise (z.B. "endet vor seinem Beginn") hinter beiden Daten
     const datum = p.von && p.bis && p.von !== p.bis
       ? [feld({ pfad: pfad("von"), wert: p.von, art: "datum", hinweise: [] }), " – ",
-        feld({ pfad: pfad("bis"), wert: p.bis, art: "datum", hinweise: [] })]
+        feld({ pfad: pfad("bis"), wert: p.bis, art: "datum", hinweise: [] }), hinweisMarken(zustand.hinweise, pfad("datum"))]
       : feld({ pfad: pfad("von"), wert: p.von, art: "datum", hinweise: [pfad("datum")] });
-    const marken = hinweisMarken(zustand.hinweise, pfad("gesamt"), pfad("menge"));
+    const marken = hinweisMarken(zustand.hinweise, pfad("gesamt"), pfad("menge"), pfad("einzelpreis"), pfad("einheit"));
     rumpf.append(el("tr", { class: marken.length ? "mit-hinweis" : "" },
       el("td", { class: "datum" }, datum),
       el("td", {},
@@ -2484,21 +2330,25 @@ function positionen(r) {
   return bereich;
 }
 
-/** Einheit einer Position; ist sie unbekannt, eine Auswahl der Einheiten der XRechnung. */
+/**
+ * Einheit einer Position als Auswahl der Einheiten der XRechnung. Eine
+ * Änderung gilt für alle Positionen mit derselben Schreibweise und wird gemerkt.
+ */
 function einheit(p) {
   const pfad = `position.${p.nr}.einheit`;
-  if (p.einheitCode) return feld({ pfad, wert: p.einheit, hinweise: [] });
+  const bekannt = REGELN.einheiten.some((x) => x.code === p.einheitCode);
   const auswahl = el("select", {
-    class: "eingabe fehlt", "data-pfad": pfad,
+    class: `eingabe${bekannt ? "" : " fehlt"}`, "data-pfad": pfad, title: p.einheit || "",
     onchange: (ereignis) => {
-      const gewaehlt = ERKENNUNGSREGELN.einheitenListe.find((x) => x.code === ereignis.target.value);
-      if (!gewaehlt) return;
-      // Bekannte Schreibweise merken ("Fahrt" = Stück), sonst den Namen der Einheit setzen
-      if (p.einheit) setze(`einheit.${einheitSchluessel(p.einheit)}`, gewaehlt.code);
-      else { setze(pfad, gewaehlt.name); setze(`einheit.${einheitSchluessel(gewaehlt.name)}`, gewaehlt.code); }
+      const code = ereignis.target.value;
+      if (!code) return;
+      if (p.einheit) setze(`einheit.${einheitSchluessel(p.einheit)}`, code);
+      else setze(`position.${p.nr}.einheitCode`, code);
+      zustand.geaendert.add(pfad);
     },
-  }, el("option", { value: "" }, p.einheit ? `${p.einheit} = …` : TEXTE.ansicht.einheitWaehlen),
-  ERKENNUNGSREGELN.einheitenListe.map((x) => el("option", { value: x.code }, x.name)));
+  },
+  bekannt ? null : el("option", { value: "" }, p.einheit ? `${p.einheit} = …` : TEXTE.ansicht.einheitWaehlen),
+  REGELN.einheiten.map((x) => el("option", { value: x.code, selected: x.code === p.einheitCode }, x.name)));
   return auswahl;
 }
 
@@ -2530,10 +2380,11 @@ function weitereAngaben(r) {
       el("input", { type: "radio", name: "steuerfall", value: art, checked: r.steuerfall.art === art,
         onchange: () => setze("steuerfall", art) }),
       name));
-  const ohneDatum = zustand.erkannt.positionen.some((p) => !p.datumVon);
+  const ohneDatum = zustand.befund.positionen.some((p) => !p.von) && !zustand.befund.rechnung.leistungVon;
   return el("div", { class: "weitere" },
     el("h3", {}, a.weitereAngaben),
-    el("div", { class: "angabe" }, el("div", { class: "leise" }, a.steuerfall), el("div", { class: "wahlen" }, steuerfaelle)),
+    el("div", { class: "angabe" }, el("div", { class: "leise" }, a.steuerfall), el("div", { class: "wahlen" }, steuerfaelle),
+      hinweisMarken(zustand.hinweise, "steuerfall", "pruefer")),
     ohneDatum ? el("div", { class: "angabe" },
       el("div", { class: "leise" }, a.leistungsdatum),
       feld({ pfad: "leistungsdatum", wert: r.leistungsdatum, art: "datum", hinweise: [], optional: true }),
@@ -2542,7 +2393,7 @@ function weitereAngaben(r) {
     el("div", { class: "angabe" }, el("div", { class: "leise" }, a.referenz),
       feld({ pfad: "kaeuferreferenz", wert: r.referenz, optional: true, hinweise: [] })),
     el("div", { class: "angabe" }, el("div", { class: "leise" }, a.leitwegId),
-      feld({ pfad: "leitwegId", wert: r.leitwegId, optional: true, hinweise: [] })));
+      feld({ pfad: "leitwegId", wert: r.leitwegId, optional: true })));
 }
 
 /** Zeigt, was für die XRechnung noch fehlt, und gibt den Knopf frei, wenn nichts fehlt. */
@@ -2556,7 +2407,7 @@ function zeigePflichtangaben(r = aktuelleRechnung()) {
   // Was beim Erzeugen gemerkt würde
   const merken = zustand.gedaechtnis.einstellungen.merken !== false;
   $("merken").checked = merken;
-  const { gemerkt } = merkeRechnung(zustand.gedaechtnis, zustand.erkannt, zustand.ergaenzungen);
+  const { gemerkt } = merkeRechnung(zustand.gedaechtnis, zustand.befund, zustand.ergaenzungen);
   $("wird-gemerkt").replaceChildren(!merken ? "" : gemerkt.length
     ? el("div", {}, TEXTE.gemerkt.wirdGemerkt, el("ul", {}, gemerkt.map((g) => el("li", {}, g))))
     : TEXTE.gemerkt.nichtsNeues);
@@ -2571,7 +2422,7 @@ function xmlErzeugen() {
   zustand.xml = erzeugeXml(rechnung);
   let gedaechtnis = zustand.gedaechtnis;
   if (gedaechtnis.einstellungen.merken !== false) {
-    gedaechtnis = merkeRechnung(gedaechtnis, zustand.erkannt, zustand.ergaenzungen).gedaechtnis;
+    gedaechtnis = merkeRechnung(gedaechtnis, zustand.befund, zustand.ergaenzungen).gedaechtnis;
   }
   aendereGedaechtnis(insLogbuch(gedaechtnis, rechnung, zustand.dateiname));
   herunterladen();
@@ -2656,7 +2507,7 @@ function einheitenTabelle(schluessel, firma, speichern) {
   if (!einheiten.length) return el("div", { class: "leise" }, TEXTE.daten.keineEinheiten);
   const zeile = ([einheit, code]) => {
     const auswahl = el("select", { class: "eingabe" },
-      ERKENNUNGSREGELN.einheitenListe.map((x) => el("option", { value: x.code, selected: x.code === code }, x.name)));
+      REGELN.einheiten.map((x) => el("option", { value: x.code, selected: x.code === code }, x.name)));
     auswahl.addEventListener("change", () => speichern((neu) => { neu.firmen[schluessel].einheiten[einheit] = auswahl.value; }));
     const loeschen = loeschKnopf(() => speichern((neu) => { delete neu.firmen[schluessel].einheiten[einheit]; }));
     return el("tr", {}, el("td", {}, `„${einheit}“`), el("td", {}, auswahl), el("td", {}, loeschen));
@@ -2720,6 +2571,7 @@ function zeigeDaten(meldung = null) {
   $("daten").replaceChildren(...[
     zustand.speichernGeht === false ? el("div", { class: "meldung" }, d.keinSpeicher) : null,
     hinweis,
+    el("div", { class: "daten-bereich" }, el("h3", {}, d.ki), kiFormular({ ersterStart: false })),
     el("div", { class: "daten-bereich" }, el("h3", {}, d.firmen), firmen.length ? firmen : el("div", { class: "leise" }, d.keineFirmen)),
     el("div", { class: "daten-bereich" }, el("h3", {}, d.logbuch), logbuch),
     el("div", { class: "daten-bereich" }, el("h3", {}, d.datensicherung),
@@ -2729,6 +2581,7 @@ function zeigeDaten(meldung = null) {
         el("button", { class: "knopf", onclick: () => auswahl.click() }, d.importieren), auswahl,
         el("span", { class: "leise" }, d.allesLoeschen), loeschKnopf(allesLoeschen)),
       rueckfrage),
+    el("div", { class: "daten-bereich" }, el("h3", {}, TEXTE.hinweise.titel), hinweisListe()),
   ].filter(Boolean));
 }
 
@@ -2770,14 +2623,14 @@ function richteSeiteEin() {
     dateiGewaehlt(ereignis.dataTransfer.files[0]);
   });
 
-  $("knopf-andere-datei").addEventListener("click", () => zeigeSchritt("hochladen"));
+  $("knopf-andere-datei").addEventListener("click", zeigeStart);
   $("knopf-xml").addEventListener("click", xmlErzeugen);
   $("knopf-erneut").addEventListener("click", herunterladen);
-  $("knopf-naechste").addEventListener("click", () => zeigeSchritt("hochladen"));
   $("link-pruefen").href = TEXTE.pruefdienst;
   $("menue-knopf").addEventListener("click", zeigeMenue);
+  $("knopf-naechste").addEventListener("click", zeigeStart);
   $("knopf-zurueck").textContent = TEXTE.daten.zurueck;
-  $("knopf-zurueck").addEventListener("click", () => zeigeSchritt(zustand.schrittVorDemMenue));
+  $("knopf-zurueck").addEventListener("click", () => zustand.schrittVorDemMenue === "hochladen" ? zeigeStart() : zeigeSchritt(zustand.schrittVorDemMenue));
   $("merken-text").textContent = TEXTE.gemerkt.merken;
   $("merken").addEventListener("change", (ereignis) => {
     const neu = JSON.parse(JSON.stringify(zustand.gedaechtnis));
@@ -2785,7 +2638,7 @@ function richteSeiteEin() {
     aendereGedaechtnis(neu);
     zeigePflichtangaben();
   });
-  zeigeSchritt("hochladen");
+  zeigeStart();
 }
 
 richteSeiteEin();

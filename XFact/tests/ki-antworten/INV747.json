@@ -1,0 +1,625 @@
+{
+ "modell": "google/gemini-3.8-flash",
+ "befund": {
+  "text": "Work With Ease EOOD                                      Rechnung Nr. 0000000747\n                                                                                                  29.8.2026\nRechnungsempfänger                                       Rechnungssteller\nAkademie Deutscher Genossenschaften e.V.                 Work With Ease EOOD\nSchloss Montabaur                                        ul Bor 4\n56410 Montabaur                                          2777 Dobrinishte\nDeutschland                                              Bulgaria\n                                                         USt-Nr.: BG205889057\nUSt-ID: DE149338636\nLeistungsdatum  Beschreibung                                          Menge    Einheit        Einzelpreis     Gesamt\n 01.01.-25.08.26 Konzeption und Vorbereitung                              3    Tage         2.000,00 €    6.000,00 €\n26.-28.08.26    ERFA M365, 2 Tage Moderation                              3    Tage         2.000,00 €    6.000,00 €\n26.8.2026       Ralf Westphal: ERFA Künstliche Intelligenz                1    Tage         2.000,00 €    2.000,00 €\n27.8.2026       Ralf Westphal: Deep Dive KI                               1    Pauschale    1.500,00 €    1.500,00 €\n                Ralf Westphal: 2 Tage Technische Unterstützung            1    Pauschale      500,00 €      500,00 €\n27.-28.08.26\n                (Musik, Speaker, Präsentationen)\n 26.-28.08.26   Reisekosten A.Kaden                                   1.080    km               0,30 €      324,00 €\n26.-28.08.26    Reisekosten                                           1.080    km               0,30 €      324,00 €\nKommentar\n                                                                          Netto                          16.648,00 €\nBetrifft: ADG Forum Assistenz- und Vorstandsunterstützung\n                                                                          USt. (0%)                           0,00 €\nZahlungsbedingungen                                                       Rechnungsbetrag                16.648,00 €\nDer Rechnungsbetrag  ist ohne Abzug zahlbar bis: 10.9.2026\nSteuerschuldnerschaft des Leistungsempfängers (reverse charge).\nRegistrierung                           Bank                                    Kontakt\nУърк уит Ииз ЕООД                       Bank: Revolut Business                  Andrea Kaden\nBG-UIC: 205889057                       IBAN: LT16 3250 0468 4871 0872          team@work-with-ease.eu\n                                        BIC: REVOLT21                           +49 176 10335862\n                                                                                https://work-with-ease.eu\n                                                                                                            Seite 1 / 1",
+  "rechnung": {
+   "nummer": "0000000747",
+   "datum": "2026-08-29",
+   "art": "380",
+   "faellig": "2026-09-10",
+   "zahlungsbedingungen": "Der Rechnungsbetrag ist ohne Abzug zahlbar bis: 10.9.2026",
+   "bestellnummer": null,
+   "leitwegId": null,
+   "leistungVon": "2026-01-01",
+   "leistungBis": "2026-08-28",
+   "bemerkung": "Betrifft: ADG Forum Assistenz- und Vorstandsunterstützung"
+  },
+  "verkaeufer": {
+   "name": "Work With Ease EOOD",
+   "strasse": "ul Bor 4",
+   "zusatz": null,
+   "plz": "2777",
+   "ort": "Dobrinishte",
+   "land": "BG",
+   "ustId": "BG205889057",
+   "steuernummer": null,
+   "email": "team@work-with-ease.eu",
+   "telefon": "+49 176 10335862",
+   "kontakt": "Andrea Kaden"
+  },
+  "kaeufer": {
+   "name": "Akademie Deutscher Genossenschaften e.V.",
+   "strasse": "Schloss Montabaur",
+   "zusatz": null,
+   "plz": "56410",
+   "ort": "Montabaur",
+   "land": "DE",
+   "ustId": "DE149338636",
+   "steuernummer": null,
+   "email": null,
+   "telefon": null,
+   "kontakt": null,
+   "oeffentlich": false
+  },
+  "zahlung": {
+   "bic": "REVOLT21",
+   "verwendungszweck": null,
+   "iban": "LT163250046848710872"
+  },
+  "positionen": [
+   {
+    "nr": 1,
+    "name": "Konzeption und Vorbereitung",
+    "beschreibung": null,
+    "einheitText": "Tage",
+    "einheitCode": "DAY",
+    "steuerkategorie": "AE",
+    "von": "2026-01-01",
+    "bis": "2026-08-25",
+    "menge": 3,
+    "einzelpreis": 2000,
+    "gesamt": 6000,
+    "steuersatz": 0
+   },
+   {
+    "nr": 2,
+    "name": "ERFA M365, 2 Tage Moderation",
+    "beschreibung": null,
+    "einheitText": "Tage",
+    "einheitCode": "DAY",
+    "steuerkategorie": "AE",
+    "von": "2026-08-26",
+    "bis": "2026-08-28",
+    "menge": 3,
+    "einzelpreis": 2000,
+    "gesamt": 6000,
+    "steuersatz": 0
+   },
+   {
+    "nr": 3,
+    "name": "Ralf Westphal: ERFA Künstliche Intelligenz",
+    "beschreibung": null,
+    "einheitText": "Tage",
+    "einheitCode": "DAY",
+    "steuerkategorie": "AE",
+    "von": "2026-08-26",
+    "bis": "2026-08-26",
+    "menge": 1,
+    "einzelpreis": 2000,
+    "gesamt": 2000,
+    "steuersatz": 0
+   },
+   {
+    "nr": 4,
+    "name": "Ralf Westphal: Deep Dive KI",
+    "beschreibung": null,
+    "einheitText": "Pauschale",
+    "einheitCode": "LS",
+    "steuerkategorie": "AE",
+    "von": "2026-08-27",
+    "bis": "2026-08-27",
+    "menge": 1,
+    "einzelpreis": 1500,
+    "gesamt": 1500,
+    "steuersatz": 0
+   },
+   {
+    "nr": 5,
+    "name": "Ralf Westphal: 2 Tage Technische Unterstützung",
+    "beschreibung": "(Musik, Speaker, Präsentationen)",
+    "einheitText": "Pauschale",
+    "einheitCode": "LS",
+    "steuerkategorie": "AE",
+    "von": "2026-08-27",
+    "bis": "2026-08-28",
+    "menge": 1,
+    "einzelpreis": 500,
+    "gesamt": 500,
+    "steuersatz": 0
+   },
+   {
+    "nr": 6,
+    "name": "Reisekosten A.Kaden",
+    "beschreibung": null,
+    "einheitText": "km",
+    "einheitCode": "KMT",
+    "steuerkategorie": "AE",
+    "von": "2026-08-26",
+    "bis": "2026-08-28",
+    "menge": 1080,
+    "einzelpreis": 0.3,
+    "gesamt": 324,
+    "steuersatz": 0
+   },
+   {
+    "nr": 7,
+    "name": "Reisekosten",
+    "beschreibung": null,
+    "einheitText": "km",
+    "einheitCode": "KMT",
+    "steuerkategorie": "AE",
+    "von": "2026-08-26",
+    "bis": "2026-08-28",
+    "menge": 1080,
+    "einzelpreis": 0.3,
+    "gesamt": 324,
+    "steuersatz": 0
+   }
+  ],
+  "steuer": [
+   {
+    "kategorie": "AE",
+    "befreiungsgrund": "Steuerschuldnerschaft des Leistungsempfängers (reverse charge).",
+    "satz": 0,
+    "basis": 16648,
+    "betrag": 0
+   }
+  ],
+  "summen": {
+   "netto": 16648,
+   "steuer": 0,
+   "brutto": 16648,
+   "zahlbetrag": 16648
+  },
+  "fehlt": [
+   {
+    "feld": "BT-49",
+    "grund": "Elektronische Adresse des Käufers fehlt auf der Rechnung"
+   }
+  ]
+ },
+ "pruefung": {
+  "felder": {
+   "nummer": {
+    "pfad": "nummer",
+    "art": "noul"
+   },
+   "datum": {
+    "pfad": "datum",
+    "art": "noul"
+   },
+   "faellig": {
+    "pfad": "faellig",
+    "art": "noul"
+   },
+   "absender_name": {
+    "pfad": "absender.name",
+    "art": "noul"
+   },
+   "absender_ort": {
+    "pfad": "absender.plz",
+    "art": "noul"
+   },
+   "absender_ust": {
+    "pfad": "absender.ustId",
+    "art": "noul"
+   },
+   "empfaenger_name": {
+    "pfad": "empfaenger.name",
+    "art": "noul"
+   },
+   "empfaenger_ort": {
+    "pfad": "empfaenger.plz",
+    "art": "noul"
+   },
+   "empfaenger_ust": {
+    "pfad": "empfaenger.ustId",
+    "art": "noul"
+   },
+   "iban": {
+    "pfad": "iban",
+    "art": "noul"
+   },
+   "kontakt": {
+    "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "p1_menge": {
+    "pfad": "position.1.menge",
+    "art": "noul"
+   },
+   "p1_preis": {
+    "pfad": "position.1.einzelpreis",
+    "art": "noul"
+   },
+   "p1_gesamt": {
+    "pfad": "position.1.gesamt",
+    "art": "noul"
+   },
+   "p1_einheit": {
+    "pfad": "position.1.einheit",
+    "art": "choice",
+    "erwartet": "DAY"
+   },
+   "p2_menge": {
+    "pfad": "position.2.menge",
+    "art": "noul"
+   },
+   "p2_preis": {
+    "pfad": "position.2.einzelpreis",
+    "art": "noul"
+   },
+   "p2_gesamt": {
+    "pfad": "position.2.gesamt",
+    "art": "noul"
+   },
+   "p2_einheit": {
+    "pfad": "position.2.einheit",
+    "art": "choice",
+    "erwartet": "DAY"
+   },
+   "p3_menge": {
+    "pfad": "position.3.menge",
+    "art": "noul"
+   },
+   "p3_preis": {
+    "pfad": "position.3.einzelpreis",
+    "art": "noul"
+   },
+   "p3_gesamt": {
+    "pfad": "position.3.gesamt",
+    "art": "noul"
+   },
+   "p3_einheit": {
+    "pfad": "position.3.einheit",
+    "art": "choice",
+    "erwartet": "DAY"
+   },
+   "p4_menge": {
+    "pfad": "position.4.menge",
+    "art": "noul"
+   },
+   "p4_preis": {
+    "pfad": "position.4.einzelpreis",
+    "art": "noul"
+   },
+   "p4_gesamt": {
+    "pfad": "position.4.gesamt",
+    "art": "noul"
+   },
+   "p4_einheit": {
+    "pfad": "position.4.einheit",
+    "art": "choice",
+    "erwartet": "LS"
+   },
+   "p5_menge": {
+    "pfad": "position.5.menge",
+    "art": "noul"
+   },
+   "p5_preis": {
+    "pfad": "position.5.einzelpreis",
+    "art": "noul"
+   },
+   "p5_gesamt": {
+    "pfad": "position.5.gesamt",
+    "art": "noul"
+   },
+   "p5_einheit": {
+    "pfad": "position.5.einheit",
+    "art": "choice",
+    "erwartet": "LS"
+   },
+   "p6_menge": {
+    "pfad": "position.6.menge",
+    "art": "noul"
+   },
+   "p6_preis": {
+    "pfad": "position.6.einzelpreis",
+    "art": "noul"
+   },
+   "p6_gesamt": {
+    "pfad": "position.6.gesamt",
+    "art": "noul"
+   },
+   "p6_einheit": {
+    "pfad": "position.6.einheit",
+    "art": "choice",
+    "erwartet": "KMT"
+   },
+   "p7_menge": {
+    "pfad": "position.7.menge",
+    "art": "noul"
+   },
+   "p7_preis": {
+    "pfad": "position.7.einzelpreis",
+    "art": "noul"
+   },
+   "p7_gesamt": {
+    "pfad": "position.7.gesamt",
+    "art": "noul"
+   },
+   "p7_einheit": {
+    "pfad": "position.7.einheit",
+    "art": "choice",
+    "erwartet": "KMT"
+   },
+   "steuerfall": {
+    "pfad": "steuerfall",
+    "art": "choice",
+    "erwartet": "AE"
+   }
+  },
+  "antworten": {
+   "nummer": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "datum": {
+    "type": "noul",
+    "noul": 0.78
+   },
+   "faellig": {
+    "type": "noul",
+    "noul": 0.9
+   },
+   "absender_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ort": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ust": {
+    "type": "noul",
+    "noul": 0.71
+   },
+   "empfaenger_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "empfaenger_ort": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "empfaenger_ust": {
+    "type": "noul",
+    "noul": 0.89
+   },
+   "iban": {
+    "type": "noul",
+    "noul": 0.95
+   },
+   "kontakt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p1_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_preis": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "p1_gesamt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p1_einheit": {
+    "type": "choice",
+    "choice": "DAY",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 1,
+     "LS": 0,
+     "C62": 0,
+     "KMT": 0,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "p2_menge": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p2_preis": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "p2_gesamt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p2_einheit": {
+    "type": "choice",
+    "choice": "DAY",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 1,
+     "LS": 0,
+     "C62": 0,
+     "KMT": 0,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "p3_menge": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p3_preis": {
+    "type": "noul",
+    "noul": 0.95
+   },
+   "p3_gesamt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p3_einheit": {
+    "type": "choice",
+    "choice": "DAY",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 1,
+     "LS": 0,
+     "C62": 0,
+     "KMT": 0,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "p4_menge": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p4_preis": {
+    "type": "noul",
+    "noul": 0.93
+   },
+   "p4_gesamt": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "p4_einheit": {
+    "type": "choice",
+    "choice": "LS",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "LS": 1,
+     "C62": 0,
+     "KMT": 0,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "p5_menge": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p5_preis": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p5_gesamt": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "p5_einheit": {
+    "type": "choice",
+    "choice": "LS",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "LS": 1,
+     "C62": 0,
+     "KMT": 0,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "p6_menge": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "p6_preis": {
+    "type": "noul",
+    "noul": 0.92
+   },
+   "p6_gesamt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p6_einheit": {
+    "type": "choice",
+    "choice": "KMT",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "LS": 0,
+     "C62": 0,
+     "KMT": 1,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "p7_menge": {
+    "type": "noul",
+    "noul": 0.93
+   },
+   "p7_preis": {
+    "type": "noul",
+    "noul": 0.92
+   },
+   "p7_gesamt": {
+    "type": "noul",
+    "noul": 0.92
+   },
+   "p7_einheit": {
+    "type": "choice",
+    "choice": "KMT",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "LS": 0,
+     "C62": 0,
+     "KMT": 1,
+     "MON": 0,
+     "WEE": 0,
+     "MIN": 0,
+     "MTR": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "LTR": 0
+    },
+    "confidence": 1
+   },
+   "steuerfall": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S": 0,
+     "AE": 1,
+     "E": 0,
+     "K": 0,
+     "O": 0
+    },
+    "confidence": 1
+   }
+  }
+ }
+}
