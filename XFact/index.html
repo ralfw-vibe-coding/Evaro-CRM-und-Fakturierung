@@ -1,0 +1,188 @@
+<!doctype html>
+<!--
+  XFact – Startseite für die beiden Apps:
+    XFact Gen  (xfact.html)        aus einer PDF-Rechnung wird eine XRechnung
+    XFact View (XFactViewer.html)  eine XRechnung lesbar anzeigen
+  Lizenz: MIT, Copyright (c) 2026 Ralf Westphal.
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XFact</title>
+<style>
+/* === FARBEN UND SCHRIFTEN – wie in XFact Gen und XFact View ============== */
+:root {
+  --farbe-hintergrund: #f6f7f9;
+  --farbe-flaeche: #ffffff;
+  --farbe-text: #1d2330;
+  --farbe-text-leise: #667085;
+  --farbe-linie: #e3e6eb;
+  --farbe-akzent: #2563eb;
+  --farbe-akzent-text: #ffffff;
+  --farbe-akzent-flaeche: #eef3fe;
+  --schrift: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --abstand: 16px;
+  --radius: 12px;
+  --breite-max: 920px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --farbe-hintergrund: #14171c;
+    --farbe-flaeche: #1c2027;
+    --farbe-text: #e6e8eb;
+    --farbe-text-leise: #9aa3af;
+    --farbe-linie: #2c323b;
+    --farbe-akzent: #5b8def;
+    --farbe-akzent-flaeche: #1e2a42;
+  }
+}
+
+/* === LAYOUT ============================================================= */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font: 16px/1.55 var(--schrift);
+}
+main { max-width: var(--breite-max); margin: 0 auto; padding: calc(var(--abstand) * 3) var(--abstand) calc(var(--abstand) * 2); }
+
+/* Der Schriftzug: X in Textfarbe, Fact in der Akzentfarbe */
+.marke { font-weight: 700; letter-spacing: -0.02em; }
+.marke span { color: var(--farbe-akzent); }
+.marke small { font-weight: 500; font-size: 0.55em; letter-spacing: 0; color: var(--farbe-text-leise); margin-left: 0.25em; }
+
+.kopf { text-align: center; margin-bottom: calc(var(--abstand) * 2.5); }
+.kopf .marke { font-size: clamp(3.2rem, 11vw, 5.5rem); line-height: 1; }
+.kopf .zeile { margin: 14px 0 0; font-size: clamp(1.15rem, 3.4vw, 1.45rem); font-weight: 600; }
+.kopf .leise { margin: 10px auto 0; max-width: 40em; color: var(--farbe-text-leise); }
+
+.einleitung {
+  max-width: 44em;
+  margin: 0 auto calc(var(--abstand) * 2.5);
+  font-size: 1.05rem;
+}
+.einleitung p { margin: 0 0 12px; }
+
+.apps { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--abstand) * 1.25); }
+@media (max-width: 680px) { .apps { grid-template-columns: 1fr; } }
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: calc(var(--abstand) * 1.5);
+  background: var(--farbe-flaeche);
+  border: 1px solid var(--farbe-linie);
+  border-radius: var(--radius);
+}
+.app .symbol {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--farbe-akzent-flaeche);
+  color: var(--farbe-akzent);
+}
+.app h2 { margin: 0; font-size: 1.6rem; }
+.app .was { margin: 0; font-weight: 600; }
+.app ul { margin: 0; padding-left: 20px; color: var(--farbe-text-leise); }
+.app ul li { margin-bottom: 4px; }
+.app .knoepfe { margin-top: auto; padding-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: var(--farbe-akzent);
+  color: var(--farbe-akzent-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.knopf:hover { filter: brightness(1.08); }
+.link { color: var(--farbe-akzent); text-decoration: none; }
+.link:hover { text-decoration: underline; }
+
+.grundsaetze {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--abstand);
+  margin: calc(var(--abstand) * 2.5) 0 0;
+}
+@media (max-width: 680px) { .grundsaetze { grid-template-columns: 1fr; } }
+.grundsaetze div { padding: 0 4px; }
+.grundsaetze strong { display: block; margin-bottom: 2px; }
+.grundsaetze span { color: var(--farbe-text-leise); font-size: 0.95rem; }
+
+.fuss {
+  max-width: var(--breite-max);
+  margin: 0 auto;
+  padding: var(--abstand) var(--abstand) calc(var(--abstand) * 2);
+  color: var(--farbe-text-leise);
+  font-size: 0.85rem;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<main>
+  <header class="kopf">
+    <div class="marke">X<span>Fact</span></div>
+    <p class="zeile">E-Rechnungen, ohne das Rechnungsprogramm zu wechseln.</p>
+    <p class="leise">Zwei kleine Werkzeuge für den Browser: eines schreibt XRechnungen, eines liest sie.</p>
+  </header>
+
+  <section class="einleitung">
+    <p>Die E-Rechnung kommt für alle Unternehmen in Deutschland. Empfangen müssen Sie sie schon heute, schreiben ab 2027 bzw. 2028. Ein neues Rechnungsprogramm brauchen Sie dafür nicht.</p>
+    <p><strong>XFact Gen</strong> macht aus der PDF-Rechnung, die Sie ohnehin schreiben, eine gültige XRechnung. <strong>XFact View</strong> zeigt Ihnen XRechnungen, die Sie bekommen, so an, wie man eine Rechnung lesen möchte. Beide laufen im Browser, auch ohne Installation, und Sie können sie nach Ihren Wünschen anpassen.</p>
+  </section>
+
+  <section class="apps">
+    <article class="app">
+      <div class="symbol" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 18v-6M9 15l3-3 3 3"/></svg>
+      </div>
+      <h2 class="marke">X<span>Fact</span><small>Gen</small></h2>
+      <p class="was">Aus Ihrer PDF-Rechnung wird eine XRechnung.</p>
+      <ul>
+        <li>PDF hineinziehen, eine KI ordnet alles den Feldern der XRechnung zu – ganz gleich, wie Ihre Rechnung aussieht.</li>
+        <li>Ein Prüfer kontrolliert jeden Wert, XFact rechnet nach und fragt nur, was wirklich fehlt.</li>
+        <li>Es merkt sich Ihre Angaben, auch je Kunde. Ab der zweiten Rechnung geht es meist ohne Nachfrage.</li>
+        <li>Ergebnis: eine XRechnung 3.0 nach den offiziellen Prüfregeln.</li>
+      </ul>
+      <div class="knoepfe">
+        <a class="knopf" href="xfact.html">XFact Gen öffnen</a>
+        <a class="link" href="XFact-Dokumentation.md">Dokumentation</a>
+      </div>
+    </article>
+
+    <article class="app">
+      <div class="symbol" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+      </div>
+      <h2 class="marke">X<span>Fact</span><small>View</small></h2>
+      <p class="was">Eine XRechnung lesbar anzeigen.</p>
+      <ul>
+        <li>XML-Datei hineinziehen und die Rechnung lesen: Absender, Positionen, Steuer, Summen, Zahlung.</li>
+        <li>Codes wie „HUR“ oder „AE“ stehen in Klartext da, Skonto mit Datum und Betrag.</li>
+        <li>Rechnet nach, zeigt auf Wunsch die Feldnummern der Norm, druckt und speichert als PDF.</li>
+        <li>Ohne KI, ganz ohne Internet. Die Rechnung verlässt Ihren Rechner nicht.</li>
+      </ul>
+      <div class="knoepfe">
+        <a class="knopf" href="XFactViewer.html">XFact View öffnen</a>
+        <a class="link" href="XFactViewer-Dokumentation.md">Dokumentation</a>
+      </div>
+    </article>
+  </section>
+
+  <section class="grundsaetze">
+    <div><strong>Im Browser</strong><span>Eine Datei je App, nichts zu installieren. Läuft auch als Datei auf Ihrem Rechner.</span></div>
+    <div><strong>Ihre Daten</strong><span>Gemerktes bleibt in Ihrem Browser. XFact Gen schickt nur den Rechnungstext an die KI, die Sie wählen.</span></div>
+    <div><strong>Open Source</strong><span>MIT-Lizenz. Mit einem KI-Assistenten passen Sie die Apps selbst an, auch ohne Programmierkenntnisse.</span></div>
+  </section>
+</main>
+<footer class="fuss">XFact · Open Source (MIT) · ohne Gewähr</footer>
+</body>
+</html>

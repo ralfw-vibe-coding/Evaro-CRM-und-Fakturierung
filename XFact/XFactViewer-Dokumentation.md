@@ -1,4 +1,4 @@
-# XFactViewer – Dokumentation
+# XFact View – Dokumentation
 
 **Eine XRechnung lesbar anzeigen.** Sie ziehen die XML-Datei in den Browser und sehen eine Rechnung, wie Sie sie kennen.
 
@@ -6,19 +6,19 @@ Version 1 · Lizenz: MIT
 
 ---
 
-## 1. Was ist XFactViewer?
+## 1. Was ist XFact View?
 
-Eine XRechnung ist eine XML-Datei. Für Programme ist sie gut lesbar, für Menschen nicht. XFactViewer ist eine kleine Web-App, die eine XRechnung so anzeigt, wie man eine Rechnung erwartet: Absender und Empfänger, Positionen, Summen, Zahlung. Codes wie `HUR`, `AE` oder `58` übersetzt er in „Stunde“, „Steuerschuldnerschaft des Leistungsempfängers“ und „SEPA-Überweisung“.
+Eine XRechnung ist eine XML-Datei. Für Programme ist sie gut lesbar, für Menschen nicht. XFact View ist eine kleine Web-App, die eine XRechnung so anzeigt, wie man eine Rechnung erwartet: Absender und Empfänger, Positionen, Summen, Zahlung. Codes wie `HUR`, `AE` oder `58` übersetzt er in „Stunde“, „Steuerschuldnerschaft des Leistungsempfängers“ und „SEPA-Überweisung“.
 
-XFactViewer läuft vollständig in Ihrem Browser, auch ohne Internet. **Die Rechnung verlässt Ihren Rechner nicht.**
+XFact View läuft vollständig in Ihrem Browser, auch ohne Internet. **Die Rechnung verlässt Ihren Rechner nicht.**
 
 **Für wen:**
 - Alle, die XRechnungen **bekommen** und sie lesen, prüfen, buchen oder ausdrucken wollen
 - Alle, die XRechnungen **schreiben** und sehen wollen, was in ihrer Datei steht
 
-## 2. Was XFactViewer kann und was nicht
+## 2. Was XFact View kann und was nicht
 
-**XFactViewer kann:**
+**XFact View kann:**
 - XRechnungen in der Syntax **CII** anzeigen. Diese Syntax verwenden auch ZUGFeRD und Factur-X.
 - Alle wichtigen Angaben zeigen:
   - Kopfdaten mit allen Referenzen (Bestellung, Auftrag, Vertrag, Projekt, Lieferschein, Wareneingang, Ausschreibung, Objekt, Kostenstelle, frühere Rechnungen)
@@ -34,7 +34,7 @@ XFactViewer läuft vollständig in Ihrem Browser, auch ohne Internet. **Die Rech
 - **Drucken** oder über den Druckdialog als PDF speichern.
 - **Von Ihnen angepasst werden.** Farben, Texte, zusätzliche Angaben: Mit einem KI-Assistenten geht das auch ohne Programmierkenntnisse (Abschnitt 8).
 
-**XFactViewer kann (noch) nicht:**
+**XFact View kann (noch) nicht:**
 - XRechnungen in der Syntax **UBL** anzeigen. Bei einer UBL-Datei sagt er Ihnen das.
 - Die XML aus einem **ZUGFeRD-PDF** herausholen. Öffnen Sie das PDF; die eingebettete XML finden Sie in vielen PDF-Programmen unter „Anhänge“.
 - **Prüfen, ob die XRechnung gültig ist.** Er zeigt an, was in der Datei steht. Ob sie den offiziellen Regeln entspricht, prüft ein Prüfdienst (Link „Online prüfen“ unten auf der Seite).
@@ -66,27 +66,27 @@ XFactViewer läuft vollständig in Ihrem Browser, auch ohne Internet. **Die Rech
 
 Was in der Datei nicht steht, wird nicht angezeigt. Leere Zeilen gibt es nicht.
 
-**Unbekannte Codes** zeigt XFactViewer so, wie sie in der Datei stehen, z.B. eine seltene Einheit als `XBG`.
+**Unbekannte Codes** zeigt XFact View so, wie sie in der Datei stehen, z.B. eine seltene Einheit als `XBG`.
 
-**Nachrechnen** ist keine Prüfung der Gültigkeit. XFactViewer rechnet nur mit den Werten aus der Datei: Menge × Preis je Position, die Summe der Positionen, Nachlässe und Zuschläge, die Steuer je Satz, den Gesamtbetrag und den Zahlbetrag. Abweichungen bis 1 Cent gelten als Rundung.
+**Nachrechnen** ist keine Prüfung der Gültigkeit. XFact View rechnet nur mit den Werten aus der Datei: Menge × Preis je Position, die Summe der Positionen, Nachlässe und Zuschläge, die Steuer je Satz, den Gesamtbetrag und den Zahlbetrag. Abweichungen bis 1 Cent gelten als Rundung.
 
 ## 5. Sicherheit
 
 - Die Datei wird **nur in Ihrem Browser** gelesen. Es wird nichts hochgeladen, nichts gespeichert, und es gibt keine Verbindung zu einem Server.
 - Inhalte der Rechnung werden **nur als Text** angezeigt. Eine präparierte Datei kann auf der Seite nichts ausführen.
-- **Anhänge** speichert XFactViewer nur auf Ihren Wunsch und öffnet sie nicht. Öffnen Sie einen Anhang nur, wenn Sie dem Absender vertrauen.
+- **Anhänge** speichert XFact View nur auf Ihren Wunsch und öffnet sie nicht. Öffnen Sie einen Anhang nur, wenn Sie dem Absender vertrauen.
 - **Links** in der Rechnung, z.B. auf externe Anhänge, werden nur als Text gezeigt, nicht als anklickbarer Link.
 
 ## 6. Häufige Fragen
 
-**Ist die Rechnung gültig, wenn XFactViewer sie anzeigt?**
-Nicht unbedingt. XFactViewer zeigt auch Dateien an, die gegen Regeln der XRechnung verstoßen. Die Gültigkeit prüft ein Prüfdienst, z.B. über den Link „Online prüfen“. Beachten Sie: Dort laden Sie die Rechnung auf eine fremde Website.
+**Ist die Rechnung gültig, wenn XFact View sie anzeigt?**
+Nicht unbedingt. XFact View zeigt auch Dateien an, die gegen Regeln der XRechnung verstoßen. Die Gültigkeit prüft ein Prüfdienst, z.B. über den Link „Online prüfen“. Beachten Sie: Dort laden Sie die Rechnung auf eine fremde Website.
 
 **Muss ich XRechnungen überhaupt lesen können?**
 Seit dem 1. Januar 2025 müssen alle Unternehmen in Deutschland E-Rechnungen empfangen können. Für den Empfang genügt ein E-Mail-Postfach; um sie zu lesen, brauchen Sie ein Programm wie dieses. Bewahren Sie die XML-Datei auf. Sie ist das Original; ein Ausdruck ersetzt sie nicht. Zu den Fristen fragen Sie im Zweifel Ihren Steuerberater.
 
 **Die Datei wird nicht angezeigt: „keine XRechnung“.**
-Die XML-Datei ist eine andere Art von Dokument, z.B. eine Bestellung oder ein Lieferschein. Oder es ist eine XRechnung in UBL, dann sagt XFactViewer das ausdrücklich.
+Die XML-Datei ist eine andere Art von Dokument, z.B. eine Bestellung oder ein Lieferschein. Oder es ist eine XRechnung in UBL, dann sagt XFact View das ausdrücklich.
 
 **Nachrechnen zeigt eine Abweichung.**
 Dann stimmen die Werte in der Datei nicht zusammen. Sprechen Sie den Absender an und nennen Sie ihm die betroffenen Felder. Mit „BT-Nummern zeigen“ sehen Sie deren Nummern.
@@ -96,13 +96,13 @@ Ja: **Drucken** und im Druckdialog „Als PDF speichern“ wählen. Gedruckt wir
 
 ## 7. Verantwortung und Lizenz
 
-XFactViewer ist Open Source unter der **MIT-Lizenz**. Sie dürfen es nutzen, verändern und weitergeben. Es wird **ohne Gewähr** bereitgestellt. Verlassen Sie sich bei Buchung und Zahlung nicht allein auf die Anzeige, sondern prüfen Sie die Rechnung wie gewohnt.
+XFact View ist Open Source unter der **MIT-Lizenz**. Sie dürfen es nutzen, verändern und weitergeben. Es wird **ohne Gewähr** bereitgestellt. Verlassen Sie sich bei Buchung und Zahlung nicht allein auf die Anzeige, sondern prüfen Sie die Rechnung wie gewohnt.
 
-Wer XFactViewer verändert und weitergibt, passt bitte diese Dokumentation mit an.
+Wer XFact View verändert und weitergibt, passt bitte diese Dokumentation mit an.
 
-## 8. XFactViewer anpassen
+## 8. XFact View anpassen
 
-**Ausdrücklich erwünscht.** XFactViewer gehört Ihnen. Soll die Rechnung anders aussehen, fehlt Ihnen eine Angabe oder ein Code, dann ändern Sie es. Programmieren müssen Sie dafür nicht können. Ein KI-Assistent übernimmt das, Sie sagen ihm in normaler Sprache, was Sie wollen.
+**Ausdrücklich erwünscht.** XFact View gehört Ihnen. Soll die Rechnung anders aussehen, fehlt Ihnen eine Angabe oder ein Code, dann ändern Sie es. Programmieren müssen Sie dafür nicht können. Ein KI-Assistent übernimmt das, Sie sagen ihm in normaler Sprache, was Sie wollen.
 
 ### Was Sie brauchen
 
@@ -129,14 +129,14 @@ Am Anfang der Datei steht eine Übersicht. Darunter folgen deutlich markierte Ab
 
 ### Los geht's
 
-1. Legen Sie einen neuen Ordner an, zum Beispiel `XFactViewer anpassen`, und kopieren Sie beide Dateien und Ihre Beispiel-XRechnungen hinein.
+1. Legen Sie einen neuen Ordner an, zum Beispiel `XFact View anpassen`, und kopieren Sie beide Dateien und Ihre Beispiel-XRechnungen hinein.
 2. **Sichern Sie die Originaldatei**, z.B. als `XFactViewer-original.html`. Dann können Sie jederzeit zurück.
 3. Starten Sie den KI-Assistenten in diesem Ordner. Bei Claude Code geht das im Terminal mit `claude` oder in der Claude-App, indem Sie den Ordner auswählen.
 
 ### Der erste Auftrag: kennenlernen, noch nichts ändern
 
 ```text
-In diesem Ordner liegt XFactViewer: XFactViewer.html ist eine Web-App, die
+In diesem Ordner liegt XFact View: XFactViewer.html ist eine Web-App, die
 XRechnungen (XML) lesbar anzeigt, XFactViewer-Dokumentation.md beschreibt,
 was sie kann. Dazu liegen ein paar XRechnungen als Beispiele hier.
 
@@ -160,7 +160,7 @@ Die Akzentfarbe soll unser Firmengrün #2F6F4F sein statt Blau.
 
 **Ein Code fehlt**
 ```text
-In unseren Rechnungen kommt die Einheit „XRO“ vor, XFactViewer zeigt nur den
+In unseren Rechnungen kommt die Einheit „XRO“ vor, XFact View zeigt nur den
 Code. Ergänze, dass XRO „Rolle“ bedeutet.
 ```
 

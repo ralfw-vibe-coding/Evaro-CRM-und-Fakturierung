@@ -1,4 +1,4 @@
-# XFact – Dokumentation
+# XFact Gen – Dokumentation
 
 **Aus Ihrer PDF-Rechnung wird eine XRechnung.** Sie müssen dafür Ihr Rechnungsprogramm nicht umbauen.
 
@@ -6,9 +6,9 @@ Version 1 · Lizenz: MIT
 
 ---
 
-## 1. Was ist XFact?
+## 1. Was ist XFact Gen?
 
-XFact ist eine kleine Web-App, die in Ihrem Browser läuft. Sie lesen eine PDF-Rechnung ein. **Eine KI liest die Rechnung** und ordnet ihren Inhalt den Feldern der XRechnung zu, ganz gleich, wie Ihre Rechnung aufgebaut ist. Ein zweites KI-Modell, der **Prüfer**, kontrolliert die erkannten Werte, und XFact rechnet nach. Dann fragt XFact, was für eine gültige XRechnung noch fehlt, und erzeugt daraus eine **XRechnung-Datei (XML)**.
+XFact Gen, kurz XFact, ist eine kleine Web-App, die in Ihrem Browser läuft. Sie lesen eine PDF-Rechnung ein. **Eine KI liest die Rechnung** und ordnet ihren Inhalt den Feldern der XRechnung zu, ganz gleich, wie Ihre Rechnung aufgebaut ist. Ein zweites KI-Modell, der **Prüfer**, kontrolliert die erkannten Werte, und XFact rechnet nach. Dann fragt XFact, was für eine gültige XRechnung noch fehlt, und erzeugt daraus eine **XRechnung-Datei (XML)**.
 
 Diese XML-Datei verschicken Sie zusammen mit Ihrem gewohnten PDF an Ihren Kunden.
 

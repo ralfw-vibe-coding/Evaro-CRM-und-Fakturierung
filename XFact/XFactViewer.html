@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ============================================================================
-  XFactViewer – eine XRechnung lesbar anzeigen
+  XFact View – eine XRechnung lesbar anzeigen
   ============================================================================
 
   Diese eine Datei ist die ganze App. Sie läuft vollständig im Browser, auch
@@ -29,7 +29,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>XFactViewer</title>
+<title>XFact View</title>
 <style>
 /* === FARBEN UND SCHRIFTEN ================================================
    Hier lassen sich Farben und Schriften der ganzen App ändern.
@@ -97,6 +97,7 @@ body {
 }
 .kopf .name { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; }
 .kopf .name span { color: var(--farbe-akzent); }
+.kopf a.name { color: inherit; text-decoration: none; }
 .kopf .name small { font-weight: 500; font-size: 0.9rem; color: var(--farbe-text-leise); margin-left: 6px; }
 
 main {
@@ -287,7 +288,7 @@ h3 {
      Aufbau der Oberfläche: erst die Datei wählen, dann die Rechnung ansehen.
      ========================================================================= -->
 <header class="kopf">
-  <div class="name">X<span>Fact</span><small>Viewer</small></div>
+  <a class="name" href="index.html" title="Zur Startseite">X<span>Fact</span><small>View</small></a>
 </header>
 <main>
   <section class="schritt" id="schritt-oeffnen">
@@ -332,14 +333,14 @@ const TEXTE = {
   andereDatei: "Andere Datei",
   drucken: "Drucken",
   btZeigen: "BT-Nummern zeigen",
-  fusszeile: "XFactViewer · Open Source (MIT) · ohne Gewähr · zeigt die Rechnung an, prüft aber nicht, ob sie gültig ist: ",
+  fusszeile: "XFact View · Open Source (MIT) · ohne Gewähr · zeigt die Rechnung an, prüft aber nicht, ob sie gültig ist: ",
   pruefdienstText: "Online prüfen",
   pruefdienst: "https://www.rechnungsapi.de/xrechnung-validator-online-kostenlos",
 
   // Fehler beim Öffnen
   keinXml: "Diese Datei ist keine lesbare XML-Datei.",
   keineXRechnung: "Diese XML-Datei ist keine XRechnung.",
-  ublNochNicht: "Diese XRechnung ist in der Syntax UBL geschrieben. XFactViewer kann bisher nur die Syntax CII anzeigen.",
+  ublNochNicht: "Diese XRechnung ist in der Syntax UBL geschrieben. XFact View kann bisher nur die Syntax CII anzeigen.",
   ohneZeilen: "Die Rechnung enthält keine Positionen.",
 
   // Anzeige
@@ -1115,7 +1116,7 @@ async function dateiGewaehlt(datei) {
   $("dateiname").textContent = datei.name;
   $("datei-info").textContent = [r.profil?.includes("xrechnung") ? "XRechnung" : null, TEXTE.syntax[r.syntax]].filter(Boolean).join(" · ");
   $("rechnung").replaceChildren(zeigeRechnung(r));
-  document.title = `${r.nummer || datei.name} – XFactViewer`;
+  document.title = `${r.nummer || datei.name} – XFact View`;
   zeigeSchritt("ansehen");
 }
 
@@ -1133,7 +1134,7 @@ function start() {
     ablage.classList.remove("beim-ziehen");
     dateiGewaehlt(e.dataTransfer.files[0]);
   });
-  $("knopf-andere").addEventListener("click", () => { zeigeSchritt("oeffnen"); document.title = "XFactViewer"; });
+  $("knopf-andere").addEventListener("click", () => { zeigeSchritt("oeffnen"); document.title = "XFact View"; });
   $("knopf-drucken").addEventListener("click", () => window.print());
   $("bt-zeigen").addEventListener("change", (e) => $("rechnung").classList.toggle("mit-bt", e.target.checked));
 }

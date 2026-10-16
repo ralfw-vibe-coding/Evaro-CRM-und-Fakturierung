@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ============================================================================
-  XFact – aus einer PDF-Rechnung wird eine XRechnung
+  XFact Gen – aus einer PDF-Rechnung wird eine XRechnung
   ============================================================================
 
   Diese eine Datei ist die ganze App. Sie läuft vollständig im Browser, auch
@@ -33,7 +33,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>XFact</title>
+<title>XFact Gen</title>
 <style>
 /* === FARBEN UND SCHRIFTEN ================================================
    Hier lassen sich Farben und Schriften der ganzen App ändern.
@@ -101,6 +101,8 @@ body {
 }
 .kopf .name { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; }
 .kopf .name span { color: var(--farbe-akzent); }
+.kopf a.name { color: inherit; text-decoration: none; }
+.kopf .name small { font-weight: 500; font-size: 0.9rem; color: var(--farbe-text-leise); margin-left: 6px; }
 
 main {
   max-width: var(--breite-max);
@@ -419,7 +421,7 @@ a.knopf { text-decoration: none; }
      Aufbau der Oberfläche. Es ist immer genau ein Schritt sichtbar.
      ========================================================================= -->
 <header class="kopf">
-  <div class="name">X<span>Fact</span></div>
+  <a class="name" href="index.html" title="Zur Startseite">X<span>Fact</span><small>Gen</small></a>
   <button class="knopf-symbol" id="menue-knopf" title="Menü" aria-label="Menü">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
   </button>
@@ -510,7 +512,7 @@ const TEXTE = {
   ablageTitel: "PDF-Rechnung hier ablegen",
   ablageHinweis: "oder klicken, um eine Datei zu wählen",
   andereDatei: "Andere Datei",
-  fusszeile: "XFact · Open Source (MIT) · ohne Gewähr",
+  fusszeile: "XFact Gen · Open Source (MIT) · ohne Gewähr",
   keinPdf: "Das ist keine PDF-Datei. Bitte wählen Sie eine PDF-Rechnung.",
   keinText: "Dieses PDF enthält keinen Text, vermutlich ist es ein Scan. Scans werden nicht unterstützt.",
   lesefehler: "Das PDF konnte nicht gelesen werden.",

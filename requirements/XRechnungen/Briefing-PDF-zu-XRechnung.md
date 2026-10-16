@@ -46,6 +46,8 @@ Aus demselben Quellcode entstehen beide Varianten:
 
 Die Seite hat in beiden Varianten einen Link „Offline-Version herunterladen“.
 
+**Namen und Startseite:** Die beiden Apps heißen **XFact Gen** (`xfact.html`, PDF → XRechnung) und **XFact View** (`XFactViewer.html`, XRechnung anzeigen); die Dateinamen bleiben. Die Startseite `XFact/index.html` zeigt den Schriftzug XFact, erklärt kurz, worum es geht, und führt zu beiden Apps und ihren Dokumentationen. Der Schriftzug in den Apps führt zur Startseite zurück. Gehostet wird der Ordner `XFact/` als Ganzes; `index.html` ist dann die Einstiegsseite unter `/xfact/`.
+
 ## 4. Erste Nutzung
 
 Vor dem ersten Hochladen zeigt Schritt 1 die Hinweise und gleich darunter die KI-Einrichtung (Texte stehen in `TEXTE.hinweise` und `TEXTE.ki`):
