@@ -347,10 +347,19 @@ const TEXTE = {
   absender: "Rechnungssteller",
   empfaenger: "Rechnungsempfänger",
   lieferanschrift: "Lieferanschrift",
+  zahlungsempfaenger: "Zahlungsempfänger",
+  artikelnummerKunde: "Ihre Art.-Nr.",
+  gtin: "GTIN",
+  ursprungsland: "Ursprungsland",
+  bestellposition: "Bestellposition",
+  listenpreis: (preis, nachlass) => `Listenpreis ${preis}, abzüglich ${nachlass}`,
   felder: {
     nummer: "Rechnungsnummer", datum: "Rechnungsdatum", faellig: "Fällig am", leistungsdatum: "Leistungsdatum",
     leistungszeitraum: "Leistungszeitraum", kaeuferreferenz: "Käuferreferenz / Leitweg-ID", bestellnummer: "Bestellnummer",
     auftragsnummer: "Auftragsnummer", vertrag: "Vertrag", projekt: "Projekt", vorherigeRechnung: "Bezieht sich auf Rechnung",
+    wareneingang: "Wareneingang", lieferschein: "Lieferschein", ausschreibung: "Ausschreibung bzw. Los", objekt: "Objekt",
+    buchungsreferenz: "Buchungsreferenz (z.B. Kostenstelle)", rechtliches: "Rechtliche Angaben", region: "Region",
+    karteninhaber: "Karteninhaber",
     waehrung: "Währung",
     ustId: "USt-IdNr.", steuernummer: "Steuernummer", register: "Registernummer", kennung: "Kennung",
     adresseElektronisch: "Elektronische Adresse", kontakt: "Ansprechpartner", telefon: "Telefon", email: "E-Mail",
@@ -500,10 +509,16 @@ function leseCii(w) {
   // Die Steuer kann zweimal stehen (auch in Buchungswährung); gezeigt wird die in Rechnungswährung
   const steuerSummen = alle(summen, "TaxTotalAmount");
   const steuerSumme = steuerSummen.find((s) => s.getAttribute("currencyID") === waehrung) || steuerSummen[0];
+  // Weitere Belege: Anlagen (916), Ausschreibung (50), Objekt (130)
+  const belege = alle(vereinbarung, "AdditionalReferencedDocument");
+  const belegMit = (code) => belege.filter((d) => text(d, "TypeCode") === code);
+  const projekt = pfad(vereinbarung, "SpecifiedProcuringProject");
+  const zahlungsempfaenger = pfad(abrechnung, "PayeeTradeParty");
 
   return {
     syntax: "CII",
     profil: text(w, "ExchangedDocumentContext", "GuidelineSpecifiedDocumentContextParameter", "ID"),  // BT-24
+    prozess: text(w, "ExchangedDocumentContext", "BusinessProcessSpecifiedDocumentContextParameter", "ID"),  // BT-23
     nummer: text(dokument, "ID"),                                         // BT-1
     art: text(dokument, "TypeCode"),                                      // BT-3
     datum: datum(dokument, "IssueDateTime"),                              // BT-2
@@ -515,12 +530,23 @@ function leseCii(w) {
     bestellnummer: text(vereinbarung, "BuyerOrderReferencedDocument", "IssuerAssignedID"),   // BT-13
     auftragsnummer: text(vereinbarung, "SellerOrderReferencedDocument", "IssuerAssignedID"), // BT-14
     vertrag: text(vereinbarung, "ContractReferencedDocument", "IssuerAssignedID"),           // BT-12
-    projekt: [text(vereinbarung, "SpecifiedProcuringProject", "ID"), text(vereinbarung, "SpecifiedProcuringProject", "Name")]
-      .filter(Boolean).join(" – ") || null,                               // BT-11
-    vorherigeRechnung: text(abrechnung, "InvoiceReferencedDocument", "IssuerAssignedID"),    // BT-25
+    projekt: projekt ? [text(projekt, "ID"), text(projekt, "Name")].filter((t, i, alle_) => t && alle_.indexOf(t) === i).join(" – ") : null,  // BT-11
+    wareneingang: text(lieferung, "ReceivingAdviceReferencedDocument", "IssuerAssignedID"),  // BT-15
+    lieferschein: text(lieferung, "DespatchAdviceReferencedDocument", "IssuerAssignedID"),   // BT-16
+    ausschreibung: belegMit("50").map((d) => text(d, "IssuerAssignedID"))[0] || null,       // BT-17
+    objekt: belegMit("130").map((d) => text(d, "IssuerAssignedID"))[0] || null,             // BT-18
+    buchungsreferenz: text(abrechnung, "ReceivableSpecifiedTradeAccountingAccount", "ID"),   // BT-19
+    vorherigeRechnungen: alle(abrechnung, "InvoiceReferencedDocument").map((d) => ({         // BG-3
+      nummer: text(d, "IssuerAssignedID"), datum: datum(d, "FormattedIssueDateTime"),         // BT-25, BT-26
+    })),
     absender: partei(pfad(vereinbarung, "SellerTradeParty")),            // BG-4
     empfaenger: partei(pfad(vereinbarung, "BuyerTradeParty")),           // BG-7
-    lieferanschrift: partei(pfad(lieferung, "ShipToTradeParty")),        // BG-13
+    zahlungsempfaenger: zahlungsempfaenger ? {                            // BG-10
+      name: text(zahlungsempfaenger, "Name"),                            // BT-59
+      kennung: [...alle(zahlungsempfaenger, "ID"), ...alle(zahlungsempfaenger, "GlobalID")].map((k) => k.textContent.trim()).join(", ") || null,  // BT-60
+      register: text(zahlungsempfaenger, "SpecifiedLegalOrganization", "ID"),  // BT-61
+    } : null,
+    lieferanschrift: partei(pfad(lieferung, "ShipToTradeParty")),        // BG-13, BG-15
     leistungsdatum: datum(lieferung, "ActualDeliverySupplyChainEvent", "OccurrenceDateTime"),  // BT-72
     leistungVon: datum(abrechnung, "BillingSpecifiedPeriod", "StartDateTime"),                 // BT-73
     leistungBis: datum(abrechnung, "BillingSpecifiedPeriod", "EndDateTime"),                   // BT-74
@@ -555,6 +581,7 @@ function leseCii(w) {
         bic: text(m, "PayeeSpecifiedCreditorFinancialInstitution", "BICID"),        // BT-86
         kundenIban: text(m, "PayerPartyDebtorFinancialAccount", "IBANID"),          // BT-91
         karte: text(m, "ApplicableTradeSettlementFinancialCard", "ID"),             // BT-87
+        karteninhaber: text(m, "ApplicableTradeSettlementFinancialCard", "CardholderName"),  // BT-88
       })),
       glaeubigerId: text(abrechnung, "CreditorReferenceID"),             // BT-90
       verwendungszweck: text(abrechnung, "PaymentReference"),            // BT-83
@@ -562,7 +589,7 @@ function leseCii(w) {
       faellig: datum(bedingungen, "DueDateDateTime"),                    // BT-9
       mandatsreferenz: text(bedingungen, "DirectDebitMandateID"),        // BT-89
     },
-    anhaenge: alle(vereinbarung, "AdditionalReferencedDocument").map((d) => { // BG-24
+    anlagen: belegMit("916").map((d) => {                                // BG-24
       const datei = pfad(d, "AttachmentBinaryObject");
       return {
         kennung: text(d, "IssuerAssignedID"),                            // BT-122
@@ -585,14 +612,16 @@ function partei(p) {
     return [CODES.steuerSchema[id?.getAttribute("schemeID")] || "andere", id?.textContent.trim()];
   }));
   return {
-    name: text(p, "Name"),                                               // BT-27 / BT-44
+    name: text(p, "Name"),                                               // BT-27 / BT-44 / BT-70
     handelsname: text(p, "SpecifiedLegalOrganization", "TradingBusinessName"), // BT-28 / BT-45
     register: text(p, "SpecifiedLegalOrganization", "ID"),              // BT-30 / BT-47
-    kennung: [...alle(p, "ID"), ...alle(p, "GlobalID")].map((k) => k.textContent.trim()).filter(Boolean).join(", ") || null, // BT-29 / BT-46
-    adresse: ["LineOne", "LineTwo", "LineThree"].map((n) => text(anschrift, n)).filter(Boolean), // BT-35.. / BT-50..
-    plz: text(anschrift, "PostcodeCode"),                               // BT-38 / BT-53
-    ort: text(anschrift, "CityName"),                                   // BT-37 / BT-52
-    land: text(anschrift, "CountryID"),                                 // BT-40 / BT-55
+    kennung: [...alle(p, "ID"), ...alle(p, "GlobalID")].map((k) => k.textContent.trim()).filter(Boolean).join(", ") || null, // BT-29 / BT-46 / BT-71
+    rechtliches: text(p, "Description"),                                // BT-33
+    adresse: ["LineOne", "LineTwo", "LineThree"].map((n) => text(anschrift, n)).filter(Boolean), // BT-35 … / BT-50 … / BT-75 …
+    plz: text(anschrift, "PostcodeCode"),                               // BT-38 / BT-53 / BT-78
+    ort: text(anschrift, "CityName"),                                   // BT-37 / BT-52 / BT-77
+    region: text(anschrift, "CountrySubDivisionName"),                  // BT-39 / BT-54 / BT-79
+    land: text(anschrift, "CountryID"),                                 // BT-40 / BT-55 / BT-80
     ustId: steuer.ustId || null,                                        // BT-31 / BT-48
     steuernummer: steuer.steuernummer || null,                          // BT-32
     adresseElektronisch: text(p, "URIUniversalCommunication", "URIID"), // BT-34 / BT-49
@@ -607,17 +636,31 @@ function partei(p) {
 function position(z) {
   const vereinbarung = pfad(z, "SpecifiedLineTradeAgreement");
   const abrechnung = pfad(z, "SpecifiedLineTradeSettlement");
+  const produkt = pfad(z, "SpecifiedTradeProduct");
   const menge = pfad(z, "SpecifiedLineTradeDelivery", "BilledQuantity");
+  const brutto = pfad(vereinbarung, "GrossPriceProductTradePrice");
+  const objekt = alle(abrechnung, "AdditionalReferencedDocument").find((d) => text(d, "TypeCode") === "130");
   return {
     nr: text(z, "AssociatedDocumentLineDocument", "LineID"),            // BT-126
     notiz: text(z, "AssociatedDocumentLineDocument", "IncludedNote", "Content"), // BT-127
-    name: text(z, "SpecifiedTradeProduct", "Name"),                     // BT-153
-    beschreibung: text(z, "SpecifiedTradeProduct", "Description"),      // BT-154
-    artikelnummer: text(z, "SpecifiedTradeProduct", "SellerAssignedID"), // BT-155
+    name: text(produkt, "Name"),                                        // BT-153
+    beschreibung: text(produkt, "Description"),                         // BT-154
+    artikelnummer: text(produkt, "SellerAssignedID"),                   // BT-155
+    kundenArtikelnummer: text(produkt, "BuyerAssignedID"),              // BT-156
+    gtin: text(produkt, "GlobalID"),                                    // BT-157
+    ursprungsland: text(produkt, "OriginTradeCountry", "ID"),           // BT-159
+    merkmale: alle(produkt, "ApplicableProductCharacteristic").map((m) => ({  // BG-32
+      name: text(m, "Description"), wert: text(m, "Value"),             // BT-160, BT-161
+    })),
+    bestellposition: text(vereinbarung, "BuyerOrderReferencedDocument", "LineID"),  // BT-132
+    buchungsreferenz: text(abrechnung, "ReceivableSpecifiedTradeAccountingAccount", "ID"),  // BT-133
+    objekt: objekt ? text(objekt, "IssuerAssignedID") : null,           // BT-128
     menge: menge ? Number(menge.textContent.trim()) : null,             // BT-129
     einheit: menge?.getAttribute("unitCode") || null,                   // BT-130
     einzelpreis: zahl(vereinbarung, "NetPriceProductTradePrice", "ChargeAmount"), // BT-146
     preisbasis: zahl(vereinbarung, "NetPriceProductTradePrice", "BasisQuantity"), // BT-149
+    bruttopreis: brutto ? zahl(brutto, "ChargeAmount") : null,          // BT-148
+    preisnachlass: brutto ? zahl(brutto, "AppliedTradeAllowanceCharge", "ActualAmount") : null,  // BT-147
     kategorie: text(abrechnung, "ApplicableTradeTax", "CategoryCode"),  // BT-151
     satz: zahl(abrechnung, "ApplicableTradeTax", "RateApplicablePercent"), // BT-152
     von: datum(abrechnung, "BillingSpecifiedPeriod", "StartDateTime"),  // BT-134
@@ -631,10 +674,94 @@ function nachlassZuschlag(a) {
   return {
     zuschlag: text(a, "ChargeIndicator", "Indicator") === "true",
     betrag: zahl(a, "ActualAmount"),
+    basis: zahl(a, "BasisAmount"),
+    prozent: zahl(a, "CalculationPercent"),
     grund: text(a, "Reason") || text(a, "ReasonCode"),
     kategorie: text(a, "CategoryTradeTax", "CategoryCode"),
     satz: zahl(a, "CategoryTradeTax", "RateApplicablePercent"),
   };
+}
+
+/**
+ * Die Rechnung als Liste "Feld der Norm → Wert", z.B. { "BT-1": "RE-1",
+ * "BG-25.2/BT-153": "Montage" }. Wiederholte Gruppen tragen ihre laufende
+ * Nummer. So lassen sich zwei XRechnungen Feld für Feld vergleichen.
+ */
+function felderDerRechnung(r) {
+  const f = {};
+  const setze = (schluessel, wert) => {
+    if (wert === null || wert === undefined || wert === "" || (Array.isArray(wert) && !wert.length)) return;
+    f[schluessel] = typeof wert === "number" ? Math.round(wert * 10000) / 10000 : wert;
+  };
+  const anschrift = (vorne, p, bt) => {
+    if (!p) return;
+    p.adresse.forEach((zeile, i) => setze(`${vorne}${bt[i]}`, zeile));
+    setze(`${vorne}${bt[3]}`, p.ort); setze(`${vorne}${bt[4]}`, p.plz); setze(`${vorne}${bt[5]}`, p.region); setze(`${vorne}${bt[6]}`, p.land);
+  };
+  setze("BT-1", r.nummer); setze("BT-2", r.datum); setze("BT-3", r.art); setze("BT-5", r.waehrung);
+  setze("BT-9", r.zahlung.faellig); setze("BT-10", r.kaeuferreferenz); setze("BT-11", r.projekt); setze("BT-12", r.vertrag);
+  setze("BT-13", r.bestellnummer); setze("BT-14", r.auftragsnummer); setze("BT-15", r.wareneingang); setze("BT-16", r.lieferschein);
+  setze("BT-17", r.ausschreibung); setze("BT-18", r.objekt); setze("BT-19", r.buchungsreferenz); setze("BT-20", r.zahlung.bedingungen);
+  r.bemerkungen.forEach((b, i) => setze(`BG-1.${i + 1}/BT-22`, b.text));
+  setze("BT-23", r.prozess); setze("BT-24", r.profil);
+  r.vorherigeRechnungen.forEach((v, i) => { setze(`BG-3.${i + 1}/BT-25`, v.nummer); setze(`BG-3.${i + 1}/BT-26`, v.datum); });
+  const a = r.absender;
+  if (a) {
+    setze("BT-27", a.name); setze("BT-28", a.handelsname); setze("BT-29", a.kennung); setze("BT-30", a.register);
+    setze("BT-31", a.ustId); setze("BT-32", a.steuernummer); setze("BT-33", a.rechtliches); setze("BT-34", a.adresseElektronisch);
+    anschrift("", a, ["BT-35", "BT-36", "BT-162", "BT-37", "BT-38", "BT-39", "BT-40"]);
+    setze("BT-41", a.kontakt?.name); setze("BT-42", a.kontakt?.telefon); setze("BT-43", a.kontakt?.email);
+  }
+  const e = r.empfaenger;
+  if (e) {
+    setze("BT-44", e.name); setze("BT-45", e.handelsname); setze("BT-46", e.kennung); setze("BT-47", e.register);
+    setze("BT-48", e.ustId); setze("BT-49", e.adresseElektronisch);
+    anschrift("", e, ["BT-50", "BT-51", "BT-163", "BT-52", "BT-53", "BT-54", "BT-55"]);
+    setze("BT-56", e.kontakt?.name); setze("BT-57", e.kontakt?.telefon); setze("BT-58", e.kontakt?.email);
+  }
+  if (r.zahlungsempfaenger) { setze("BT-59", r.zahlungsempfaenger.name); setze("BT-60", r.zahlungsempfaenger.kennung); setze("BT-61", r.zahlungsempfaenger.register); }
+  const l = r.lieferanschrift;
+  if (l) {
+    setze("BT-70", l.name); setze("BT-71", l.kennung);
+    anschrift("", l, ["BT-75", "BT-76", "BT-165", "BT-77", "BT-78", "BT-79", "BT-80"]);
+  }
+  setze("BT-72", r.leistungsdatum); setze("BT-73", r.leistungVon); setze("BT-74", r.leistungBis);
+  r.zahlung.mittel.forEach((m, i) => {
+    setze("BT-81", m.art); setze("BT-82", m.info);
+    setze(`BG-17.${i + 1}/BT-84`, m.iban); setze(`BG-17.${i + 1}/BT-85`, m.kontoinhaber); setze(`BG-17.${i + 1}/BT-86`, m.bic);
+    setze("BT-87", m.karte); setze("BT-88", m.karteninhaber); setze("BT-91", m.kundenIban);
+  });
+  setze("BT-83", r.zahlung.verwendungszweck); setze("BT-89", r.zahlung.mandatsreferenz); setze("BT-90", r.zahlung.glaeubigerId);
+  const nz = (vorne, n, bt) => {
+    setze(`${vorne}${bt[0]}`, n.betrag); setze(`${vorne}${bt[1]}`, n.basis); setze(`${vorne}${bt[2]}`, n.prozent);
+    if (bt[3]) { setze(`${vorne}${bt[3]}`, n.kategorie); setze(`${vorne}${bt[4]}`, n.satz); }
+    setze(`${vorne}${bt[5]}`, n.grund);
+  };
+  r.nachlaesseZuschlaege.filter((n) => !n.zuschlag).forEach((n, i) => nz(`BG-20.${i + 1}/`, n, ["BT-92", "BT-93", "BT-94", "BT-95", "BT-96", "BT-97"]));
+  r.nachlaesseZuschlaege.filter((n) => n.zuschlag).forEach((n, i) => nz(`BG-21.${i + 1}/`, n, ["BT-99", "BT-100", "BT-101", "BT-102", "BT-103", "BT-104"]));
+  const s = r.summen;
+  setze("BT-106", s.positionen); setze("BT-107", s.nachlaesse); setze("BT-108", s.zuschlaege); setze("BT-109", s.netto);
+  setze("BT-110", s.steuer); setze("BT-112", s.brutto); setze("BT-113", s.gezahlt); setze("BT-114", s.rundung); setze("BT-115", s.zahlbetrag);
+  for (const g of r.steuer) {
+    const vorne = `BG-23.${g.kategorie}${g.satz ?? ""}/`;
+    setze(`${vorne}BT-116`, g.basis); setze(`${vorne}BT-117`, g.betrag); setze(`${vorne}BT-118`, g.kategorie);
+    setze(`${vorne}BT-119`, g.satz); setze(`${vorne}BT-120`, g.befreiungsgrund); setze(`${vorne}BT-121`, g.befreiungscode);
+  }
+  r.anlagen.forEach((d, i) => { setze(`BG-24.${i + 1}/BT-122`, d.kennung); setze(`BG-24.${i + 1}/BT-123`, d.beschreibung); setze(`BG-24.${i + 1}/BT-124`, d.link); });
+  r.positionen.forEach((p, i) => {
+    const vorne = `BG-25.${i + 1}/`;
+    setze(`${vorne}BT-126`, p.nr); setze(`${vorne}BT-127`, p.notiz); setze(`${vorne}BT-128`, p.objekt); setze(`${vorne}BT-129`, p.menge);
+    setze(`${vorne}BT-130`, p.einheit); setze(`${vorne}BT-131`, p.gesamt); setze(`${vorne}BT-132`, p.bestellposition);
+    setze(`${vorne}BT-133`, p.buchungsreferenz); setze(`${vorne}BT-134`, p.von); setze(`${vorne}BT-135`, p.bis);
+    p.nachlaesseZuschlaege.filter((n) => !n.zuschlag).forEach((n, j) => nz(`${vorne}BG-27.${j + 1}/`, n, ["BT-136", "BT-137", "BT-138", null, null, "BT-139"]));
+    p.nachlaesseZuschlaege.filter((n) => n.zuschlag).forEach((n, j) => nz(`${vorne}BG-28.${j + 1}/`, n, ["BT-141", "BT-142", "BT-143", null, null, "BT-144"]));
+    setze(`${vorne}BT-146`, p.einzelpreis); setze(`${vorne}BT-147`, p.preisnachlass); setze(`${vorne}BT-148`, p.bruttopreis);
+    setze(`${vorne}BT-149`, p.preisbasis); setze(`${vorne}BT-151`, p.kategorie); setze(`${vorne}BT-152`, p.satz);
+    setze(`${vorne}BT-153`, p.name); setze(`${vorne}BT-154`, p.beschreibung); setze(`${vorne}BT-155`, p.artikelnummer);
+    setze(`${vorne}BT-156`, p.kundenArtikelnummer); setze(`${vorne}BT-157`, p.gtin); setze(`${vorne}BT-159`, p.ursprungsland);
+    p.merkmale.forEach((m, j) => { setze(`${vorne}BG-32.${j + 1}/BT-160`, m.name); setze(`${vorne}BG-32.${j + 1}/BT-161`, m.wert); });
+  });
+  return f;
 }
 
 /**
@@ -721,7 +848,7 @@ function alsDatum(iso) {
 // Für die Oberfläche, für Tests und für Neugierige.
 window.XFactViewer = {
   TEXTE, CODES, NACHRECHNEN,
-  leseXRechnung, lesbareBedingungen, rechneNach, bedeutung, landName,
+  leseXRechnung, felderDerRechnung, lesbareBedingungen, rechneNach, bedeutung, landName,
   alsBetrag, alsZahl, alsDatum,
 };
 </script>
@@ -777,7 +904,12 @@ function zeigeRechnung(r) {
       angabe(f.auftragsnummer, "BT-14", r.auftragsnummer),
       angabe(f.vertrag, "BT-12", r.vertrag),
       angabe(f.projekt, "BT-11", r.projekt),
-      angabe(f.vorherigeRechnung, "BT-25", r.vorherigeRechnung),
+      angabe(f.wareneingang, "BT-15", r.wareneingang),
+      angabe(f.lieferschein, "BT-16", r.lieferschein),
+      angabe(f.ausschreibung, "BT-17", r.ausschreibung),
+      angabe(f.objekt, "BT-18", r.objekt),
+      angabe(f.buchungsreferenz, "BT-19", r.buchungsreferenz),
+      r.vorherigeRechnungen.map((v) => angabe(f.vorherigeRechnung, "BT-25", [v.nummer, v.datum ? `(${alsDatum(v.datum)})` : null].filter(Boolean).join(" "))),
       r.waehrung !== "EUR" ? angabe(f.waehrung, "BT-5", r.waehrung) : null),
     zeigePositionen(r),
     zeigeNachlaesseZuschlaege(r),
@@ -788,7 +920,10 @@ function zeigeRechnung(r) {
     r.bemerkungen.length ? el("div", { class: "abschnitt" },
       el("h3", { "data-bt": "BG-1" }, TEXTE.bemerkungen),
       r.bemerkungen.map((b) => el("p", { class: "bemerkung" }, b.text))) : null,
-    r.lieferanschrift ? el("div", { class: "abschnitt" }, zeigePartei(TEXTE.lieferanschrift, r.lieferanschrift, "BG-13", {})) : null,
+    r.lieferanschrift ? el("div", { class: "abschnitt" }, zeigePartei(TEXTE.lieferanschrift, r.lieferanschrift, "BG-13", { name: "BT-70" })) : null,
+    r.zahlungsempfaenger ? el("div", { class: "abschnitt" }, el("h3", { "data-bt": "BG-10" }, TEXTE.zahlungsempfaenger),
+      el("div", { class: "name", "data-bt": "BT-59" }, r.zahlungsempfaenger.name),
+      el("dl", { class: "angaben" }, angabe(f.kennung, "BT-60", r.zahlungsempfaenger.kennung), angabe(f.register, "BT-61", r.zahlungsempfaenger.register))) : null,
     zeigeAnhaenge(r));
 }
 
@@ -802,11 +937,13 @@ function zeigePartei(titel, p, bg, bt) {
     p.handelsname && p.handelsname !== p.name ? el("div", {}, p.handelsname) : null,
     p.adresse.map((zeile) => el("div", {}, zeile)),
     el("div", {}, [p.plz, p.ort].filter(Boolean).join(" ")),
+    p.region ? el("div", {}, p.region) : null,
     ausland ? el("div", {}, ausland) : null,
     el("dl", { class: "angaben" },
       angabe(f.ustId, bt.ustId, p.ustId),
       angabe(f.steuernummer, bt.steuernummer, p.steuernummer),
       angabe(f.register, null, p.register),
+      angabe(f.rechtliches, "BT-33", p.rechtliches),
       angabe(f.kennung, null, p.kennung),
       angabe(f.adresseElektronisch, bt.elektronisch, p.adresseElektronisch),
       p.kontakt ? [
@@ -832,8 +969,14 @@ function zeigePositionen(r) {
       el("td", {},
         el("div", { class: "bezeichnung" }, p.name),
         p.beschreibung ? el("div", { class: "beschreibung" }, p.beschreibung) : null,
-        p.artikelnummer ? el("div", { class: "beschreibung" }, `${TEXTE.artikelnummer} ${p.artikelnummer}`) : null,
         p.notiz ? el("div", { class: "beschreibung" }, p.notiz) : null,
+        [[TEXTE.artikelnummer, p.artikelnummer], [TEXTE.artikelnummerKunde, p.kundenArtikelnummer], [TEXTE.gtin, p.gtin],
+          [TEXTE.ursprungsland, p.ursprungsland && landName(p.ursprungsland)], [TEXTE.bestellposition, p.bestellposition],
+          [TEXTE.felder.objekt, p.objekt], [TEXTE.felder.buchungsreferenz, p.buchungsreferenz],
+          ...p.merkmale.map((m) => [m.name, m.wert])]
+          .filter(([, wert]) => wert).map(([name, wert]) => el("div", { class: "beschreibung" }, `${name}: ${wert}`)),
+        p.bruttopreis !== null && p.preisnachlass ? el("div", { class: "beschreibung" },
+          TEXTE.listenpreis(alsBetrag(p.bruttopreis, r.waehrung), alsBetrag(p.preisnachlass, r.waehrung))) : null,
         p.nachlaesseZuschlaege.map((a) => el("div", { class: "beschreibung" },
           `${a.zuschlag ? TEXTE.zuschlag : TEXTE.nachlass}${a.grund ? ` (${a.grund})` : ""}: ${alsBetrag(a.zuschlag ? a.betrag : -a.betrag, r.waehrung)}`))),
       el("td", { class: "zahl" }, p.menge === null ? "" : alsZahl(p.menge)),
@@ -907,6 +1050,7 @@ function zeigeZahlung(r) {
     angabe(f.kontoinhaber, "BT-85", m.kontoinhaber),
     angabe(f.kundenIban, "BT-91", m.kundenIban && gruppiert(m.kundenIban)),
     angabe(f.karte, "BT-87", m.karte),
+    angabe(f.karteninhaber, "BT-88", m.karteninhaber),
   ]);
   return el("div", { class: "abschnitt" },
     el("h3", { "data-bt": "BG-16" }, TEXTE.zahlung),
@@ -920,10 +1064,10 @@ function zeigeZahlung(r) {
 }
 
 function zeigeAnhaenge(r) {
-  if (!r.anhaenge.length) return null;
+  if (!r.anlagen.length) return null;
   return el("div", { class: "abschnitt" },
     el("h3", { "data-bt": "BG-24" }, TEXTE.anhaenge),
-    r.anhaenge.map((a) => el("div", { class: "anhang" },
+    r.anlagen.map((a) => el("div", { class: "anhang" },
       el("span", {}, a.beschreibung || a.dateiname || a.kennung),
       a.dateiname && a.dateiname !== a.beschreibung ? el("span", { class: "leise" }, a.dateiname) : null,
       a.inhalt ? el("button", { class: "knopf klein", onclick: () => anhangSpeichern(a) }, TEXTE.herunterladen) : null,

@@ -22,11 +22,11 @@ function hinUndZurueck(name: string, ergaenzungen: object = {}, befund = beispie
 describe("liest zurück, was XFact erzeugt", () => {
   it("Kreditkarte und Rabatt auf eine Position", () => {
     const befund = JSON.parse(JSON.stringify(beispiel("INV753").befund));
-    Object.assign(befund.positionen[0], { einzelpreis: 800, nachlass: 23, nachlassGrund: "Treue", gesamt: 777 });
+    Object.assign(befund.positionen[0], { nettopreis: 800, nachlaesse: [{ betrag: 23, basis: 0, prozent: 0, grund: "Treue" }], gesamt: 777 });
     const { gelesen } = hinUndZurueck("INV753", {}, befund, { zahlungsart: "kreditkarte", empfaenger: { email: "rechnung@kunde.example", karte: "4242" } });
     expect(gelesen.zahlung.mittel).toEqual([expect.objectContaining({ art: "54", karte: "4242", iban: null })]);
     expect(gelesen.positionen[0]).toMatchObject({ einzelpreis: 800, gesamt: 777,
-      nachlaesseZuschlaege: [{ zuschlag: false, betrag: 23, grund: "Treue", kategorie: null, satz: null }] });
+      nachlaesseZuschlaege: [{ zuschlag: false, betrag: 23, basis: null, prozent: null, grund: "Treue", kategorie: null, satz: null }] });
     expect(Viewer.rechneNach(gelesen)).toEqual([]);
   });
 
@@ -40,7 +40,7 @@ describe("liest zurück, was XFact erzeugt", () => {
     expect(gelesen.absender).toMatchObject({
       name: rechnung.absender.name, plz: rechnung.absender.plz, ort: rechnung.absender.ort, land: rechnung.absender.land,
       ustId: rechnung.absender.ustId, adresseElektronisch: rechnung.absender.email,
-      kontakt: { name: rechnung.absender.kontakt, telefon: rechnung.absender.telefon, email: rechnung.absender.email },
+      kontakt: { name: rechnung.absender.kontakt, telefon: rechnung.absender.telefon, email: rechnung.absender.kontaktEmail || rechnung.absender.email },
     });
     expect(gelesen.empfaenger).toMatchObject({ name: rechnung.empfaenger.name, adresseElektronisch: "rechnung@kunde.example" });
     expect(gelesen.positionen.map((p: any) => [p.menge, p.einheit, p.einzelpreis, p.gesamt, p.von, p.bis]))
@@ -49,7 +49,7 @@ describe("liest zurück, was XFact erzeugt", () => {
     expect(gelesen.summen).toMatchObject({ netto: summen.netto, steuer: summen.steuer, brutto: summen.brutto, zahlbetrag: summen.brutto });
     expect(gelesen.steuer[0]).toMatchObject({ kategorie: "AE", satz: 0, befreiungscode: "VATEX-EU-AE" });
     expect(gelesen.zahlung).toMatchObject({ faellig: rechnung.faellig, verwendungszweck: rechnung.nummer });
-    expect(gelesen.zahlung.mittel).toEqual([expect.objectContaining({ art: "58", iban: rechnung.bank.iban })]);
+    expect(gelesen.zahlung.mittel).toEqual([expect.objectContaining({ art: "58", iban: rechnung.zahlung.konten[0].iban })]);
     expect(Viewer.rechneNach(gelesen)).toEqual([]);
   });
 
@@ -197,14 +197,14 @@ describe("eine XRechnung mit allem, was XFact nicht erzeugt", () => {
   it("Positionen mit Preisbasis, Nachlass, mehrzeiliger Beschreibung", () => {
     expect(r.positionen[0]).toMatchObject({ nr: "1", name: "Schrauben & Dübel", artikelnummer: "A-100", menge: 400, einheit: "C62",
       einzelpreis: 12.5, preisbasis: 100, gesamt: 45 });
-    expect(r.positionen[0].nachlaesseZuschlaege).toEqual([{ zuschlag: false, betrag: 5, grund: "Mengenrabatt", kategorie: null, satz: null }]);
+    expect(r.positionen[0].nachlaesseZuschlaege).toEqual([{ zuschlag: false, betrag: 5, basis: null, prozent: null, grund: "Mengenrabatt", kategorie: null, satz: null }]);
     expect(r.positionen[1]).toMatchObject({ menge: 2.5, einheit: "HUR", beschreibung: "Zeile 1\nZeile 2" });
     expect(Viewer.bedeutung("einheit", "HUR")).toBe("Stunde");
     expect(Viewer.bedeutung("einheit", "XYZ")).toBe("XYZ");
   });
 
   it("Nachlass auf die Rechnung, Anzahlung, Summen", () => {
-    expect(r.nachlaesseZuschlaege).toEqual([{ zuschlag: false, betrag: 20, grund: "Treuerabatt", kategorie: "S", satz: 19 }]);
+    expect(r.nachlaesseZuschlaege).toEqual([{ zuschlag: false, betrag: 20, basis: null, prozent: null, grund: "Treuerabatt", kategorie: "S", satz: 19 }]);
     expect(r.summen).toEqual({ positionen: 195, zuschlaege: null, nachlaesse: 20, netto: 175, steuer: 33.25, brutto: 208.25,
       gezahlt: 100, rundung: null, zahlbetrag: 108.25 });
   });
@@ -219,7 +219,7 @@ describe("eine XRechnung mit allem, was XFact nicht erzeugt", () => {
   });
 
   it("Anhang: eingebettete Datei", () => {
-    expect(r.anhaenge).toEqual([{ kennung: "Anl-1", beschreibung: "Stundenzettel", link: null, dateiname: "stunden.txt",
+    expect(r.anlagen).toEqual([{ kennung: "Anl-1", beschreibung: "Stundenzettel", link: null, dateiname: "stunden.txt",
       mime: "text/plain", inhalt: "SGFsbG8=" }]);
   });
 

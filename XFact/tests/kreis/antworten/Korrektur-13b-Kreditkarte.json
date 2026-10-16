@@ -1,0 +1,406 @@
+{
+ "modell": "google/gemini-3.8-flash",
+ "befund": {
+  "text": "Tischlerei Holzmann GmbH & Co. KG\n(Holzmann Innenausbau)\nWerkstraße 12 · Halle B · 50667 Köln\nNordrhein-Westfalen\nIhre Ansprechpartnerin/Ihr Ansprechpartner: Anna Holzmann\nTel. 0221 555 120 · E-Mail rechnung@holzmann.example · direkt: anna.holzmann@holzmann.example\nTischlerei Holzmann GmbH & Co. KG · Halle B · 50667 Köln           Rechnungskorrektur Nr.   RK-2026-004\nBau & Boden Schmitt GmbH                                           Datum                    20.09.2026\nIndustriestraße 40                                                 Leistungsdatum           02.09.2026\n51373 Leverkusen\n                                                                   Korrigiert Rechnung      RE-2026-0790 vom 03.09.2026\nRechnungsempfang: rechnung@bau-schmitt.example\nIhre USt-IdNr. DE811907980\nRechnungskorrektur RK-2026-004\nPos.      Bezeichnung                       Menge        Einheit         Preis               USt         Betrag\n1         Parkett verlegen                       85,5    Quadratmet               38,00 €      § 13b          3.249,00 €\n                                                         er\n                                                                              Summe Positionen                3.249,00 €\n                                                                                     Nettobetrag              3.249,00 €\n                                                                           USt 0 % auf 3.249,00 €                 0,00 €\n                                                                                   Gesamtbetrag               3.249,00 €\nSteuerschuldnerschaft des Leistungsempfängers nach § 13b UStG\nDiese Rechnung ersetzt die Rechnung RE-2026-0790.\nZahlungsart: Kreditkarte\nDer Rechnungsbetrag wird der hinterlegten Kreditkarte belastet.\nBelastet wird die Karte mit der Endung 4242 (Karteninhaber Marco Schmitt).\nTischlerei Holzmann GmbH & Co. KG · HRA 4711, Amtsgericht Köln · Sitz Köln; Komplementärin: Holzmann Verwaltungs GmbH, HRB 815; Geschäftsführer: Peter\nHolzmann\nUSt-IdNr. DE123456788 · Steuernummer 214/5800/1234\nSeite 1 von 1",
+  "rechnung": {
+   "nummer": "RK-2026-004",
+   "datum": "2026-09-20",
+   "art": "384",
+   "waehrung": "EUR",
+   "faellig": null,
+   "leistungsdatum": "2026-09-02",
+   "leistungVon": null,
+   "leistungBis": null,
+   "kaeuferreferenz": null,
+   "leitwegId": null,
+   "bestellnummer": null,
+   "auftragsnummer": null,
+   "vertrag": null,
+   "projekt": null,
+   "wareneingang": null,
+   "lieferschein": null,
+   "ausschreibung": null,
+   "objekt": null,
+   "buchungsreferenz": null,
+   "vorherigeRechnungen": [
+    {
+     "nummer": "RE-2026-0790",
+     "datum": "2026-09-03"
+    }
+   ],
+   "bemerkungen": [
+    "Diese Rechnung ersetzt die Rechnung RE-2026-0790."
+   ],
+   "zahlungsbedingungen": "Der Rechnungsbetrag wird der hinterlegten Kreditkarte belastet. Belastet wird die Karte mit der Endung 4242 (Karteninhaber Marco Schmitt).",
+   "skonto": [],
+   "gezahlt": 0,
+   "rundung": 0,
+   "anlagen": []
+  },
+  "verkaeufer": {
+   "name": "Tischlerei Holzmann GmbH & Co. KG",
+   "handelsname": "Holzmann Innenausbau",
+   "kennung": null,
+   "register": "HRA 4711, Amtsgericht Köln",
+   "ustId": "DE123456788",
+   "steuernummer": "214/5800/1234",
+   "rechtlicheAngaben": "Sitz Köln; Komplementärin: Holzmann Verwaltungs GmbH, HRB 815; Geschäftsführer: Peter Holzmann",
+   "email": "rechnung@holzmann.example",
+   "strasse": "Werkstraße 12",
+   "zusatz": "Halle B",
+   "zeile3": null,
+   "ort": "Köln",
+   "plz": "50667",
+   "region": "Nordrhein-Westfalen",
+   "land": "DE",
+   "kontakt": "Anna Holzmann",
+   "telefon": "0221 555 120",
+   "kontaktEmail": "anna.holzmann@holzmann.example"
+  },
+  "kaeufer": {
+   "name": "Bau & Boden Schmitt GmbH",
+   "handelsname": null,
+   "kennung": null,
+   "register": null,
+   "ustId": "DE811907980",
+   "email": "rechnung@bau-schmitt.example",
+   "strasse": "Industriestraße 40",
+   "zusatz": null,
+   "zeile3": null,
+   "ort": "Leverkusen",
+   "plz": "51373",
+   "region": null,
+   "land": "DE",
+   "kontakt": null,
+   "telefon": null,
+   "kontaktEmail": null,
+   "oeffentlich": false
+  },
+  "zahlungsempfaenger": {
+   "name": null,
+   "kennung": null,
+   "register": null
+  },
+  "steuervertreter": null,
+  "lieferung": {
+   "name": null,
+   "ortKennung": null,
+   "strasse": null,
+   "zusatz": null,
+   "zeile3": null,
+   "ort": null,
+   "plz": null,
+   "region": null,
+   "land": null
+  },
+  "zahlung": {
+   "art": "kreditkarte",
+   "text": "Kreditkarte",
+   "verwendungszweck": null,
+   "konten": [],
+   "karte": "4242",
+   "karteninhaber": "Marco Schmitt",
+   "glaeubigerId": null,
+   "mandatsreferenz": null,
+   "kundenIban": null
+  },
+  "nachlaesse": [],
+  "zuschlaege": [],
+  "positionen": [
+   {
+    "nr": 1,
+    "posNr": "1",
+    "name": "Parkett verlegen",
+    "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 85.5,
+    "einheitText": "Quadratmeter",
+    "einheitCode": "MTK",
+    "nettopreis": 38,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
+    "gesamt": 3249,
+    "steuerkategorie": "AE",
+    "steuersatz": 0,
+    "von": null,
+    "bis": null
+   }
+  ],
+  "steuer": [
+   {
+    "kategorie": "AE",
+    "satz": 0,
+    "basis": 3249,
+    "betrag": 0,
+    "befreiungsgrund": "Steuerschuldnerschaft des Leistungsempfängers nach § 13b UStG"
+   }
+  ],
+  "summen": {
+   "positionen": 3249,
+   "nachlaesse": 0,
+   "zuschlaege": 0,
+   "netto": 3249,
+   "steuer": 0,
+   "brutto": 3249,
+   "zahlbetrag": 3249
+  },
+  "fehlt": [
+   {
+    "feld": "BT-10",
+    "grund": "Käuferreferenz fehlt auf dem Beleg"
+   }
+  ],
+  "nichtZugeordnet": []
+ },
+ "pruefung": {
+  "felder": {
+   "nummer": {
+    "pfad": "nummer",
+    "art": "noul"
+   },
+   "datum": {
+    "pfad": "datum",
+    "art": "noul"
+   },
+   "leistungsdatum": {
+    "pfad": "leistungsdatum",
+    "art": "noul"
+   },
+   "absender_name": {
+    "pfad": "absender.name",
+    "art": "noul"
+   },
+   "absender_ort": {
+    "pfad": "absender.plz",
+    "art": "noul"
+   },
+   "absender_ust": {
+    "pfad": "absender.ustId",
+    "art": "noul"
+   },
+   "absender_register": {
+    "pfad": "absender.register",
+    "art": "noul"
+   },
+   "empfaenger_name": {
+    "pfad": "empfaenger.name",
+    "art": "noul"
+   },
+   "empfaenger_ort": {
+    "pfad": "empfaenger.plz",
+    "art": "noul"
+   },
+   "empfaenger_ust": {
+    "pfad": "empfaenger.ustId",
+    "art": "noul"
+   },
+   "kontakt": {
+    "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "vorherige1": {
+    "pfad": "vorherigeRechnungen.1.nummer",
+    "art": "noul"
+   },
+   "p1_menge": {
+    "pfad": "position.1.menge",
+    "art": "noul"
+   },
+   "p1_preis": {
+    "pfad": "position.1.einzelpreis",
+    "art": "noul"
+   },
+   "p1_gesamt": {
+    "pfad": "position.1.gesamt",
+    "art": "noul"
+   },
+   "p1_einheit": {
+    "pfad": "position.1.einheit",
+    "art": "choice",
+    "erwartet": "MTK",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p1_steuer": {
+    "pfad": "position.1.steuer",
+    "art": "choice",
+    "erwartet": "AE",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "zahlungsart": {
+    "pfad": "zahlungsart",
+    "art": "choice",
+    "erwartet": "kreditkarte",
+    "namen": {
+     "ueberweisung": "Überweisung",
+     "lastschrift": "Lastschrift",
+     "kreditkarte": "Kreditkarte",
+     "debitkarte": "Debit-/EC-Karte",
+     "bar": "bar",
+     "verrechnung": "Verrechnung",
+     "online": "Online-Zahlung (z.B. PayPal)"
+    }
+   }
+  },
+  "antworten": {
+   "nummer": {
+    "type": "noul",
+    "noul": 0.94
+   },
+   "datum": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "leistungsdatum": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ort": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ust": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "absender_register": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "empfaenger_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "empfaenger_ort": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_ust": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "kontakt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "vorherige1": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_preis": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "p1_gesamt": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "p1_einheit": {
+    "type": "choice",
+    "choice": "MTK",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
+     "LS": 0,
+     "C62": 0,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 1,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p1_steuer": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0,
+     "E": 0,
+     "AE": 1,
+     "O": 0
+    },
+    "confidence": 1
+   },
+   "zahlungsart": {
+    "type": "choice",
+    "choice": "kreditkarte",
+    "probabilities": {
+     "ueberweisung": 0,
+     "lastschrift": 0,
+     "kreditkarte": 1,
+     "debitkarte": 0,
+     "bar": 0,
+     "verrechnung": 0,
+     "online": 0
+    },
+    "confidence": 1
+   }
+  }
+ }
+}

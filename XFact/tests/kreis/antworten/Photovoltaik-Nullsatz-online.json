@@ -1,0 +1,537 @@
+{
+ "modell": "google/gemini-3.8-flash",
+ "befund": {
+  "text": "Sonnenstrom Rheinland GmbH\nWerkstraße 12 · Tor 2 · 50667 Köln\nNordrhein-Westfalen\nIhre Ansprechpartnerin/Ihr Ansprechpartner: Lea Sommer\nTel. 0221 777 80 · E-Mail service@sonnenstrom.example\nSonnenstrom Rheinland GmbH · Tor 2 · 50667 Köln                    Rechnung Nr.             PV-2026-210\nFamilie Krüger                                                     Datum                    28.08.2026\nAm Hang 9                                                          Leistungsdatum           27.08.2026\n51465 Bergisch Gladbach\nRechnungsempfang: kruger.familie@mail.example\nRechnung PV-2026-210\nPos.       Bezeichnung                      Menge        Einheit         Preis               USt        Betrag\n1          Photovoltaikanlage 9,8 kWp               1    Stück                 9.000,00 €        0 %          9.000,00 €\n           inkl. Speicher\n2          Wartungsvertrag erstes Jahr              1    Jahr                    150,00 €       19 %            150,00 €\n                                                                              Summe Positionen                9.150,00 €\n                                                                                     Nettobetrag              9.150,00 €\n                                                                           USt 0 % auf 9.000,00 €                 0,00 €\n                                                                       zzgl. 19 % USt auf 150,00 €               28,50 €\n                                                                                   Gesamtbetrag               9.178,50 €\n                                                                                  bereits bezahlt            −9.178,50 €\n                                                                                       Zu zahlen                  0,00 €\nZahlungsart: PayPal\nZahlung über einen Online-Zahlungsdienst.\nSonnenstrom Rheinland GmbH · HRB 5521, Amtsgericht Köln\nUSt-IdNr. DE123456788 · Steuernummer 214/5800/1234\nSeite 1 von 1",
+  "rechnung": {
+   "nummer": "PV-2026-210",
+   "datum": "2026-08-28",
+   "art": "380",
+   "waehrung": "EUR",
+   "faellig": null,
+   "leistungsdatum": "2026-08-27",
+   "leistungVon": null,
+   "leistungBis": null,
+   "kaeuferreferenz": null,
+   "leitwegId": null,
+   "bestellnummer": null,
+   "auftragsnummer": null,
+   "vertrag": null,
+   "projekt": null,
+   "wareneingang": null,
+   "lieferschein": null,
+   "ausschreibung": null,
+   "objekt": null,
+   "buchungsreferenz": null,
+   "vorherigeRechnungen": [],
+   "bemerkungen": [],
+   "zahlungsbedingungen": "Zahlung über einen Online-Zahlungsdienst.",
+   "skonto": [],
+   "gezahlt": 9178.5,
+   "rundung": 0,
+   "anlagen": []
+  },
+  "verkaeufer": {
+   "name": "Sonnenstrom Rheinland GmbH",
+   "handelsname": null,
+   "kennung": null,
+   "register": "HRB 5521, Amtsgericht Köln",
+   "ustId": "DE123456788",
+   "steuernummer": "214/5800/1234",
+   "rechtlicheAngaben": "Amtsgericht Köln",
+   "email": "service@sonnenstrom.example",
+   "strasse": "Werkstraße 12",
+   "zusatz": "Tor 2",
+   "zeile3": null,
+   "ort": "Köln",
+   "plz": "50667",
+   "region": "Nordrhein-Westfalen",
+   "land": "DE",
+   "kontakt": "Lea Sommer",
+   "telefon": "0221 777 80",
+   "kontaktEmail": "service@sonnenstrom.example"
+  },
+  "kaeufer": {
+   "name": "Familie Krüger",
+   "handelsname": null,
+   "kennung": null,
+   "register": null,
+   "ustId": null,
+   "email": "kruger.familie@mail.example",
+   "strasse": "Am Hang 9",
+   "zusatz": null,
+   "zeile3": null,
+   "ort": "Bergisch Gladbach",
+   "plz": "51465",
+   "region": null,
+   "land": "DE",
+   "kontakt": null,
+   "telefon": null,
+   "kontaktEmail": null,
+   "oeffentlich": false
+  },
+  "zahlungsempfaenger": {
+   "name": null,
+   "kennung": null,
+   "register": null
+  },
+  "steuervertreter": null,
+  "lieferung": {
+   "name": null,
+   "ortKennung": null,
+   "strasse": null,
+   "zusatz": null,
+   "zeile3": null,
+   "ort": null,
+   "plz": null,
+   "region": null,
+   "land": null
+  },
+  "zahlung": {
+   "art": "online",
+   "text": "PayPal",
+   "verwendungszweck": null,
+   "konten": [],
+   "karte": null,
+   "karteninhaber": null,
+   "glaeubigerId": null,
+   "mandatsreferenz": null,
+   "kundenIban": null
+  },
+  "nachlaesse": [],
+  "zuschlaege": [],
+  "positionen": [
+   {
+    "nr": 1,
+    "posNr": "1",
+    "name": "Photovoltaikanlage 9,8 kWp",
+    "beschreibung": "inkl. Speicher",
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 1,
+    "einheitText": "Stück",
+    "einheitCode": "C62",
+    "nettopreis": 9000,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
+    "gesamt": 9000,
+    "steuerkategorie": "Z",
+    "steuersatz": 0,
+    "von": null,
+    "bis": null
+   },
+   {
+    "nr": 2,
+    "posNr": "2",
+    "name": "Wartungsvertrag erstes Jahr",
+    "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 1,
+    "einheitText": "Jahr",
+    "einheitCode": "ANN",
+    "nettopreis": 150,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
+    "gesamt": 150,
+    "steuerkategorie": "S",
+    "steuersatz": 19,
+    "von": null,
+    "bis": null
+   }
+  ],
+  "steuer": [
+   {
+    "kategorie": "Z",
+    "satz": 0,
+    "basis": 9000,
+    "betrag": 0,
+    "befreiungsgrund": null
+   },
+   {
+    "kategorie": "S",
+    "satz": 19,
+    "basis": 150,
+    "betrag": 28.5,
+    "befreiungsgrund": null
+   }
+  ],
+  "summen": {
+   "positionen": 9150,
+   "nachlaesse": 0,
+   "zuschlaege": 0,
+   "netto": 9150,
+   "steuer": 28.5,
+   "brutto": 9178.5,
+   "zahlbetrag": 0
+  },
+  "fehlt": [
+   {
+    "feld": "BT-10",
+    "grund": "Käuferreferenz (Leitweg-ID / Kundenreferenz) fehlt auf der Rechnung"
+   }
+  ],
+  "nichtZugeordnet": []
+ },
+ "pruefung": {
+  "felder": {
+   "nummer": {
+    "pfad": "nummer",
+    "art": "noul"
+   },
+   "datum": {
+    "pfad": "datum",
+    "art": "noul"
+   },
+   "leistungsdatum": {
+    "pfad": "leistungsdatum",
+    "art": "noul"
+   },
+   "absender_name": {
+    "pfad": "absender.name",
+    "art": "noul"
+   },
+   "absender_ort": {
+    "pfad": "absender.plz",
+    "art": "noul"
+   },
+   "absender_ust": {
+    "pfad": "absender.ustId",
+    "art": "noul"
+   },
+   "absender_register": {
+    "pfad": "absender.register",
+    "art": "noul"
+   },
+   "empfaenger_name": {
+    "pfad": "empfaenger.name",
+    "art": "noul"
+   },
+   "empfaenger_ort": {
+    "pfad": "empfaenger.plz",
+    "art": "noul"
+   },
+   "kontakt": {
+    "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "gezahlt": {
+    "pfad": "gezahlt",
+    "art": "noul"
+   },
+   "p1_menge": {
+    "pfad": "position.1.menge",
+    "art": "noul"
+   },
+   "p1_preis": {
+    "pfad": "position.1.einzelpreis",
+    "art": "noul"
+   },
+   "p1_gesamt": {
+    "pfad": "position.1.gesamt",
+    "art": "noul"
+   },
+   "p1_einheit": {
+    "pfad": "position.1.einheit",
+    "art": "choice",
+    "erwartet": "C62",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p1_steuer": {
+    "pfad": "position.1.steuer",
+    "art": "choice",
+    "erwartet": "Z",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "p2_menge": {
+    "pfad": "position.2.menge",
+    "art": "noul"
+   },
+   "p2_preis": {
+    "pfad": "position.2.einzelpreis",
+    "art": "noul"
+   },
+   "p2_gesamt": {
+    "pfad": "position.2.gesamt",
+    "art": "noul"
+   },
+   "p2_einheit": {
+    "pfad": "position.2.einheit",
+    "art": "choice",
+    "erwartet": "ANN",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p2_steuer": {
+    "pfad": "position.2.steuer",
+    "art": "choice",
+    "erwartet": "S19",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "zahlungsart": {
+    "pfad": "zahlungsart",
+    "art": "choice",
+    "erwartet": "online",
+    "namen": {
+     "ueberweisung": "Überweisung",
+     "lastschrift": "Lastschrift",
+     "kreditkarte": "Kreditkarte",
+     "debitkarte": "Debit-/EC-Karte",
+     "bar": "bar",
+     "verrechnung": "Verrechnung",
+     "online": "Online-Zahlung (z.B. PayPal)"
+    }
+   }
+  },
+  "antworten": {
+   "nummer": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "datum": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "leistungsdatum": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ort": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ust": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_register": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "empfaenger_ort": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "kontakt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "gezahlt": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p1_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_preis": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "p1_gesamt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_einheit": {
+    "type": "choice",
+    "choice": "C62",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
+     "LS": 0,
+     "C62": 1,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p1_steuer": {
+    "type": "choice",
+    "choice": "Z",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.98,
+     "E": 0.02,
+     "AE": 0,
+     "O": 0
+    },
+    "confidence": 0.98
+   },
+   "p2_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p2_preis": {
+    "type": "noul",
+    "noul": 0.91
+   },
+   "p2_gesamt": {
+    "type": "noul",
+    "noul": 0.89
+   },
+   "p2_einheit": {
+    "type": "choice",
+    "choice": "ANN",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 1,
+     "MIN": 0,
+     "LS": 0,
+     "C62": 0,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p2_steuer": {
+    "type": "choice",
+    "choice": "S19",
+    "probabilities": {
+     "S19": 1,
+     "S7": 0,
+     "Z": 0,
+     "E": 0,
+     "AE": 0,
+     "O": 0
+    },
+    "confidence": 1
+   },
+   "zahlungsart": {
+    "type": "choice",
+    "choice": "online",
+    "probabilities": {
+     "ueberweisung": 0,
+     "lastschrift": 0,
+     "kreditkarte": 0,
+     "debitkarte": 0,
+     "bar": 0,
+     "verrechnung": 0,
+     "online": 1
+    },
+    "confidence": 1
+   }
+  }
+ }
+}

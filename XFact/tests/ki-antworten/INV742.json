@@ -6,86 +6,178 @@
    "nummer": "0000000742",
    "datum": "2026-07-17",
    "art": "380",
+   "waehrung": "EUR",
    "faellig": "2026-07-31",
-   "zahlungsbedingungen": "Der Rechnungsbetrag ist ohne Abzug zahlbar bis: 31.7.2026",
-   "bestellnummer": null,
-   "leitwegId": null,
+   "leistungsdatum": null,
    "leistungVon": "2026-07-02",
    "leistungBis": "2026-07-16",
-   "bemerkung": null
+   "kaeuferreferenz": null,
+   "leitwegId": null,
+   "bestellnummer": null,
+   "auftragsnummer": null,
+   "vertrag": null,
+   "projekt": null,
+   "wareneingang": null,
+   "lieferschein": null,
+   "ausschreibung": null,
+   "objekt": null,
+   "buchungsreferenz": null,
+   "vorherigeRechnungen": [],
+   "bemerkungen": [],
+   "zahlungsbedingungen": "Der Rechnungsbetrag ist ohne Abzug zahlbar bis: 31.7.2026",
+   "skonto": [],
+   "gezahlt": 0,
+   "rundung": 0,
+   "anlagen": []
   },
   "verkaeufer": {
    "name": "Work With Ease EOOD",
-   "strasse": "ul Bor 4",
-   "zusatz": null,
-   "plz": "2777",
-   "ort": "Dobrinishte",
-   "land": "BG",
+   "handelsname": null,
+   "kennung": null,
+   "register": "205889057",
    "ustId": "BG205889057",
    "steuernummer": null,
+   "rechtlicheAngaben": "Registrierung: Уърк уит Ииз ЕООД, BG-UIC: 205889057",
    "email": "team@work-with-ease.eu",
+   "strasse": "ul Bor 4",
+   "zusatz": null,
+   "zeile3": null,
+   "ort": "Dobrinishte",
+   "plz": "2777",
+   "region": null,
+   "land": "BG",
+   "kontakt": "Andrea Kaden",
    "telefon": "+49 176 10335862",
-   "kontakt": "Andrea Kaden"
+   "kontaktEmail": "team@work-with-ease.eu"
   },
   "kaeufer": {
    "name": "Humboldt-Universität zu Berlin",
+   "handelsname": null,
+   "kennung": null,
+   "register": null,
+   "ustId": "DE137176824",
+   "email": null,
    "strasse": "Unter den Linden 6",
    "zusatz": null,
-   "plz": "10099",
+   "zeile3": null,
    "ort": "Berlin",
+   "plz": "10099",
+   "region": null,
    "land": "DE",
-   "ustId": "DE137176824",
-   "steuernummer": null,
-   "email": null,
-   "telefon": null,
    "kontakt": null,
+   "telefon": null,
+   "kontaktEmail": null,
    "oeffentlich": true
   },
-  "zahlung": {
-   "bic": "REVOLT21",
-   "verwendungszweck": null,
-   "iban": "LT163250046848710872"
+  "zahlungsempfaenger": {
+   "name": null,
+   "kennung": null,
+   "register": null
   },
+  "steuervertreter": null,
+  "lieferung": {
+   "name": null,
+   "ortKennung": null,
+   "strasse": null,
+   "zusatz": null,
+   "zeile3": null,
+   "ort": null,
+   "plz": null,
+   "region": null,
+   "land": null
+  },
+  "zahlung": {
+   "art": "ueberweisung",
+   "text": null,
+   "verwendungszweck": null,
+   "konten": [
+    {
+     "iban": "LT163250046848710872",
+     "bic": "REVOLT21",
+     "inhaber": null
+    }
+   ],
+   "karte": null,
+   "karteninhaber": null,
+   "glaeubigerId": null,
+   "mandatsreferenz": null,
+   "kundenIban": null
+  },
+  "nachlaesse": [],
+  "zuschlaege": [],
   "positionen": [
    {
     "nr": 1,
+    "posNr": "1",
     "name": "Online Seminar",
     "beschreibung": "2.7. & 16.7.26: EI001 ChatGPT & Co: Ein Einstieg in die KI-Nutzung im Office",
+    "notiz": null,
+    "artikelnummer": "EI001",
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 6,
     "einheitText": "Std",
     "einheitCode": "HUR",
-    "steuerkategorie": "AE",
-    "von": "2026-07-02",
-    "bis": "2026-07-16",
-    "menge": 6,
-    "einzelpreis": 150,
+    "nettopreis": 150,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
     "gesamt": 900,
-    "steuersatz": 0
+    "steuerkategorie": "AE",
+    "steuersatz": 0,
+    "von": "2026-07-02",
+    "bis": "2026-07-16"
    },
    {
     "nr": 2,
+    "posNr": "2",
     "name": "Online Seminar",
     "beschreibung": "2.7. & 16.7.26: EI002 Prompting like a Pro - Ein KI-Aufbaukurs",
+    "notiz": null,
+    "artikelnummer": "EI002",
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 6,
     "einheitText": "Std",
     "einheitCode": "HUR",
-    "steuerkategorie": "AE",
-    "von": "2026-07-02",
-    "bis": "2026-07-16",
-    "menge": 6,
-    "einzelpreis": 150,
+    "nettopreis": 150,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
     "gesamt": 900,
-    "steuersatz": 0
+    "steuerkategorie": "AE",
+    "steuersatz": 0,
+    "von": "2026-07-02",
+    "bis": "2026-07-16"
    }
   ],
   "steuer": [
    {
     "kategorie": "AE",
-    "befreiungsgrund": "Steuerschuldnerschaft des Leistungsempfängers (reverse charge).",
     "satz": 0,
     "basis": 1800,
-    "betrag": 0
+    "betrag": 0,
+    "befreiungsgrund": "Steuerschuldnerschaft des Leistungsempfängers (reverse charge)."
    }
   ],
   "summen": {
+   "positionen": 1800,
+   "nachlaesse": 0,
+   "zuschlaege": 0,
    "netto": 1800,
    "steuer": 0,
    "brutto": 1800,
@@ -94,13 +186,14 @@
   "fehlt": [
    {
     "feld": "BT-10",
-    "grund": "Leitweg-ID / Käuferreferenz fehlt, obwohl der Empfänger eine öffentliche Einrichtung ist"
+    "grund": "Leitweg-ID bzw. Käuferreferenz für öffentlichen Auftraggeber fehlt auf der Rechnung"
    },
    {
     "feld": "BT-49",
-    "grund": "Elektronische Adresse des Käufers fehlt"
+    "grund": "Elektronische Adresse / E-Mail des Käufers nicht angegeben"
    }
-  ]
+  ],
+  "nichtZugeordnet": []
  },
  "pruefung": {
   "felder": {
@@ -116,6 +209,14 @@
     "pfad": "faellig",
     "art": "noul"
    },
+   "leistungVon": {
+    "pfad": "leistungVon",
+    "art": "noul"
+   },
+   "leistungBis": {
+    "pfad": "leistungBis",
+    "art": "noul"
+   },
    "absender_name": {
     "pfad": "absender.name",
     "art": "noul"
@@ -126,6 +227,10 @@
    },
    "absender_ust": {
     "pfad": "absender.ustId",
+    "art": "noul"
+   },
+   "absender_register": {
+    "pfad": "absender.register",
     "art": "noul"
    },
    "empfaenger_name": {
@@ -140,12 +245,12 @@
     "pfad": "empfaenger.ustId",
     "art": "noul"
    },
-   "iban": {
-    "pfad": "iban",
-    "art": "noul"
-   },
    "kontakt": {
     "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "iban": {
+    "pfad": "zahlung.konten.1.iban",
     "art": "noul"
    },
    "p1_menge": {
@@ -160,10 +265,52 @@
     "pfad": "position.1.gesamt",
     "art": "noul"
    },
+   "p1_artikel": {
+    "pfad": "position.1.artikelnummer",
+    "art": "noul"
+   },
    "p1_einheit": {
     "pfad": "position.1.einheit",
     "art": "choice",
-    "erwartet": "HUR"
+    "erwartet": "HUR",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p1_steuer": {
+    "pfad": "position.1.steuer",
+    "art": "choice",
+    "erwartet": "AE",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
    },
    "p2_menge": {
     "pfad": "position.2.menge",
@@ -177,15 +324,66 @@
     "pfad": "position.2.gesamt",
     "art": "noul"
    },
+   "p2_artikel": {
+    "pfad": "position.2.artikelnummer",
+    "art": "noul"
+   },
    "p2_einheit": {
     "pfad": "position.2.einheit",
     "art": "choice",
-    "erwartet": "HUR"
+    "erwartet": "HUR",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
    },
-   "steuerfall": {
-    "pfad": "steuerfall",
+   "p2_steuer": {
+    "pfad": "position.2.steuer",
     "art": "choice",
-    "erwartet": "AE"
+    "erwartet": "AE",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "zahlungsart": {
+    "pfad": "zahlungsart",
+    "art": "choice",
+    "erwartet": "ueberweisung",
+    "namen": {
+     "ueberweisung": "Überweisung",
+     "lastschrift": "Lastschrift",
+     "kreditkarte": "Kreditkarte",
+     "debitkarte": "Debit-/EC-Karte",
+     "bar": "bar",
+     "verrechnung": "Verrechnung",
+     "online": "Online-Zahlung (z.B. PayPal)"
+    }
    }
   },
   "antworten": {
@@ -195,11 +393,19 @@
    },
    "datum": {
     "type": "noul",
-    "noul": 0.88
+    "noul": 0.87
    },
    "faellig": {
     "type": "noul",
-    "noul": 0.93
+    "noul": 0.91
+   },
+   "leistungVon": {
+    "type": "noul",
+    "noul": 0.79
+   },
+   "leistungBis": {
+    "type": "noul",
+    "noul": 0.75
    },
    "absender_name": {
     "type": "noul",
@@ -213,9 +419,13 @@
     "type": "noul",
     "noul": 0.94
    },
+   "absender_register": {
+    "type": "noul",
+    "noul": 0.95
+   },
    "empfaenger_name": {
     "type": "noul",
-    "noul": 0.98
+    "noul": 0.99
    },
    "empfaenger_ort": {
     "type": "noul",
@@ -223,89 +433,145 @@
    },
    "empfaenger_ust": {
     "type": "noul",
-    "noul": 0.97
-   },
-   "iban": {
-    "type": "noul",
-    "noul": 0.95
+    "noul": 0.98
    },
    "kontakt": {
     "type": "noul",
     "noul": 0.98
    },
+   "iban": {
+    "type": "noul",
+    "noul": 0.95
+   },
    "p1_menge": {
     "type": "noul",
-    "noul": 0.99
+    "noul": 0.98
    },
    "p1_preis": {
     "type": "noul",
-    "noul": 0.97
+    "noul": 0.98
    },
    "p1_gesamt": {
     "type": "noul",
-    "noul": 0.97
+    "noul": 0.98
+   },
+   "p1_artikel": {
+    "type": "noul",
+    "noul": 0.81
    },
    "p1_einheit": {
     "type": "choice",
     "choice": "HUR",
     "probabilities": {
-     "HUR": 1,
+     "HUR": 0.98,
      "DAY": 0,
-     "LS": 0,
-     "C62": 0,
-     "KMT": 0,
-     "MON": 0,
      "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
      "MIN": 0,
+     "LS": 0,
+     "C62": 0.02,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
      "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
      "MTK": 0,
      "MTQ": 0,
      "KGM": 0,
-     "LTR": 0
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
     },
-    "confidence": 1
+    "confidence": 0.98
+   },
+   "p1_steuer": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.01,
+     "E": 0,
+     "AE": 0.99,
+     "O": 0
+    },
+    "confidence": 0.99
    },
    "p2_menge": {
     "type": "noul",
-    "noul": 0.98
+    "noul": 0.99
    },
    "p2_preis": {
     "type": "noul",
-    "noul": 0.97
+    "noul": 0.98
    },
    "p2_gesamt": {
     "type": "noul",
-    "noul": 0.97
+    "noul": 0.98
+   },
+   "p2_artikel": {
+    "type": "noul",
+    "noul": 0.89
    },
    "p2_einheit": {
     "type": "choice",
     "choice": "HUR",
     "probabilities": {
-     "HUR": 1,
+     "HUR": 0.96,
      "DAY": 0,
-     "LS": 0,
-     "C62": 0,
-     "KMT": 0,
-     "MON": 0,
      "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
      "MIN": 0,
+     "LS": 0,
+     "C62": 0.04,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
      "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
      "MTK": 0,
      "MTQ": 0,
      "KGM": 0,
-     "LTR": 0
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
     },
-    "confidence": 1
+    "confidence": 0.96
    },
-   "steuerfall": {
+   "p2_steuer": {
     "type": "choice",
     "choice": "AE",
     "probabilities": {
-     "S": 0,
-     "AE": 1,
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.01,
      "E": 0,
-     "K": 0,
+     "AE": 0.99,
      "O": 0
+    },
+    "confidence": 0.99
+   },
+   "zahlungsart": {
+    "type": "choice",
+    "choice": "ueberweisung",
+    "probabilities": {
+     "ueberweisung": 1,
+     "lastschrift": 0,
+     "kreditkarte": 0,
+     "debitkarte": 0,
+     "bar": 0,
+     "verrechnung": 0,
+     "online": 0
     },
     "confidence": 1
    }

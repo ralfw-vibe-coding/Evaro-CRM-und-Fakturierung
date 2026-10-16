@@ -6,156 +6,325 @@
    "nummer": "0000000747",
    "datum": "2026-08-29",
    "art": "380",
+   "waehrung": "EUR",
    "faellig": "2026-09-10",
-   "zahlungsbedingungen": "Der Rechnungsbetrag ist ohne Abzug zahlbar bis: 10.9.2026",
-   "bestellnummer": null,
-   "leitwegId": null,
+   "leistungsdatum": null,
    "leistungVon": "2026-01-01",
    "leistungBis": "2026-08-28",
-   "bemerkung": "Betrifft: ADG Forum Assistenz- und Vorstandsunterstützung"
+   "kaeuferreferenz": null,
+   "leitwegId": null,
+   "bestellnummer": null,
+   "auftragsnummer": null,
+   "vertrag": null,
+   "projekt": null,
+   "wareneingang": null,
+   "lieferschein": null,
+   "ausschreibung": null,
+   "objekt": null,
+   "buchungsreferenz": null,
+   "vorherigeRechnungen": [],
+   "bemerkungen": [
+    "Betrifft: ADG Forum Assistenz- und Vorstandsunterstützung"
+   ],
+   "zahlungsbedingungen": "Der Rechnungsbetrag  ist ohne Abzug zahlbar bis: 10.9.2026",
+   "skonto": [],
+   "gezahlt": 0,
+   "rundung": 0,
+   "anlagen": []
   },
   "verkaeufer": {
    "name": "Work With Ease EOOD",
-   "strasse": "ul Bor 4",
-   "zusatz": null,
-   "plz": "2777",
-   "ort": "Dobrinishte",
-   "land": "BG",
+   "handelsname": null,
+   "kennung": null,
+   "register": "BG-UIC: 205889057",
    "ustId": "BG205889057",
    "steuernummer": null,
+   "rechtlicheAngaben": "Уърк уит Ииз ЕООД",
    "email": "team@work-with-ease.eu",
+   "strasse": "ul Bor 4",
+   "zusatz": null,
+   "zeile3": null,
+   "ort": "Dobrinishte",
+   "plz": "2777",
+   "region": null,
+   "land": "BG",
+   "kontakt": "Andrea Kaden",
    "telefon": "+49 176 10335862",
-   "kontakt": "Andrea Kaden"
+   "kontaktEmail": null
   },
   "kaeufer": {
    "name": "Akademie Deutscher Genossenschaften e.V.",
+   "handelsname": null,
+   "kennung": null,
+   "register": null,
+   "ustId": "DE149338636",
+   "email": null,
    "strasse": "Schloss Montabaur",
    "zusatz": null,
-   "plz": "56410",
+   "zeile3": null,
    "ort": "Montabaur",
+   "plz": "56410",
+   "region": null,
    "land": "DE",
-   "ustId": "DE149338636",
-   "steuernummer": null,
-   "email": null,
-   "telefon": null,
    "kontakt": null,
+   "telefon": null,
+   "kontaktEmail": null,
    "oeffentlich": false
   },
-  "zahlung": {
-   "bic": "REVOLT21",
-   "verwendungszweck": null,
-   "iban": "LT163250046848710872"
+  "zahlungsempfaenger": {
+   "name": null,
+   "kennung": null,
+   "register": null
   },
+  "steuervertreter": null,
+  "lieferung": {
+   "name": null,
+   "ortKennung": null,
+   "strasse": null,
+   "zusatz": null,
+   "zeile3": null,
+   "ort": null,
+   "plz": null,
+   "region": null,
+   "land": null
+  },
+  "zahlung": {
+   "art": "ueberweisung",
+   "text": null,
+   "verwendungszweck": null,
+   "konten": [
+    {
+     "iban": "LT163250046848710872",
+     "bic": "REVOLT21",
+     "inhaber": null
+    }
+   ],
+   "karte": null,
+   "karteninhaber": null,
+   "glaeubigerId": null,
+   "mandatsreferenz": null,
+   "kundenIban": null
+  },
+  "nachlaesse": [],
+  "zuschlaege": [],
   "positionen": [
    {
     "nr": 1,
+    "posNr": "1",
     "name": "Konzeption und Vorbereitung",
     "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 3,
     "einheitText": "Tage",
     "einheitCode": "DAY",
-    "steuerkategorie": "AE",
-    "von": "2026-01-01",
-    "bis": "2026-08-25",
-    "menge": 3,
-    "einzelpreis": 2000,
+    "nettopreis": 2000,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
     "gesamt": 6000,
-    "steuersatz": 0
+    "steuerkategorie": "AE",
+    "steuersatz": 0,
+    "von": "2026-01-01",
+    "bis": "2026-08-25"
    },
    {
     "nr": 2,
+    "posNr": "2",
     "name": "ERFA M365, 2 Tage Moderation",
     "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 3,
     "einheitText": "Tage",
     "einheitCode": "DAY",
-    "steuerkategorie": "AE",
-    "von": "2026-08-26",
-    "bis": "2026-08-28",
-    "menge": 3,
-    "einzelpreis": 2000,
+    "nettopreis": 2000,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
     "gesamt": 6000,
-    "steuersatz": 0
+    "steuerkategorie": "AE",
+    "steuersatz": 0,
+    "von": "2026-08-26",
+    "bis": "2026-08-28"
    },
    {
     "nr": 3,
+    "posNr": "3",
     "name": "Ralf Westphal: ERFA Künstliche Intelligenz",
     "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 1,
     "einheitText": "Tage",
     "einheitCode": "DAY",
-    "steuerkategorie": "AE",
-    "von": "2026-08-26",
-    "bis": "2026-08-26",
-    "menge": 1,
-    "einzelpreis": 2000,
+    "nettopreis": 2000,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
     "gesamt": 2000,
-    "steuersatz": 0
+    "steuerkategorie": "AE",
+    "steuersatz": 0,
+    "von": "2026-08-26",
+    "bis": "2026-08-26"
    },
    {
     "nr": 4,
+    "posNr": "4",
     "name": "Ralf Westphal: Deep Dive KI",
     "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 1,
     "einheitText": "Pauschale",
     "einheitCode": "LS",
-    "steuerkategorie": "AE",
-    "von": "2026-08-27",
-    "bis": "2026-08-27",
-    "menge": 1,
-    "einzelpreis": 1500,
+    "nettopreis": 1500,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
     "gesamt": 1500,
-    "steuersatz": 0
+    "steuerkategorie": "AE",
+    "steuersatz": 0,
+    "von": "2026-08-27",
+    "bis": "2026-08-27"
    },
    {
     "nr": 5,
+    "posNr": "5",
     "name": "Ralf Westphal: 2 Tage Technische Unterstützung",
     "beschreibung": "(Musik, Speaker, Präsentationen)",
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 1,
     "einheitText": "Pauschale",
     "einheitCode": "LS",
-    "steuerkategorie": "AE",
-    "von": "2026-08-27",
-    "bis": "2026-08-28",
-    "menge": 1,
-    "einzelpreis": 500,
+    "nettopreis": 500,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
     "gesamt": 500,
-    "steuersatz": 0
+    "steuerkategorie": "AE",
+    "steuersatz": 0,
+    "von": "2026-08-27",
+    "bis": "2026-08-28"
    },
    {
     "nr": 6,
+    "posNr": "6",
     "name": "Reisekosten A.Kaden",
     "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 1080,
     "einheitText": "km",
     "einheitCode": "KMT",
-    "steuerkategorie": "AE",
-    "von": "2026-08-26",
-    "bis": "2026-08-28",
-    "menge": 1080,
-    "einzelpreis": 0.3,
+    "nettopreis": 0.3,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
     "gesamt": 324,
-    "steuersatz": 0
+    "steuerkategorie": "AE",
+    "steuersatz": 0,
+    "von": "2026-08-26",
+    "bis": "2026-08-28"
    },
    {
     "nr": 7,
+    "posNr": "7",
     "name": "Reisekosten",
     "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 1080,
     "einheitText": "km",
     "einheitCode": "KMT",
-    "steuerkategorie": "AE",
-    "von": "2026-08-26",
-    "bis": "2026-08-28",
-    "menge": 1080,
-    "einzelpreis": 0.3,
+    "nettopreis": 0.3,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
     "gesamt": 324,
-    "steuersatz": 0
+    "steuerkategorie": "AE",
+    "steuersatz": 0,
+    "von": "2026-08-26",
+    "bis": "2026-08-28"
    }
   ],
   "steuer": [
    {
     "kategorie": "AE",
-    "befreiungsgrund": "Steuerschuldnerschaft des Leistungsempfängers (reverse charge).",
     "satz": 0,
     "basis": 16648,
-    "betrag": 0
+    "betrag": 0,
+    "befreiungsgrund": "Steuerschuldnerschaft des Leistungsempfängers (reverse charge)."
    }
   ],
   "summen": {
+   "positionen": 16648,
+   "nachlaesse": 0,
+   "zuschlaege": 0,
    "netto": 16648,
    "steuer": 0,
    "brutto": 16648,
@@ -163,10 +332,15 @@
   },
   "fehlt": [
    {
+    "feld": "BT-10",
+    "grund": "Keine Käuferreferenz angegeben"
+   },
+   {
     "feld": "BT-49",
-    "grund": "Elektronische Adresse des Käufers fehlt auf der Rechnung"
+    "grund": "Keine elektronische Adresse des Empfängers angegeben"
    }
-  ]
+  ],
+  "nichtZugeordnet": []
  },
  "pruefung": {
   "felder": {
@@ -182,6 +356,14 @@
     "pfad": "faellig",
     "art": "noul"
    },
+   "leistungVon": {
+    "pfad": "leistungVon",
+    "art": "noul"
+   },
+   "leistungBis": {
+    "pfad": "leistungBis",
+    "art": "noul"
+   },
    "absender_name": {
     "pfad": "absender.name",
     "art": "noul"
@@ -192,6 +374,10 @@
    },
    "absender_ust": {
     "pfad": "absender.ustId",
+    "art": "noul"
+   },
+   "absender_register": {
+    "pfad": "absender.register",
     "art": "noul"
    },
    "empfaenger_name": {
@@ -206,12 +392,12 @@
     "pfad": "empfaenger.ustId",
     "art": "noul"
    },
-   "iban": {
-    "pfad": "iban",
-    "art": "noul"
-   },
    "kontakt": {
     "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "iban": {
+    "pfad": "zahlung.konten.1.iban",
     "art": "noul"
    },
    "p1_menge": {
@@ -229,7 +415,45 @@
    "p1_einheit": {
     "pfad": "position.1.einheit",
     "art": "choice",
-    "erwartet": "DAY"
+    "erwartet": "DAY",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p1_steuer": {
+    "pfad": "position.1.steuer",
+    "art": "choice",
+    "erwartet": "AE",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
    },
    "p2_menge": {
     "pfad": "position.2.menge",
@@ -246,7 +470,45 @@
    "p2_einheit": {
     "pfad": "position.2.einheit",
     "art": "choice",
-    "erwartet": "DAY"
+    "erwartet": "DAY",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p2_steuer": {
+    "pfad": "position.2.steuer",
+    "art": "choice",
+    "erwartet": "AE",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
    },
    "p3_menge": {
     "pfad": "position.3.menge",
@@ -263,7 +525,45 @@
    "p3_einheit": {
     "pfad": "position.3.einheit",
     "art": "choice",
-    "erwartet": "DAY"
+    "erwartet": "DAY",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p3_steuer": {
+    "pfad": "position.3.steuer",
+    "art": "choice",
+    "erwartet": "AE",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
    },
    "p4_menge": {
     "pfad": "position.4.menge",
@@ -280,7 +580,45 @@
    "p4_einheit": {
     "pfad": "position.4.einheit",
     "art": "choice",
-    "erwartet": "LS"
+    "erwartet": "LS",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p4_steuer": {
+    "pfad": "position.4.steuer",
+    "art": "choice",
+    "erwartet": "AE",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
    },
    "p5_menge": {
     "pfad": "position.5.menge",
@@ -297,7 +635,45 @@
    "p5_einheit": {
     "pfad": "position.5.einheit",
     "art": "choice",
-    "erwartet": "LS"
+    "erwartet": "LS",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p5_steuer": {
+    "pfad": "position.5.steuer",
+    "art": "choice",
+    "erwartet": "AE",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
    },
    "p6_menge": {
     "pfad": "position.6.menge",
@@ -314,7 +690,45 @@
    "p6_einheit": {
     "pfad": "position.6.einheit",
     "art": "choice",
-    "erwartet": "KMT"
+    "erwartet": "KMT",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p6_steuer": {
+    "pfad": "position.6.steuer",
+    "art": "choice",
+    "erwartet": "AE",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
    },
    "p7_menge": {
     "pfad": "position.7.menge",
@@ -331,12 +745,59 @@
    "p7_einheit": {
     "pfad": "position.7.einheit",
     "art": "choice",
-    "erwartet": "KMT"
+    "erwartet": "KMT",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
    },
-   "steuerfall": {
-    "pfad": "steuerfall",
+   "p7_steuer": {
+    "pfad": "position.7.steuer",
     "art": "choice",
-    "erwartet": "AE"
+    "erwartet": "AE",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "zahlungsart": {
+    "pfad": "zahlungsart",
+    "art": "choice",
+    "erwartet": "ueberweisung",
+    "namen": {
+     "ueberweisung": "Überweisung",
+     "lastschrift": "Lastschrift",
+     "kreditkarte": "Kreditkarte",
+     "debitkarte": "Debit-/EC-Karte",
+     "bar": "bar",
+     "verrechnung": "Verrechnung",
+     "online": "Online-Zahlung (z.B. PayPal)"
+    }
    }
   },
   "antworten": {
@@ -346,11 +807,19 @@
    },
    "datum": {
     "type": "noul",
-    "noul": 0.78
+    "noul": 0.76
    },
    "faellig": {
     "type": "noul",
-    "noul": 0.9
+    "noul": 0.89
+   },
+   "leistungVon": {
+    "type": "noul",
+    "noul": 0.94
+   },
+   "leistungBis": {
+    "type": "noul",
+    "noul": 0.67
    },
    "absender_name": {
     "type": "noul",
@@ -362,7 +831,11 @@
    },
    "absender_ust": {
     "type": "noul",
-    "noul": 0.71
+    "noul": 0.77
+   },
+   "absender_register": {
+    "type": "noul",
+    "noul": 0.97
    },
    "empfaenger_name": {
     "type": "noul",
@@ -374,15 +847,15 @@
    },
    "empfaenger_ust": {
     "type": "noul",
-    "noul": 0.89
-   },
-   "iban": {
-    "type": "noul",
-    "noul": 0.95
+    "noul": 0.86
    },
    "kontakt": {
     "type": "noul",
-    "noul": 0.97
+    "noul": 0.96
+   },
+   "iban": {
+    "type": "noul",
+    "noul": 0.96
    },
    "p1_menge": {
     "type": "noul",
@@ -390,11 +863,11 @@
    },
    "p1_preis": {
     "type": "noul",
-    "noul": 0.96
+    "noul": 0.98
    },
    "p1_gesamt": {
     "type": "noul",
-    "noul": 0.97
+    "noul": 0.99
    },
    "p1_einheit": {
     "type": "choice",
@@ -402,19 +875,42 @@
     "probabilities": {
      "HUR": 0,
      "DAY": 1,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
      "LS": 0,
      "C62": 0,
+     "SET": 0,
+     "PR": 0,
      "KMT": 0,
-     "MON": 0,
-     "WEE": 0,
-     "MIN": 0,
      "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
      "MTK": 0,
      "MTQ": 0,
      "KGM": 0,
-     "LTR": 0
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
     },
     "confidence": 1
+   },
+   "p1_steuer": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.01,
+     "E": 0,
+     "AE": 0.99,
+     "O": 0
+    },
+    "confidence": 0.99
    },
    "p2_menge": {
     "type": "noul",
@@ -422,11 +918,11 @@
    },
    "p2_preis": {
     "type": "noul",
-    "noul": 0.96
+    "noul": 0.97
    },
    "p2_gesamt": {
     "type": "noul",
-    "noul": 0.97
+    "noul": 0.98
    },
    "p2_einheit": {
     "type": "choice",
@@ -434,19 +930,42 @@
     "probabilities": {
      "HUR": 0,
      "DAY": 1,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
      "LS": 0,
      "C62": 0,
+     "SET": 0,
+     "PR": 0,
      "KMT": 0,
-     "MON": 0,
-     "WEE": 0,
-     "MIN": 0,
      "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
      "MTK": 0,
      "MTQ": 0,
      "KGM": 0,
-     "LTR": 0
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
     },
     "confidence": 1
+   },
+   "p2_steuer": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.01,
+     "E": 0,
+     "AE": 0.99,
+     "O": 0
+    },
+    "confidence": 0.99
    },
    "p3_menge": {
     "type": "noul",
@@ -454,31 +973,54 @@
    },
    "p3_preis": {
     "type": "noul",
-    "noul": 0.95
+    "noul": 0.98
    },
    "p3_gesamt": {
     "type": "noul",
-    "noul": 0.97
+    "noul": 0.98
    },
    "p3_einheit": {
     "type": "choice",
     "choice": "DAY",
     "probabilities": {
      "HUR": 0,
-     "DAY": 1,
-     "LS": 0,
-     "C62": 0,
-     "KMT": 0,
-     "MON": 0,
+     "DAY": 0.99,
      "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
      "MIN": 0,
+     "LS": 0,
+     "C62": 0.01,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
      "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
      "MTK": 0,
      "MTQ": 0,
      "KGM": 0,
-     "LTR": 0
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
     },
-    "confidence": 1
+    "confidence": 0.99
+   },
+   "p3_steuer": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.01,
+     "E": 0,
+     "AE": 0.99,
+     "O": 0
+    },
+    "confidence": 0.99
    },
    "p4_menge": {
     "type": "noul",
@@ -486,11 +1028,11 @@
    },
    "p4_preis": {
     "type": "noul",
-    "noul": 0.93
+    "noul": 0.98
    },
    "p4_gesamt": {
     "type": "noul",
-    "noul": 0.96
+    "noul": 0.98
    },
    "p4_einheit": {
     "type": "choice",
@@ -498,23 +1040,46 @@
     "probabilities": {
      "HUR": 0,
      "DAY": 0,
-     "LS": 1,
-     "C62": 0,
-     "KMT": 0,
-     "MON": 0,
      "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
      "MIN": 0,
+     "LS": 0.99,
+     "C62": 0.01,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
      "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
      "MTK": 0,
      "MTQ": 0,
      "KGM": 0,
-     "LTR": 0
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
     },
-    "confidence": 1
+    "confidence": 0.99
+   },
+   "p4_steuer": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.01,
+     "E": 0,
+     "AE": 0.99,
+     "O": 0
+    },
+    "confidence": 0.99
    },
    "p5_menge": {
     "type": "noul",
-    "noul": 0.97
+    "noul": 0.98
    },
    "p5_preis": {
     "type": "noul",
@@ -522,7 +1087,7 @@
    },
    "p5_gesamt": {
     "type": "noul",
-    "noul": 0.96
+    "noul": 0.98
    },
    "p5_einheit": {
     "type": "choice",
@@ -530,31 +1095,54 @@
     "probabilities": {
      "HUR": 0,
      "DAY": 0,
-     "LS": 1,
-     "C62": 0,
-     "KMT": 0,
-     "MON": 0,
      "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
      "MIN": 0,
+     "LS": 0.99,
+     "C62": 0.01,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
      "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
      "MTK": 0,
      "MTQ": 0,
      "KGM": 0,
-     "LTR": 0
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
     },
-    "confidence": 1
+    "confidence": 0.99
+   },
+   "p5_steuer": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.01,
+     "E": 0,
+     "AE": 0.99,
+     "O": 0
+    },
+    "confidence": 0.99
    },
    "p6_menge": {
     "type": "noul",
-    "noul": 0.96
+    "noul": 0.97
    },
    "p6_preis": {
     "type": "noul",
-    "noul": 0.92
+    "noul": 0.98
    },
    "p6_gesamt": {
     "type": "noul",
-    "noul": 0.97
+    "noul": 0.98
    },
    "p6_einheit": {
     "type": "choice",
@@ -562,31 +1150,54 @@
     "probabilities": {
      "HUR": 0,
      "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
      "LS": 0,
      "C62": 0,
+     "SET": 0,
+     "PR": 0,
      "KMT": 1,
-     "MON": 0,
-     "WEE": 0,
-     "MIN": 0,
      "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
      "MTK": 0,
      "MTQ": 0,
      "KGM": 0,
-     "LTR": 0
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
     },
     "confidence": 1
    },
+   "p6_steuer": {
+    "type": "choice",
+    "choice": "AE",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.02,
+     "E": 0,
+     "AE": 0.9,
+     "O": 0.08
+    },
+    "confidence": 0.88
+   },
    "p7_menge": {
     "type": "noul",
-    "noul": 0.93
+    "noul": 0.94
    },
    "p7_preis": {
     "type": "noul",
-    "noul": 0.92
+    "noul": 0.97
    },
    "p7_gesamt": {
     "type": "noul",
-    "noul": 0.92
+    "noul": 0.95
    },
    "p7_einheit": {
     "type": "choice",
@@ -594,29 +1205,54 @@
     "probabilities": {
      "HUR": 0,
      "DAY": 0,
-     "LS": 0,
-     "C62": 0,
-     "KMT": 1,
-     "MON": 0,
      "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
      "MIN": 0,
+     "LS": 0,
+     "C62": 0.02,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0.98,
      "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
      "MTK": 0,
      "MTQ": 0,
      "KGM": 0,
-     "LTR": 0
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
     },
-    "confidence": 1
+    "confidence": 0.98
    },
-   "steuerfall": {
+   "p7_steuer": {
     "type": "choice",
     "choice": "AE",
     "probabilities": {
-     "S": 0,
-     "AE": 1,
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.04,
      "E": 0,
-     "K": 0,
-     "O": 0
+     "AE": 0.86,
+     "O": 0.1
+    },
+    "confidence": 0.83
+   },
+   "zahlungsart": {
+    "type": "choice",
+    "choice": "ueberweisung",
+    "probabilities": {
+     "ueberweisung": 1,
+     "lastschrift": 0,
+     "kreditkarte": 0,
+     "debitkarte": 0,
+     "bar": 0,
+     "verrechnung": 0,
+     "online": 0
     },
     "confidence": 1
    }

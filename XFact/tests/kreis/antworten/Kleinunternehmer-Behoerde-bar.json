@@ -1,0 +1,517 @@
+{
+ "modell": "google/gemini-3.8-flash",
+ "befund": {
+  "text": "Gartenpflege Weber\nLindenweg 4 · 52062 Aachen\nIhre Ansprechpartnerin/Ihr Ansprechpartner: Tom Weber\nTel. 0241 991 22 · E-Mail weber@gartenpflege-weber.example\nGartenpflege Weber · Lindenweg 4 · 52062 Aachen                   Rechnung Nr.             2026-031\nStadt Aachen                                                      Datum                    11.09.2026\nz. Hd. Frau Klein                                                 Leitweg-ID               05334002-12345-14\nMarkt 1\n                                                                  Leistungsdatum           10.09.2026\nFachbereich Umwelt\n52058 Aachen\nRechnungsempfang: erechnung@stadt-aachen.example\nRechnung 2026-031\nLieferanschrift: Grünanlage Stadtpark, (GA-117)\nPos.       Bezeichnung                      Menge       Einheit         Preis              USt         Betrag\n1          Rasen mähen                             6    Stunde                   35,00 €          –           210,00 €\n2          Grünschnitt entsorgen                   1    Pauschale                40,00 €          –            40,00 €\n                                                                             Summe Positionen                 250,00 €\n                                                                                    Nettobetrag               250,00 €\n                                                                            USt 0 % auf 250,00 €                 0,00 €\n                                                                                  Gesamtbetrag                250,00 €\nGemäß § 19 UStG wird keine Umsatzsteuer berechnet.\nZahlungsart: bar\nZahlung in bar.\nGartenpflege Weber\nSteuernummer 203/123/45678 · Unsere Lieferantennummer bei Ihnen 203/123/45678\nSeite 1 von 1",
+  "rechnung": {
+   "nummer": "2026-031",
+   "datum": "2026-09-11",
+   "art": "380",
+   "waehrung": "EUR",
+   "faellig": null,
+   "leistungsdatum": "2026-09-10",
+   "leistungVon": null,
+   "leistungBis": null,
+   "kaeuferreferenz": "05334002-12345-14",
+   "leitwegId": "05334002-12345-14",
+   "bestellnummer": null,
+   "auftragsnummer": null,
+   "vertrag": null,
+   "projekt": null,
+   "wareneingang": null,
+   "lieferschein": null,
+   "ausschreibung": null,
+   "objekt": null,
+   "buchungsreferenz": null,
+   "vorherigeRechnungen": [],
+   "bemerkungen": [],
+   "zahlungsbedingungen": "Zahlung in bar.",
+   "skonto": [],
+   "gezahlt": 0,
+   "rundung": 0,
+   "anlagen": []
+  },
+  "verkaeufer": {
+   "name": "Gartenpflege Weber",
+   "handelsname": null,
+   "kennung": "203/123/45678",
+   "register": null,
+   "ustId": null,
+   "steuernummer": "203/123/45678",
+   "rechtlicheAngaben": null,
+   "email": "weber@gartenpflege-weber.example",
+   "strasse": "Lindenweg 4",
+   "zusatz": null,
+   "zeile3": null,
+   "ort": "Aachen",
+   "plz": "52062",
+   "region": null,
+   "land": "DE",
+   "kontakt": "Tom Weber",
+   "telefon": "0241 991 22",
+   "kontaktEmail": "weber@gartenpflege-weber.example"
+  },
+  "kaeufer": {
+   "name": "Stadt Aachen",
+   "handelsname": null,
+   "kennung": null,
+   "register": null,
+   "ustId": null,
+   "email": "erechnung@stadt-aachen.example",
+   "strasse": "Markt 1",
+   "zusatz": "Fachbereich Umwelt",
+   "zeile3": null,
+   "ort": "Aachen",
+   "plz": "52058",
+   "region": null,
+   "land": "DE",
+   "kontakt": "Frau Klein",
+   "telefon": null,
+   "kontaktEmail": null,
+   "oeffentlich": true
+  },
+  "zahlungsempfaenger": {
+   "name": null,
+   "kennung": null,
+   "register": null
+  },
+  "steuervertreter": null,
+  "lieferung": {
+   "name": "Grünanlage Stadtpark",
+   "ortKennung": "GA-117",
+   "strasse": null,
+   "zusatz": null,
+   "zeile3": null,
+   "ort": null,
+   "plz": null,
+   "region": null,
+   "land": null
+  },
+  "zahlung": {
+   "art": "bar",
+   "text": "bar",
+   "verwendungszweck": null,
+   "konten": [],
+   "karte": null,
+   "karteninhaber": null,
+   "glaeubigerId": null,
+   "mandatsreferenz": null,
+   "kundenIban": null
+  },
+  "nachlaesse": [],
+  "zuschlaege": [],
+  "positionen": [
+   {
+    "nr": 1,
+    "posNr": "1",
+    "name": "Rasen mähen",
+    "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 6,
+    "einheitText": "Stunde",
+    "einheitCode": "HUR",
+    "nettopreis": 35,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
+    "gesamt": 210,
+    "steuerkategorie": "E",
+    "steuersatz": 0,
+    "von": null,
+    "bis": null
+   },
+   {
+    "nr": 2,
+    "posNr": "2",
+    "name": "Grünschnitt entsorgen",
+    "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 1,
+    "einheitText": "Pauschale",
+    "einheitCode": "LS",
+    "nettopreis": 40,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
+    "gesamt": 40,
+    "steuerkategorie": "E",
+    "steuersatz": 0,
+    "von": null,
+    "bis": null
+   }
+  ],
+  "steuer": [
+   {
+    "kategorie": "E",
+    "satz": 0,
+    "basis": 250,
+    "betrag": 0,
+    "befreiungsgrund": "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."
+   }
+  ],
+  "summen": {
+   "positionen": 250,
+   "nachlaesse": 0,
+   "zuschlaege": 0,
+   "netto": 250,
+   "steuer": 0,
+   "brutto": 250,
+   "zahlbetrag": 250
+  },
+  "fehlt": [],
+  "nichtZugeordnet": []
+ },
+ "pruefung": {
+  "felder": {
+   "nummer": {
+    "pfad": "nummer",
+    "art": "noul"
+   },
+   "datum": {
+    "pfad": "datum",
+    "art": "noul"
+   },
+   "leistungsdatum": {
+    "pfad": "leistungsdatum",
+    "art": "noul"
+   },
+   "absender_name": {
+    "pfad": "absender.name",
+    "art": "noul"
+   },
+   "absender_ort": {
+    "pfad": "absender.plz",
+    "art": "noul"
+   },
+   "absender_kennung": {
+    "pfad": "absender.kennung",
+    "art": "noul"
+   },
+   "empfaenger_name": {
+    "pfad": "empfaenger.name",
+    "art": "noul"
+   },
+   "empfaenger_ort": {
+    "pfad": "empfaenger.plz",
+    "art": "noul"
+   },
+   "kontakt": {
+    "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "empfaenger_kontakt": {
+    "pfad": "empfaenger.kontakt",
+    "art": "noul"
+   },
+   "p1_menge": {
+    "pfad": "position.1.menge",
+    "art": "noul"
+   },
+   "p1_preis": {
+    "pfad": "position.1.einzelpreis",
+    "art": "noul"
+   },
+   "p1_gesamt": {
+    "pfad": "position.1.gesamt",
+    "art": "noul"
+   },
+   "p1_einheit": {
+    "pfad": "position.1.einheit",
+    "art": "choice",
+    "erwartet": "HUR",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p1_steuer": {
+    "pfad": "position.1.steuer",
+    "art": "choice",
+    "erwartet": "E",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "p2_menge": {
+    "pfad": "position.2.menge",
+    "art": "noul"
+   },
+   "p2_preis": {
+    "pfad": "position.2.einzelpreis",
+    "art": "noul"
+   },
+   "p2_gesamt": {
+    "pfad": "position.2.gesamt",
+    "art": "noul"
+   },
+   "p2_einheit": {
+    "pfad": "position.2.einheit",
+    "art": "choice",
+    "erwartet": "LS",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p2_steuer": {
+    "pfad": "position.2.steuer",
+    "art": "choice",
+    "erwartet": "E",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "zahlungsart": {
+    "pfad": "zahlungsart",
+    "art": "choice",
+    "erwartet": "bar",
+    "namen": {
+     "ueberweisung": "Überweisung",
+     "lastschrift": "Lastschrift",
+     "kreditkarte": "Kreditkarte",
+     "debitkarte": "Debit-/EC-Karte",
+     "bar": "bar",
+     "verrechnung": "Verrechnung",
+     "online": "Online-Zahlung (z.B. PayPal)"
+    }
+   }
+  },
+  "antworten": {
+   "nummer": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "datum": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "leistungsdatum": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "absender_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ort": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_kennung": {
+    "type": "noul",
+    "noul": 0.86
+   },
+   "empfaenger_name": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "empfaenger_ort": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "kontakt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "empfaenger_kontakt": {
+    "type": "noul",
+    "noul": 0.94
+   },
+   "p1_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_preis": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p1_gesamt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_einheit": {
+    "type": "choice",
+    "choice": "HUR",
+    "probabilities": {
+     "HUR": 1,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
+     "LS": 0,
+     "C62": 0,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p1_steuer": {
+    "type": "choice",
+    "choice": "E",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.01,
+     "E": 0.99,
+     "AE": 0,
+     "O": 0
+    },
+    "confidence": 0.99
+   },
+   "p2_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p2_preis": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "p2_gesamt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p2_einheit": {
+    "type": "choice",
+    "choice": "LS",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
+     "LS": 1,
+     "C62": 0,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p2_steuer": {
+    "type": "choice",
+    "choice": "E",
+    "probabilities": {
+     "S19": 0,
+     "S7": 0,
+     "Z": 0.01,
+     "E": 0.99,
+     "AE": 0,
+     "O": 0
+    },
+    "confidence": 0.99
+   },
+   "zahlungsart": {
+    "type": "choice",
+    "choice": "bar",
+    "probabilities": {
+     "ueberweisung": 0,
+     "lastschrift": 0,
+     "kreditkarte": 0,
+     "debitkarte": 0,
+     "bar": 1,
+     "verrechnung": 0,
+     "online": 0
+    },
+    "confidence": 1
+   }
+  }
+ }
+}

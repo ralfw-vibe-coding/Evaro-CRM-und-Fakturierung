@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createContext, runInContext } from "node:vm";
 import { DOMParser } from "@xmldom/xmldom";
+// @ts-ignore – reines JavaScript
+import { leer, ueber } from "./kreis/muster.mjs";
 
 /**
  * Lädt den Fachlogik-Teil von xfact.html (<script id="xfact-fachlogik">) in
@@ -23,30 +25,33 @@ export function ladeFachlogik(): any {
   return umgebung.XFact;
 }
 
-/** Eine vollständige, gültige Rechnung (wie baueRechnung sie liefert), für Prüfungstests. */
-export function musterRechnung(aenderung: object = {}) {
-  return {
-    nummer: "2026-0153", datum: "2026-09-12", faellig: "2026-09-26", waehrung: "EUR",
-    referenz: null, leitwegId: null, leistungsdatum: null, kaeuferreferenz: "keine Angabe", bestellreferenz: null,
-    steuerfall: { art: "standard", kategorie: "S", text: null },
-    absender: { name: "Muster GmbH", adresse: ["Hauptstr. 1"], plz: "20095", ort: "Hamburg", land: "DE",
-      ustId: "DE123456789", steuernummer: null, email: "info@muster.example", telefon: "040 123456", kontakt: "Max Muster" },
-    empfaenger: { name: "Berg GmbH", adresse: ["Alte Ziegelei 21"], plz: "51491", ort: "Overath", land: "DE",
-      ustId: null, steuernummer: null, email: "rechnung@berg.example", telefon: null, kontakt: null, oeffentlich: false },
-    bank: { iban: "DE89370400440532013000", bic: null },
-    positionen: [{ nr: 1, name: "Montage", beschreibung: null, menge: 2, einheit: "Std", einheitCode: "HUR",
-      einzelpreis: 50, gesamt: 100, kategorie: "S", satz: 19, von: "2026-09-07", bis: "2026-09-07" }],
-    ...aenderung,
+let geladen: any;
+const XF = () => (geladen ??= ladeFachlogik());
+
+/** Antwort der KI für eine einfache, vollständige Rechnung; "teil" überschreibt (Objekte Feld für Feld) */
+export function musterAntwort(teil: object = {}) {
+  const basis = {
+    rechnung: { nummer: "2026-0153", datum: "2026-09-12", art: "380", waehrung: "EUR", faellig: "2026-09-26" },
+    verkaeufer: { name: "Muster GmbH", strasse: "Hauptstr. 1", plz: "20095", ort: "Hamburg", land: "DE", ustId: "DE123456789",
+      email: "info@muster.example", telefon: "040 123456", kontakt: "Max Muster" },
+    kaeufer: { name: "Berg GmbH", strasse: "Alte Ziegelei 21", plz: "51491", ort: "Overath", land: "DE", email: "rechnung@berg.example" },
+    zahlung: { art: "ueberweisung", konten: [{ iban: "DE89370400440532013000", bic: "", inhaber: "" }] },
+    positionen: [{ posNr: "1", name: "Montage", beschreibung: "", notiz: "", artikelnummer: "", kundenArtikelnummer: "", gtin: "",
+      ursprungsland: "", merkmale: [], objekt: "", bestellposition: "", buchungsreferenz: "", menge: 2, einheitText: "Std",
+      einheitCode: "HUR", nettopreis: 50, bruttopreis: 0, preisnachlass: 0, basismenge: 0, nachlaesse: [], zuschlaege: [],
+      gesamt: 100, steuerkategorie: "S", steuersatz: 19, von: "2026-09-07", bis: "2026-09-07" }],
   };
+  return ueber(leer(XF().KI_SCHEMA), ueber(basis, teil));
 }
 
-/** Ein Befund der KI, wie ihn hinweiseZurRechnung braucht: Summen, Steuer, Text, Positionen. */
-export function musterBefund(aenderung: object = {}) {
-  return {
-    text: "", rechnung: { leistungVon: null, leistungBis: null }, positionen: [],
-    steuer: [], summen: { netto: 0, steuer: 0, brutto: 0, zahlbetrag: 0 }, fehlt: [],
-    ...aenderung,
-  };
+/** Befund zu musterAntwort (wie ihn befundAusKi liefert); "text" ist der Rechnungstext */
+export function musterBefund(teil: object = {}, text = "") {
+  return XF().befundAusKi(musterAntwort(teil), text);
+}
+
+/** Eine vollständige, gültige Rechnung (wie baueRechnung sie liefert); "aenderung" ersetzt Felder der obersten Ebene */
+export function musterRechnung(aenderung: object = {}) {
+  return { ...XF().baueRechnung(musterBefund(), {}), ...aenderung };
 }
 
 /** Aufgezeichnete Antwort von KI und Prüfer zu einer Beispielrechnung (siehe aufzeichnen.mjs). */

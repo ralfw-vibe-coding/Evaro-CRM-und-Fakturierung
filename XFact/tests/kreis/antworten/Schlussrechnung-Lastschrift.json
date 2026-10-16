@@ -1,0 +1,628 @@
+{
+ "modell": "google/gemini-3.8-flash",
+ "befund": {
+  "text": "Tischlerei Holzmann GmbH & Co. KG\nWerkstraße 12 · Tor 2 · 50667 Köln\nNordrhein-Westfalen\nIhre Ansprechpartnerin/Ihr Ansprechpartner: Anna Holzmann\nTel. 0221 555 120 · E-Mail rechnung@holzmann.example · direkt: anna.holzmann@holzmann.example\nTischlerei Holzmann GmbH & Co. KG · Tor 2 · 50667 Köln            Schlussrechnung Nr.     SR-2026-077\nBerger Hotelbetriebe GmbH                                         Datum                   02.10.2026\nRheinallee 7                                                      Kundennummer            K-20931\n53111 Bonn\n                                                                  Ihre Bestellung         BV-Schulstraße\nRechnungsempfang: eingangsrechnungen@berger-hotels.example\n                                                                  Projekt                 Neubau Kita Schulstraße\nIhre USt-IdNr. DE987654325\n                                                                  Leistungsdatum          30.09.2026\n                                                                  Abschlagsrechnung       AR-2026-031 vom 01.07.2026\nSchlussrechnung SR-2026-077\nPos.       Bezeichnung                     Menge        Einheit         Preis              USt        Betrag\n1          Innentüren liefern und                 18    Stück                  980,00 €       19 %         17.640,00 €\n           montieren\n2          Treppengeländer Eiche                   1    Pauschale            9.850,50 €       19 %          9.850,50 €\n                                                                             Summe Positionen              27.490,50 €\n                                                   zzgl. 1,5 % Baustellengemeinkosten (19 % USt)             412,36 €\n                                                                                   Nettobetrag             27.902,86 €\n                                                                  zzgl. 19 % USt auf 27.902,86 €            5.301,54 €\n                                                                                 Gesamtbetrag             33.204,40 €\n                                                               abzgl. bereits gezahlte Abschläge         −20.000,00 €\n                                                                                      Rundung                   0,01 €\n                                                                                     Zu zahlen            13.204,41 €\nBezieht sich außerdem auf: AR-2026-052 (15.08.2026)\nZahlungsart: SEPA-Lastschrift\nDer Rechnungsbetrag wird am 09.10.2026 per SEPA-Lastschrift eingezogen.\nGläubiger-ID DE98ZZZ09999999999, Mandatsreferenz M-2026-118\nDer Betrag wird von Ihrem Konto DE75512108001245126199 eingezogen.\nTischlerei Holzmann GmbH & Co. KG\nUSt-IdNr. DE123456788 · Steuernummer 214/5800/1234\nSeite 1 von 1",
+  "rechnung": {
+   "nummer": "SR-2026-077",
+   "datum": "2026-10-02",
+   "art": "877",
+   "waehrung": "EUR",
+   "faellig": "2026-10-09",
+   "leistungsdatum": "2026-09-30",
+   "leistungVon": null,
+   "leistungBis": null,
+   "kaeuferreferenz": null,
+   "leitwegId": null,
+   "bestellnummer": "BV-Schulstraße",
+   "auftragsnummer": null,
+   "vertrag": null,
+   "projekt": "Neubau Kita Schulstraße",
+   "wareneingang": null,
+   "lieferschein": null,
+   "ausschreibung": null,
+   "objekt": null,
+   "buchungsreferenz": null,
+   "vorherigeRechnungen": [
+    {
+     "nummer": "AR-2026-031",
+     "datum": "2026-07-01"
+    },
+    {
+     "nummer": "AR-2026-052",
+     "datum": "2026-08-15"
+    }
+   ],
+   "bemerkungen": [],
+   "zahlungsbedingungen": "Der Rechnungsbetrag wird am 09.10.2026 per SEPA-Lastschrift eingezogen. Gläubiger-ID DE98ZZZ09999999999, Mandatsreferenz M-2026-118. Der Betrag wird von Ihrem Konto DE75512108001245126199 eingezogen.",
+   "skonto": [],
+   "gezahlt": 20000,
+   "rundung": 0.01,
+   "anlagen": []
+  },
+  "verkaeufer": {
+   "name": "Tischlerei Holzmann GmbH & Co. KG",
+   "handelsname": null,
+   "kennung": null,
+   "register": null,
+   "ustId": "DE123456788",
+   "steuernummer": "214/5800/1234",
+   "rechtlicheAngaben": null,
+   "email": "rechnung@holzmann.example",
+   "strasse": "Werkstraße 12",
+   "zusatz": "Tor 2",
+   "zeile3": null,
+   "ort": "Köln",
+   "plz": "50667",
+   "region": "Nordrhein-Westfalen",
+   "land": "DE",
+   "kontakt": "Anna Holzmann",
+   "telefon": "0221 555 120",
+   "kontaktEmail": "anna.holzmann@holzmann.example"
+  },
+  "kaeufer": {
+   "name": "Berger Hotelbetriebe GmbH",
+   "handelsname": null,
+   "kennung": "K-20931",
+   "register": null,
+   "ustId": "DE987654325",
+   "email": "eingangsrechnungen@berger-hotels.example",
+   "strasse": "Rheinallee 7",
+   "zusatz": null,
+   "zeile3": null,
+   "ort": "Bonn",
+   "plz": "53111",
+   "region": null,
+   "land": "DE",
+   "kontakt": null,
+   "telefon": null,
+   "kontaktEmail": null,
+   "oeffentlich": false
+  },
+  "zahlungsempfaenger": {
+   "name": null,
+   "kennung": null,
+   "register": null
+  },
+  "steuervertreter": null,
+  "lieferung": {
+   "name": null,
+   "ortKennung": null,
+   "strasse": null,
+   "zusatz": null,
+   "zeile3": null,
+   "ort": null,
+   "plz": null,
+   "region": null,
+   "land": null
+  },
+  "zahlung": {
+   "art": "lastschrift",
+   "text": "SEPA-Lastschrift",
+   "verwendungszweck": null,
+   "konten": [],
+   "karte": null,
+   "karteninhaber": null,
+   "glaeubigerId": "DE98ZZZ09999999999",
+   "mandatsreferenz": "M-2026-118",
+   "kundenIban": "DE75512108001245126199"
+  },
+  "nachlaesse": [],
+  "zuschlaege": [
+   {
+    "betrag": 412.36,
+    "basis": 27490.5,
+    "prozent": 1.5,
+    "grund": "Baustellengemeinkosten",
+    "kategorie": "S",
+    "satz": 19
+   }
+  ],
+  "positionen": [
+   {
+    "nr": 1,
+    "posNr": "1",
+    "name": "Innentüren liefern und montieren",
+    "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 18,
+    "einheitText": "Stück",
+    "einheitCode": "C62",
+    "nettopreis": 980,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
+    "gesamt": 17640,
+    "steuerkategorie": "S",
+    "steuersatz": 19,
+    "von": null,
+    "bis": null
+   },
+   {
+    "nr": 2,
+    "posNr": "2",
+    "name": "Treppengeländer Eiche",
+    "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 1,
+    "einheitText": "Pauschale",
+    "einheitCode": "LS",
+    "nettopreis": 9850.5,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
+    "gesamt": 9850.5,
+    "steuerkategorie": "S",
+    "steuersatz": 19,
+    "von": null,
+    "bis": null
+   }
+  ],
+  "steuer": [
+   {
+    "kategorie": "S",
+    "satz": 19,
+    "basis": 27902.86,
+    "betrag": 5301.54,
+    "befreiungsgrund": null
+   }
+  ],
+  "summen": {
+   "positionen": 27490.5,
+   "nachlaesse": 0,
+   "zuschlaege": 412.36,
+   "netto": 27902.86,
+   "steuer": 5301.54,
+   "brutto": 33204.4,
+   "zahlbetrag": 13204.41
+  },
+  "fehlt": [
+   {
+    "feld": "BT-10",
+    "grund": "Käuferreferenz (Leitweg-ID / Referenz des Käufers) ist nicht angegeben"
+   }
+  ],
+  "nichtZugeordnet": []
+ },
+ "pruefung": {
+  "felder": {
+   "nummer": {
+    "pfad": "nummer",
+    "art": "noul"
+   },
+   "datum": {
+    "pfad": "datum",
+    "art": "noul"
+   },
+   "faellig": {
+    "pfad": "faellig",
+    "art": "noul"
+   },
+   "leistungsdatum": {
+    "pfad": "leistungsdatum",
+    "art": "noul"
+   },
+   "absender_name": {
+    "pfad": "absender.name",
+    "art": "noul"
+   },
+   "absender_ort": {
+    "pfad": "absender.plz",
+    "art": "noul"
+   },
+   "absender_ust": {
+    "pfad": "absender.ustId",
+    "art": "noul"
+   },
+   "empfaenger_name": {
+    "pfad": "empfaenger.name",
+    "art": "noul"
+   },
+   "empfaenger_ort": {
+    "pfad": "empfaenger.plz",
+    "art": "noul"
+   },
+   "empfaenger_ust": {
+    "pfad": "empfaenger.ustId",
+    "art": "noul"
+   },
+   "empfaenger_kennung": {
+    "pfad": "empfaenger.kennung",
+    "art": "noul"
+   },
+   "kontakt": {
+    "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "bestellnummer": {
+    "pfad": "bestellnummer",
+    "art": "noul"
+   },
+   "projekt": {
+    "pfad": "projekt",
+    "art": "noul"
+   },
+   "vorherige1": {
+    "pfad": "vorherigeRechnungen.1.nummer",
+    "art": "noul"
+   },
+   "vorherige2": {
+    "pfad": "vorherigeRechnungen.2.nummer",
+    "art": "noul"
+   },
+   "glaeubiger": {
+    "pfad": "absender.glaeubigerId",
+    "art": "noul"
+   },
+   "kunden_iban": {
+    "pfad": "empfaenger.iban",
+    "art": "noul"
+   },
+   "mandat": {
+    "pfad": "empfaenger.mandatsreferenz",
+    "art": "noul"
+   },
+   "gezahlt": {
+    "pfad": "gezahlt",
+    "art": "noul"
+   },
+   "zuschlaege1": {
+    "pfad": "zuschlaege.1.betrag",
+    "art": "noul"
+   },
+   "p1_menge": {
+    "pfad": "position.1.menge",
+    "art": "noul"
+   },
+   "p1_preis": {
+    "pfad": "position.1.einzelpreis",
+    "art": "noul"
+   },
+   "p1_gesamt": {
+    "pfad": "position.1.gesamt",
+    "art": "noul"
+   },
+   "p1_einheit": {
+    "pfad": "position.1.einheit",
+    "art": "choice",
+    "erwartet": "C62",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p1_steuer": {
+    "pfad": "position.1.steuer",
+    "art": "choice",
+    "erwartet": "S19",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "p2_menge": {
+    "pfad": "position.2.menge",
+    "art": "noul"
+   },
+   "p2_preis": {
+    "pfad": "position.2.einzelpreis",
+    "art": "noul"
+   },
+   "p2_gesamt": {
+    "pfad": "position.2.gesamt",
+    "art": "noul"
+   },
+   "p2_einheit": {
+    "pfad": "position.2.einheit",
+    "art": "choice",
+    "erwartet": "LS",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p2_steuer": {
+    "pfad": "position.2.steuer",
+    "art": "choice",
+    "erwartet": "S19",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "zahlungsart": {
+    "pfad": "zahlungsart",
+    "art": "choice",
+    "erwartet": "lastschrift",
+    "namen": {
+     "ueberweisung": "Überweisung",
+     "lastschrift": "Lastschrift",
+     "kreditkarte": "Kreditkarte",
+     "debitkarte": "Debit-/EC-Karte",
+     "bar": "bar",
+     "verrechnung": "Verrechnung",
+     "online": "Online-Zahlung (z.B. PayPal)"
+    }
+   }
+  },
+  "antworten": {
+   "nummer": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "datum": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "faellig": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "leistungsdatum": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ort": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ust": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_name": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_ort": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_ust": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_kennung": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "kontakt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "bestellnummer": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "projekt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "vorherige1": {
+    "type": "noul",
+    "noul": 0.87
+   },
+   "vorherige2": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "glaeubiger": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "kunden_iban": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "mandat": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "gezahlt": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "zuschlaege1": {
+    "type": "noul",
+    "noul": 0.95
+   },
+   "p1_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_preis": {
+    "type": "noul",
+    "noul": 0.86
+   },
+   "p1_gesamt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_einheit": {
+    "type": "choice",
+    "choice": "C62",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
+     "LS": 0,
+     "C62": 1,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p1_steuer": {
+    "type": "choice",
+    "choice": "S19",
+    "probabilities": {
+     "S19": 1,
+     "S7": 0,
+     "Z": 0,
+     "E": 0,
+     "AE": 0,
+     "O": 0
+    },
+    "confidence": 1
+   },
+   "p2_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p2_preis": {
+    "type": "noul",
+    "noul": 0.92
+   },
+   "p2_gesamt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p2_einheit": {
+    "type": "choice",
+    "choice": "LS",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
+     "LS": 1,
+     "C62": 0,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p2_steuer": {
+    "type": "choice",
+    "choice": "S19",
+    "probabilities": {
+     "S19": 1,
+     "S7": 0,
+     "Z": 0,
+     "E": 0,
+     "AE": 0,
+     "O": 0
+    },
+    "confidence": 1
+   },
+   "zahlungsart": {
+    "type": "choice",
+    "choice": "lastschrift",
+    "probabilities": {
+     "ueberweisung": 0,
+     "lastschrift": 1,
+     "kreditkarte": 0,
+     "debitkarte": 0,
+     "bar": 0,
+     "verrechnung": 0,
+     "online": 0
+    },
+    "confidence": 1
+   }
+  }
+ }
+}

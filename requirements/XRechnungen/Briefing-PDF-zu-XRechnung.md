@@ -101,7 +101,7 @@ Zahlbar bis 26.09.2026 · IBAN DE12 3456 … · BIC …
 - **Rechenkontrolle** bei den Summen: ✓ oder ein Hinweis, wo die Differenz entsteht.
 
 **Unter der Rechnung** stehen „Weitere Angaben“, also alles, was im Rechnungsbild keinen Platz hat:
-- **Steuerfall**, wenn er nicht eindeutig ist (Abschnitt 7)
+- **Umsatzsteuer** je Position (Auswahl in der Tabelle) und für alle Positionen mit einem Klick (Abschnitt 7)
 - **Einheiten zuordnen:** „Pausch.“ = [Pauschale ▾]
 - **Käuferreferenz bzw. Leitweg-ID** (optional, bei Behörden Pflicht). Hält die KI den Empfänger für eine öffentliche Stelle (`kaeufer.oeffentlich`) und fehlt die Leitweg-ID, ist das Feld gelb, nicht rot: Nicht jede öffentliche Stelle verlangt sie, und die KI kann sich irren. „Stimmt“ hebt den Hinweis auf.
 - **Leistungsdatum fehlt** → Schnellknopf „= Rechnungsdatum“
@@ -122,12 +122,24 @@ Der Knopf **„XML erzeugen“** ist aktiv, sobald kein roter Hinweis mehr offen
 
 ## 6. Erkennung
 
+### 6.0 Grundlage ist die Norm, nicht die Beispielrechnungen
+
+Was eine XRechnung enthalten kann, legt die Norm EN 16931 mit der XRechnung 3.0 fest: 164 Felder (BT-1 … BT-165 ohne BT-4) und die Codelisten für Rechnungsarten, Zahlungsarten, Steuerkategorien und Einheiten. XFact leitet seine Abdeckung daraus ab, nicht aus vorgelegten Rechnungen. (Anlass: Bis zum 16.10.2026 wurde das Antwortschema an Beispielrechnungen entlang erweitert; Kreditkarte, Skonto und Rabatte je Position fielen erst auf, als der Nutzer Rechnungen damit vorlegte. Das war der falsche Weg.)
+
+- **Liste STANDARD** in `xfact.html`: jedes Feld mit seiner Behandlung – „ki“ (die KI liest es, 130 Felder), „xfact“ (XFact setzt es selbst, 14), „nein“ (bewusst nicht, mit Grund, 20: Fremdwährung, Steuervertreter, Steuerfälligkeit, Code-Felder neben Texten, Warenklassifizierung, eingebettete Dateien). Daraus der Anhang der Dokumentation (`node XFact/tests/abdeckung.mjs`).
+- **Antwortschema der KI** enthält jedes „ki“-Feld (Test `abdeckung.test.ts`) und ist nach den Bereichen einer Rechnung gegliedert: Kopf und Referenzen, Rechnungssteller, Empfänger, Zahlungsempfänger, Lieferung, Zahlung, Nachlässe und Zuschläge, Positionen, Steuer, Summen.
+- **Sicherheitsnetz:** Die KI meldet unter `nichtZugeordnet` jede Angabe, die sie keinem Feld zuordnen konnte; die Prüfansicht zeigt sie gelb unter „Nicht übernommen“. Nicht gemeldet werden Angaben ohne Feld und ohne Bedeutung für die Rechnung (Internetadresse, Name der Bank, Seitenzahlen).
+- **Prüfregeln aus der KoSIT-Konfiguration** (Schematron EN 16931 und XRechnung 3.0.2) bestimmen, was rot (Fehler) und gelb (Warnung) ist, z.B. Mandatsreferenz bei Lastschrift (PEPPOL-R061, Fehler), Position im Leistungszeitraum (PEPPOL-R110/111), Nettopreis = Bruttopreis − Nachlass (PEPPOL-R046), „nicht steuerbar“ nur allein und ohne USt-IdNr. (BR-O-02, BR-O-11), Nullsatz ohne Befreiungsgrund (BR-Z-10); nur gelb: Menge × Preis (PEPPOL-R120), Telefon und E-Mail (BR-DE-27/28), Korrektur ohne Bezug (BR-DE-26).
+- **Eigenheiten der Syntax CII**, die XFact berücksichtigt: nur eine vorausgegangene Rechnung (weitere als Bemerkung), nur eine Anlage mit Beschreibung (CII-SR-475), keine leeren Elemente (PEPPOL-R008).
+
+**Kreis-Test** (`XFact/tests/kreis/`): sechs Musterrechnungen, die zusammen jedes „ki“-Feld enthalten, werden zur XRechnung, als PDF gedruckt (`als-pdf.mjs`, wie ein Rechnungsprogramm, mit gewohnten Beschriftungen), von XFact mit echter KI und Prüfer gelesen und wieder zur XRechnung. Beide werden mit XFactViewer gelesen und Feld für Feld verglichen (`vergleich.mjs`). Ergebnis am 16.10.2026: in allen sechs Rechnungen kein Feld abweichend, fehlend oder zusätzlich; alle XMLs KoSIT-gültig ohne Warnungen; höchstens ein Grenzfall des Prüfers je Rechnung (Wert knapp unter 0,5). Abweichungen, die nur Auslegung sind, gleicht der Vergleich aus: Bezeichnung und Beschreibung einer Position zusammen, Anschriftzeilen zusammen, freie Texte (BT-20 außer Skonto, BT-82). Neu aufzeichnen: `node XFact/tests/kreis/aufzeichnen.mjs <schlüsseldatei>`.
+
 ### 6.1 Arbeitsteilung
 
 | Wer | Was | Wie |
 |---|---|---|
 | **Sprach-KI** (ein Aufruf je Rechnung) | liest den ganzen Text und füllt die Felder der XRechnung: Kopf, beide Parteien, Zahlung, Positionen, Steuer, Summen; leitet ab, was eindeutig ist (Einheitencode, Steuerkategorie, Fälligkeit aus Zahlungsziel, Leistungsdatum aus Beschreibung oder Zeitraum); schätzt ein, ob der Empfänger eine öffentliche Stelle ist (dann wird nach der Leitweg-ID gefragt); meldet unter „fehlt“ fehlende Pflichtangaben | `frageKi`: Anweisung `KI_ANWEISUNG`, Antwortschema `KI_SCHEMA` (`response_format: json_schema`, `strict`), Eingabe ist nur der Text aus „PDF lesen“ |
-| **Prüfer Jev** (ein Aufruf, alle Fragen parallel) | „Steht in der Rechnung, dass X der Wert Y ist?“ für Nummer, Daten, Namen, PLZ/Ort, USt-IdNrn., IBAN, Ansprechpartner, Menge/Preis/Betrag je Position, bei Lastschrift Gläubiger-ID und Kunden-IBAN; Auswahlfragen für Einheit, Steuerfall und Zahlungsart | `frageJev` über die Decisions-Schnittstelle von OpenRouter (`typesafe/jev-1.13`); Wert unter 0,5 oder andere Wahl ergibt gelb |
+| **Prüfer Jev** (ein Aufruf, alle Fragen parallel) | „Steht in der Rechnung, dass X der Wert Y ist?“ für Nummer, Daten, Namen, PLZ/Ort, USt-IdNrn., IBAN, Ansprechpartner, Referenzen, Kennungen, Registernummern, Menge/Preis/Betrag/Rabatt/Artikelnummer je Position, Nachlässe und Zuschläge, bei Lastschrift Gläubiger-ID, Kunden-IBAN und Mandat; Auswahlfragen für Einheit und Steuer je Position und die Zahlungsart; Beträge im deutschen Format | `frageJev` über die Decisions-Schnittstelle von OpenRouter (`typesafe/jev-1.13`); Wert unter 0,5 oder andere Wahl ergibt gelb |
 | **Feste Regeln** | IBAN-Prüfziffer und -Länge, Aufbau der USt-IdNr. je Land, Aufbau und Prüfziffer von Leitweg-ID und Gläubiger-ID (ISO 7064 Mod 97-10), gültige Daten, Fälligkeit nicht vor Rechnungsdatum, Zeitraum nicht verkehrt herum, Einheitencode aus der Liste, Rechnungsnummer/IBAN/USt-IdNr. wörtlich im Text, Menge × Preis, Summen gegen die von der KI gelesenen Summen | Abschnitte REGELN und PRÜFUNGEN |
 
 Die Antwort der KI wird zum **Befund** vereinheitlicht (`befundAusKi`: leere Texte → null, Zahlen als Zahl, USt-IdNr. und IBAN ohne Leerzeichen); daraus und aus den Ergänzungen des Nutzers baut `baueRechnung` die Rechnung, mit der Prüfansicht, Gedächtnis und XML-Erzeugung arbeiten.
@@ -212,7 +224,7 @@ Ist keiner dieser Fälle erkennbar, kommt eine Rückfrage unter „Weitere Angab
 | Bereich | Inhalt | Schlüssel |
 |---|---|---|
 | Firmenprofile | eigene Stammdaten, Ansprechpartner, Bank, gelernte Beschriftungen | USt-IdNr. bzw. Steuernummer. Mehrere Profile entstehen automatisch, z.B. bei Buchhaltern mit mehreren Mandanten. |
-| Kundenprofile | E-Mail, Leitweg-ID bzw. Referenz, Steuerfall | USt-IdNr., sonst Name + PLZ |
+| Kundenprofile | E-Mail, USt-IdNr., Leitweg-ID, für Lastschrift IBAN und Mandatsreferenz, für Karten die letzten 4 Ziffern | USt-IdNr., sonst Name + PLZ |
 | Einheitenzuordnung | Beschriftung → Code | je Firmenprofil |
 | Einstellungen | KI an oder aus, Endpunkt, Modell, Schlüssel, Hinweise bestätigt | |
 | Logbuch | Zeitpunkt, Dateiname, Rechnungsnummer, Kunde, Bruttobetrag | |
@@ -313,7 +325,9 @@ Begründung: Aus React- und Tailwind-Code entsteht beim Bauen eine Datei, die ma
 | Impressum, Datenschutzerklärung | entfällt, weil die Seite nicht öffentlich beworben wird |
 | Lizenz | Open Source, MIT |
 | Repository | bleibt im Evaro-Repo, weil es ein Experiment ist |
-| Steuerfälle Version 1 | 19 %, 7 % (auch gemischt), §13b und §19 (Abschnitt 7) |
+| Abdeckung | aus der Norm abgeleitet (Abschnitt 6.0), nicht aus Beispielrechnungen; jedes Feld unterstützt oder bewusst nicht, mit Grund |
+| Umsatzsteuer | je Position: S (beliebige Sätze, gemischt), Z, E, AE, O; nicht K, G, L, M (Empfänger im Ausland bzw. Sondergebiete) |
+| Zahlungsarten | Überweisung (58), Lastschrift (59), Kreditkarte (54), Debitkarte (55), bar (10), Verrechnung (97), online (68), sonstige (ZZZ) |
 | Ort im Repo | `XFact/` neben `frontend/` und `backend/` |
 | Merken | ein Häkchen für alle ergänzten Angaben statt eines pro Feld; Gemerktes füllt nur Lücken |
 | Speicher | `localStorage` (Schlüssel `xfact.gedaechtnis`); Kunden je Firma; Logbuch höchstens 1000 Einträge. Unter `file://` in Chrome geprüft: bleibt erhalten |
@@ -324,4 +338,6 @@ Begründung: Aus React- und Tailwind-Code entsteht beim Bauen eine Datei, die ma
 2. **Menü:** „Hilfe“ (Dokumentation in der App) und „Offline-Version herunterladen“ fehlen noch; ebenso das Ausliefern unter `/xfact/` auf der Netlify-Site.
 3. **Firefox und Safari** sind noch nicht geprüft, insbesondere `file://`.
 4. **Lokale KI** (LM Studio): angebunden und getestet ist nur die Anfrage; welches lokale Modell gut genug ist, ist offen.
-5. **XFactViewer** (`XFact/XFactViewer.html`, eigene Dokumentation `XFactViewer-Dokumentation.md`): zeigt XRechnungen lesbar an, ohne KI, vollständig im Browser. Gebaut ist Schritt 1: Syntax CII, Codes übersetzt, Nachrechnen, BT-Nummern, Anhänge speichern, Drucken; getestet mit den XMLs aus XFact (hin und zurück) und einer handgeschriebenen XRechnung. Offen: Syntax UBL, XML aus ZUGFeRD-/Factur-X-PDFs holen, Tests mit der offiziellen KoSIT-Testsuite, Ausliefern neben XFact.
+5. **Offizielle KoSIT-Testsuite** (xrechnung-testsuite auf GitHub) als zweite Quelle für den Kreis-Test: ihre CII-Beispiele als PDF drucken und durch XFact schicken. Braucht einen Download; noch nicht gemacht.
+6. **Prüfansicht bei sehr vielen Feldern:** Seltene Angaben stehen unter „Weitere Angaben ergänzen“; ob das für Nutzer übersichtlich genug ist, ist mit echten Rechnungen zu prüfen.
+7. **XFactViewer** (`XFact/XFactViewer.html`, eigene Dokumentation `XFactViewer-Dokumentation.md`): zeigt XRechnungen lesbar an, ohne KI, vollständig im Browser. Gebaut ist Schritt 1: Syntax CII, Codes übersetzt, Nachrechnen, BT-Nummern, Anhänge speichern, Drucken; getestet mit den XMLs aus XFact (hin und zurück) und einer handgeschriebenen XRechnung. Offen: Syntax UBL, XML aus ZUGFeRD-/Factur-X-PDFs holen, Tests mit der offiziellen KoSIT-Testsuite, Ausliefern neben XFact.

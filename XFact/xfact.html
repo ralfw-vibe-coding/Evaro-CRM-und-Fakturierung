@@ -233,7 +233,8 @@ main {
 .positionen tr.mit-hinweis td { border-bottom: 0; padding-bottom: 0; }
 .positionen tr.hinweise td { padding-top: 2px; }
 .positionen .zahl { text-align: right; font-family: var(--schrift-zahlen); white-space: nowrap; }
-.positionen .datum { white-space: nowrap; }
+.positionen .datum { width: 6.5em; }
+.positionen .datum .feld { white-space: nowrap; }
 .positionen .name { font-weight: 500; }
 .positionen .beschreibung { color: var(--farbe-text-leise); font-size: 0.86rem; }
 .positionen tfoot td { border-bottom: 0; font-weight: 600; }
@@ -305,6 +306,17 @@ main {
 }
 .weitere .angabe { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 10px; }
 .weitere .angabe > .leise { min-width: 15em; }
+.weitere dl.angaben { display: grid; grid-template-columns: 15em 1fr; gap: 6px 12px; margin: 0; align-items: baseline; }
+.weitere dl.angaben dt { color: var(--farbe-text-leise); }
+.weitere dl.angaben dd { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.weitere details.mehr summary { cursor: pointer; color: var(--farbe-akzent); margin: 6px 0 10px; }
+.nicht-zugeordnet { margin-bottom: var(--abstand); padding: 10px 14px; border-radius: var(--radius); background: var(--farbe-unsicher-flaeche); color: var(--farbe-text); }
+.nicht-zugeordnet ul { margin: 6px 0 0; padding-left: 20px; }
+.nicht-zugeordnet .hinweis.unsicher { background: transparent; padding: 0; color: var(--farbe-text); font-size: inherit; }
+.positionen .notiz { font-style: italic; }
+.positionen select.eingabe { max-width: 8.5em; font-size: 0.85rem; padding: 2px 4px; }
+.rechnung-kopf .titel select.eingabe { font: inherit; font-weight: 600; width: auto; max-width: 16em; }
+.positionen.nachlaesse { margin-top: -8px; }
 .wahlen { display: grid; gap: 4px; }
 .wahl { display: inline-flex; align-items: center; gap: 6px; }
 .knopf.klein { padding: 3px 10px; font-size: 0.85rem; }
@@ -522,7 +534,13 @@ const TEXTE = {
     glaeubigerIdAufbau: "Aufbau oder Prüfziffer der Gläubiger-ID stimmt nicht",
     skontoBetrag: (laut, berechnet) => `auf der Rechnung ${laut}, berechnet ${berechnet}`,
     leitwegIdBehoerde: "Empfänger ist vermutlich eine Behörde – dann meist Pflicht",
-    steuerfallNicht: (kategorie) => `Steuerkategorie „${kategorie}“ unterstützt XFact nicht`,
+    nurEuro: "XFact kann nur Rechnungen in Euro umwandeln",
+    nichtUnterstuetzt: "kann XFact nicht abbilden",
+    ausserhalbZeitraum: "liegt außerhalb des Leistungszeitraums der Rechnung",
+    bruttoNetto: "Nettopreis ist nicht Bruttopreis minus Nachlass",
+    telefon: "Telefonnummer mit mindestens drei Ziffern",
+    email: "keine gültige E-Mail-Adresse",
+    korrekturOhneBezug: "eine Rechnungskorrektur sollte die korrigierte Rechnung nennen",
   },
 
   // KI: Einrichtung, Fortschritt, Fehler
@@ -585,20 +603,27 @@ const TEXTE = {
     einzelpreis: "Preis", steuersatz: "USt", gesamt: "Gesamt" },
   mengeMalPreis: (soll) => `Menge × Preis ergibt ${soll}`,
 
-  // Steuerfälle: Hinweistexte, falls auf der Rechnung keiner zu finden ist
-  steuerfallText: {
-    reverse_charge: "Steuerschuldnerschaft des Leistungsempfängers",
+  // Grund der Steuerbefreiung (BT-120), falls auf der Rechnung keiner steht
+  steuerText: {
+    AE: "Steuerschuldnerschaft des Leistungsempfängers",
+    O: "Nicht steuerbar",
     kleinunternehmer: "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.",
   },
-  // Text der Zahlungsbedingungen in der XML
+  // Text der Zahlungsbedingungen in der XML, wenn die Rechnung keinen eigenen hat
   zahlbarBis: (datum) => `Zahlbar bis ${datum}`,
+  zahlungsText: {
+    lastschrift: (datum) => (datum ? `Der Rechnungsbetrag wird am ${datum} per SEPA-Lastschrift eingezogen.` : "Der Rechnungsbetrag wird per SEPA-Lastschrift eingezogen."),
+    kreditkarte: (datum) => (datum ? `Der Rechnungsbetrag wird am ${datum} der hinterlegten Kreditkarte belastet.` : "Der Rechnungsbetrag wird der hinterlegten Kreditkarte belastet."),
+    debitkarte: () => "Zahlung mit Karte.",
+    bar: () => "Zahlung in bar.",
+    verrechnung: () => "Der Rechnungsbetrag wird verrechnet.",
+    online: () => "Zahlung über einen Online-Zahlungsdienst.",
+    sonstige: (datum) => (datum ? `Zahlbar bis ${datum}` : null),
+  },
   nachlass: "Rabatt",
-  kreditkarte: (datum) => datum
-    ? `Der Rechnungsbetrag wird am ${datum} der hinterlegten Kreditkarte belastet.`
-    : "Der Rechnungsbetrag wird der hinterlegten Kreditkarte belastet.",
-  lastschrift: (datum) => datum
-    ? `Der Rechnungsbetrag wird am ${datum} per SEPA-Lastschrift eingezogen.`
-    : "Der Rechnungsbetrag wird per SEPA-Lastschrift eingezogen.",
+  zuschlag: "Zuschlag",
+  anlage: "Anlage",
+  weitereVorherige: (liste) => `Bezieht sich außerdem auf: ${liste}`,
   // Ersatzwert für die Käuferreferenz (BT-10), wenn nichts bekannt ist
   keineKaeuferreferenz: "keine Angabe",
 
@@ -666,14 +691,12 @@ const TEXTE = {
     emailFuerRechnungen: "E-Mail für Rechnungen",
     netto: "Netto",
     umsatzsteuer: (satz) => `USt ${satz} %`,
-    steuerBefreit: {
-      AE: "USt 0 % – Steuerschuldnerschaft des Leistungsempfängers",
-      E: "keine USt – Kleinunternehmer",
-    },
     gesamt: "Gesamtbetrag",
     zahlbarBis: "Zahlbar bis",
     einzugAm: "Einzug am",
-    zahlungsarten: { ueberweisung: "Überweisung", lastschrift: "Lastschrift", kreditkarte: "Kreditkarte" },
+    zahlungsarten: { ueberweisung: "Überweisung", lastschrift: "Lastschrift", kreditkarte: "Kreditkarte", debitkarte: "Debit-/EC-Karte",
+      bar: "bar", verrechnung: "Verrechnung", online: "Online-Zahlung (z.B. PayPal)", sonstige: "sonstige" },
+    steuerArten: { S: "Umsatzsteuer", Z: "Nullsatz (0 %)", E: "steuerfrei", AE: "§ 13b (Reverse Charge)", O: "nicht steuerbar" },
     belastungAm: "Belastung am",
     skonto: "Skonto",
     skontoBis: "bis",
@@ -683,19 +706,59 @@ const TEXTE = {
     mandatsreferenz: "Mandatsreferenz",
     kundenIban: "IBAN des Kunden",
     weitereAngaben: "Weitere Angaben",
-    steuerfall: "Steuer",
-    steuerfaelle: {
-      standard: "Umsatzsteuer wird ausgewiesen (19 % / 7 %)",
-      reverse_charge: "Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)",
-      kleinunternehmer: "Kleinunternehmer (§ 19 UStG), keine Umsatzsteuer",
-    },
-    leistungsdatum: "Leistungsdatum für Positionen ohne Datum",
+    leistungsdatum: "Leistungsdatum der ganzen Rechnung",
+    leistungszeitraum: "Leistungszeitraum der ganzen Rechnung",
     gleichRechnungsdatum: "= Rechnungsdatum",
-    referenz: "Referenz / Bestellnummer des Kunden",
     leitwegId: "Leitweg-ID (nur bei Behörden)",
+    referenzen: {
+      referenz: "Referenz des Kunden („Ihr Zeichen“)", leitwegId: "Leitweg-ID (nur bei Behörden)", bestellnummer: "Bestellnummer des Kunden",
+      auftragsnummer: "Eigene Auftragsnummer", vertrag: "Vertrag", projekt: "Projekt bzw. Bauvorhaben", lieferschein: "Lieferschein",
+      wareneingang: "Wareneingangsmeldung des Kunden", ausschreibung: "Ausschreibung bzw. Los", objekt: "Abgerechnetes Objekt (z.B. Zähler)",
+      buchungsreferenz: "Kostenstelle bzw. Buchungsreferenz des Kunden",
+    },
+    steuerAlle: "Umsatzsteuer für alle Positionen",
+    steuerText: (art) => `Hinweis zur Steuer (${art})`,
+    paragraph19: "§ 19 UStG (Kleinunternehmer)",
+    vorherigeRechnungen: "Bezieht sich auf Rechnung",
+    bemerkungen: "Bemerkungen",
+    anlagen: "Anlagen",
+    lieferung: { name: "Lieferanschrift: Name", strasse: "Lieferanschrift: Straße", ort: "Lieferanschrift: PLZ, Ort" },
+    weitereFelder: "Weitere Angaben ergänzen",
+    hinzufuegenPlus: "+ hinzufügen",
+    entfernen: "Entfernen",
+    nichtZugeordnet: "Nicht übernommen:",
+    nichtZugeordnetHinweis: "Diese Angaben stehen auf der Rechnung, passen aber in kein Feld der XRechnung. Prüfen Sie, ob sie nötig sind; wenn ja, tragen Sie sie in ein passendes Feld ein oder als Bemerkung.",
+    listenpreis: "Listenpreis",
+    abzueglich: "abzüglich",
+    jeMenge: (menge) => `je ${menge}`,
+    nachlaesseZuschlaege: "Nachlässe und Zuschläge auf die ganze Rechnung",
+    nachlassHinzufuegen: "+ Nachlass auf die Rechnung",
+    zuschlagHinzufuegen: "+ Zuschlag (z.B. Fracht)",
+    steuerWaehlen: "Steuer wählen …",
+    summePositionen: "Summe der Positionen",
+    nachlaesse: "Nachlässe",
+    zuschlaege: "Zuschläge",
+    gezahlt: "Bereits gezahlt",
+    rundung: "Rundung",
+    zahlbetrag: "Zu zahlen",
+    zahlung: "Zahlung",
+    zahlungsart: "Zahlungsart",
+    faelligAm: "Fällig am",
+    konto: "Konto",
+    kontoinhaber: "Inhaber",
+    kontoHinzufuegen: "+ Konto",
+    karteninhaber: "Karteninhaber",
+    skontoHinzufuegen: "+ Skonto",
+    zahlungsbedingungen: "Zahlungsbedingungen",
+    verwendungszweck: "Verwendungszweck",
+    zahlungsempfaenger: "Zahlungsempfänger (z.B. Factoring)",
     einheitWaehlen: "Einheit wählen …",
     stimmt: "Stimmt",
     felder: { email: "E-Mail", telefon: "Telefon", kontakt: "Ansprechpartner", ustId: "USt-IdNr.", steuernummer: "Steuernummer",
+      register: "Registernummer", kennungAbsender: "Lieferantennummer beim Kunden", rechtliches: "Rechtliche Angaben",
+      kontaktEmail: "E-Mail des Ansprechpartners", kennungEmpfaenger: "Kundennummer", kennung: "Kennung",
+      artikelnummer: "Art.-Nr.", kundenArtikelnummer: "Art.-Nr. des Kunden", gtin: "GTIN/EAN", ursprungsland: "Ursprungsland",
+      objekt: "Objekt", bestellposition: "Bestellposition", buchungsreferenz: "Kostenstelle",
       glaeubigerId: "Gläubiger-ID (Lastschrift)", iban: "IBAN (Lastschrift)", mandatsreferenz: "Mandatsreferenz",
       karte: "Kreditkarte (letzte 4 Ziffern)" },
     stimmtTitel: "Der Wert ist richtig",
@@ -713,10 +776,26 @@ const TEXTE = {
   pflicht: {
     nummer: "Rechnungsnummer",
     datum: "Rechnungsdatum",
-    faellig: "Fälligkeit (zahlbar bis)",
+    art: "Rechnungsart",
+    waehrung: (waehrung) => `Rechnung in ${waehrung}: XFact kann nur Rechnungen in Euro umwandeln`,
+    steuervertreter: "Rechnung mit Steuervertreter: kann XFact nicht abbilden (nur für Rechnungssteller im Ausland)",
+    faellig: "Fälligkeit (zahlbar bis) oder Zahlungsbedingungen",
     iban: "IBAN",
-    steuerfall: "Steuerfall (normal, § 13b oder § 19)",
+    zahlungsart: "Zahlungsart",
     positionen: "mindestens eine Position",
+    lieferung: { plz: "PLZ der Lieferanschrift", ort: "Ort der Lieferanschrift" },
+    leistungVon: "Beginn des Leistungszeitraums",
+    leistungBis: "Ende des Leistungszeitraums",
+    zeitraumVerkehrtGesamt: "Der Leistungszeitraum der Rechnung endet vor seinem Beginn",
+    steuerText: (art) => `Grund der Steuerbefreiung (${art})`,
+    nichtSteuerbarAllein: "„Nicht steuerbar“ darf in einer XRechnung nicht mit anderen Steuerarten gemischt werden",
+    nachlass: (nr) => `Nachlass ${nr}`,
+    zuschlag: (nr) => `Zuschlag ${nr}`,
+    steuerVon: (was) => `Umsatzsteuer für ${was}`,
+    kategorieNicht: (nr, art) => `Position ${nr}: ${art} – kann XFact nicht abbilden (nur für Rechnungen innerhalb Deutschlands)`,
+    ausserhalbZeitraum: (nr) => `Position ${nr}: Leistungsdatum außerhalb des Leistungszeitraums der Rechnung`,
+    bruttoNetto: (nr) => `Position ${nr}: Nettopreis muss Bruttopreis minus Preisnachlass sein`,
+    preis: (nr) => `Position ${nr}: Preis`,
     absender: {
       name: "Name des Rechnungsstellers", plz: "PLZ des Rechnungsstellers", ort: "Ort des Rechnungsstellers",
       ustId: "USt-IdNr. oder Steuernummer des Rechnungsstellers", email: "E-Mail des Rechnungsstellers",
@@ -728,14 +807,208 @@ const TEXTE = {
       email: "E-Mail des Empfängers für Rechnungen",
       ustId: "USt-IdNr. des Empfängers (nötig bei Steuerschuldnerschaft des Leistungsempfängers)",
       iban: "IBAN des Empfängers, von der abgebucht wird (für die Lastschrift)",
-      karte: "letzte 4 Ziffern der Kreditkarte des Empfängers",
+      karte: "letzte 4 Ziffern der Karte des Empfängers",
+      mandatsreferenz: "Mandatsreferenz der Lastschrift",
     },
     einheit: (nr, einheit) => `Position ${nr}: Einheit${einheit ? ` „${einheit}“` : ""} zuordnen`,
     leistungsdatum: (nr) => `Position ${nr}: Leistungsdatum`,
     zeitraumVerkehrt: (nr) => `Position ${nr}: Leistungszeitraum endet vor seinem Beginn`,
-    steuersatz: (nr) => `Position ${nr}: USt-Satz`,
+    steuersatz: (nr) => `Position ${nr}: Umsatzsteuer`,
     skontoFrist: (prozent) => `Frist für ${prozent} % Skonto`,
   },
+};
+
+// === STANDARD =================================================================
+// Alle Felder der Norm EN 16931 (XRechnung 3.0) und wie XFact sie behandelt:
+//   "ki"    die KI liest es aus der Rechnung, der Nutzer kann es ändern
+//   "xfact" XFact setzt es selbst (fest oder berechnet)
+//   "nein"  bewusst nicht unterstützt – mit Grund; findet die KI so etwas,
+//           zeigt XFact einen Hinweis, statt es stillschweigend wegzulassen
+// Diese Liste ist die Grundlage für das Antwortschema der KI, die
+// XML-Erzeugung, die Tests und die Dokumentation.
+// =============================================================================
+const STANDARD = [
+  // Kopf
+  ["BT-1", "Rechnungsnummer", "ki"],
+  ["BT-2", "Rechnungsdatum", "ki"],
+  ["BT-3", "Rechnungsart", "ki"],
+  ["BT-5", "Währung", "xfact", "immer EUR; Rechnungen in anderer Währung lehnt XFact ab"],
+  ["BT-6", "Umsatzsteuer-Buchungswährung", "nein", "nur bei Rechnungen in fremder Währung"],
+  ["BT-7", "Steuerfälligkeitsdatum", "nein", "in Deutschland nicht üblich; maßgeblich ist das Leistungsdatum"],
+  ["BT-8", "Code für das Steuerfälligkeitsdatum", "nein", "in Deutschland nicht üblich"],
+  ["BT-9", "Fälligkeitsdatum", "ki"],
+  ["BT-10", "Käuferreferenz bzw. Leitweg-ID", "ki", "ohne Angabe „keine Angabe“"],
+  ["BT-11", "Projekt", "ki"],
+  ["BT-12", "Vertrag", "ki"],
+  ["BT-13", "Bestellnummer", "ki"],
+  ["BT-14", "Auftragsnummer des Verkäufers", "ki"],
+  ["BT-15", "Wareneingangsmeldung", "ki"],
+  ["BT-16", "Lieferschein", "ki"],
+  ["BT-17", "Ausschreibung bzw. Los", "ki"],
+  ["BT-18", "Objektkennung (z.B. Zähler, Abonnement)", "ki"],
+  ["BT-19", "Buchungsreferenz des Käufers (z.B. Kostenstelle)", "ki"],
+  ["BT-20", "Zahlungsbedingungen, Skonto", "ki"],
+  ["BT-21", "Betreff-Code einer Bemerkung", "nein", "der Text der Bemerkung genügt"],
+  ["BT-22", "Bemerkung", "ki"],
+  ["BT-23", "Geschäftsprozess", "xfact"],
+  ["BT-24", "Kennung der Spezifikation (XRechnung 3.0)", "xfact"],
+  ["BT-25", "Vorausgegangene Rechnung", "ki", "die Syntax CII kennt nur eine; weitere schreibt XFact als Bemerkung"],
+  ["BT-26", "Datum der vorausgegangenen Rechnung", "ki"],
+  // Rechnungssteller
+  ["BT-27", "Name des Rechnungsstellers", "ki"],
+  ["BT-28", "Handelsname des Rechnungsstellers", "ki"],
+  ["BT-29", "Kennung des Rechnungsstellers", "ki", "ohne Schema; nur mit Steuernummer setzt XFact sie als Kennung (BR-CO-26)"],
+  ["BT-30", "Registernummer des Rechnungsstellers", "ki", "ohne Schema"],
+  ["BT-31", "USt-IdNr. des Rechnungsstellers", "ki"],
+  ["BT-32", "Steuernummer des Rechnungsstellers", "ki"],
+  ["BT-33", "Weitere rechtliche Angaben (Sitz, Registergericht, Geschäftsführung)", "ki"],
+  ["BT-34", "Elektronische Adresse des Rechnungsstellers", "ki", "die E-Mail-Adresse"],
+  ["BT-35", "Straße des Rechnungsstellers", "ki"],
+  ["BT-36", "Anschriftzusatz des Rechnungsstellers", "ki"],
+  ["BT-162", "Weitere Anschriftzeile des Rechnungsstellers", "ki"],
+  ["BT-37", "Ort des Rechnungsstellers", "ki"],
+  ["BT-38", "PLZ des Rechnungsstellers", "ki"],
+  ["BT-39", "Region des Rechnungsstellers", "ki"],
+  ["BT-40", "Land des Rechnungsstellers", "ki"],
+  ["BT-41", "Ansprechpartner des Rechnungsstellers", "ki"],
+  ["BT-42", "Telefon des Rechnungsstellers", "ki"],
+  ["BT-43", "E-Mail des Ansprechpartners", "ki", "ohne eigene Angabe die E-Mail des Rechnungsstellers"],
+  // Rechnungsempfänger
+  ["BT-44", "Name des Empfängers", "ki"],
+  ["BT-45", "Handelsname des Empfängers", "ki"],
+  ["BT-46", "Kennung des Empfängers (z.B. Kundennummer)", "ki", "ohne Schema"],
+  ["BT-47", "Registernummer des Empfängers", "ki", "ohne Schema"],
+  ["BT-48", "USt-IdNr. des Empfängers", "ki"],
+  ["BT-49", "Elektronische Adresse des Empfängers", "ki", "meist nicht auf der Rechnung; XFact fragt und merkt sie sich je Kunde"],
+  ["BT-50", "Straße des Empfängers", "ki"],
+  ["BT-51", "Anschriftzusatz des Empfängers", "ki"],
+  ["BT-163", "Weitere Anschriftzeile des Empfängers", "ki"],
+  ["BT-52", "Ort des Empfängers", "ki"],
+  ["BT-53", "PLZ des Empfängers", "ki"],
+  ["BT-54", "Region des Empfängers", "ki"],
+  ["BT-55", "Land des Empfängers", "ki"],
+  ["BT-56", "Ansprechpartner beim Empfänger", "ki"],
+  ["BT-57", "Telefon des Ansprechpartners beim Empfänger", "ki"],
+  ["BT-58", "E-Mail des Ansprechpartners beim Empfänger", "ki"],
+  // Zahlungsempfänger, Steuervertreter
+  ["BT-59", "Name des Zahlungsempfängers (z.B. Factoring)", "ki"],
+  ["BT-60", "Kennung des Zahlungsempfängers", "ki", "ohne Schema"],
+  ["BT-61", "Registernummer des Zahlungsempfängers", "ki", "ohne Schema"],
+  ["BT-62", "Name des Steuervertreters", "nein", "nur für Rechnungssteller im Ausland; XFact ist für deutsche Rechnungssteller"],
+  ["BT-63", "USt-IdNr. des Steuervertreters", "nein", "wie BT-62"],
+  ["BT-64", "Straße des Steuervertreters", "nein", "wie BT-62"],
+  ["BT-65", "Anschriftzusatz des Steuervertreters", "nein", "wie BT-62"],
+  ["BT-164", "Weitere Anschriftzeile des Steuervertreters", "nein", "wie BT-62"],
+  ["BT-66", "Ort des Steuervertreters", "nein", "wie BT-62"],
+  ["BT-67", "PLZ des Steuervertreters", "nein", "wie BT-62"],
+  ["BT-68", "Region des Steuervertreters", "nein", "wie BT-62"],
+  ["BT-69", "Land des Steuervertreters", "nein", "wie BT-62"],
+  // Lieferung
+  ["BT-70", "Name des Warenempfängers", "ki"],
+  ["BT-71", "Kennung des Lieferorts", "ki", "ohne Schema"],
+  ["BT-72", "Liefer- bzw. Leistungsdatum", "ki"],
+  ["BT-73", "Beginn des Abrechnungszeitraums", "ki"],
+  ["BT-74", "Ende des Abrechnungszeitraums", "ki"],
+  ["BT-75", "Straße der Lieferanschrift", "ki"],
+  ["BT-76", "Anschriftzusatz der Lieferanschrift", "ki"],
+  ["BT-165", "Weitere Anschriftzeile der Lieferanschrift", "ki"],
+  ["BT-77", "Ort der Lieferanschrift", "ki"],
+  ["BT-78", "PLZ der Lieferanschrift", "ki"],
+  ["BT-79", "Region der Lieferanschrift", "ki"],
+  ["BT-80", "Land der Lieferanschrift", "ki"],
+  // Zahlung
+  ["BT-81", "Zahlungsart", "ki", "Überweisung, Lastschrift, Kredit-/Debitkarte, bar, Verrechnung, Online-Zahlung, sonstige"],
+  ["BT-82", "Zahlungsart als Text", "ki"],
+  ["BT-83", "Verwendungszweck", "ki", "ohne Angabe die Rechnungsnummer"],
+  ["BT-84", "IBAN des Rechnungsstellers", "ki", "auch mehrere Konten"],
+  ["BT-85", "Kontoinhaber", "ki", "ohne Angabe der Name des Rechnungsstellers"],
+  ["BT-86", "BIC", "ki"],
+  ["BT-87", "Kartennummer (nur die letzten 4 Ziffern)", "ki"],
+  ["BT-88", "Karteninhaber", "ki"],
+  ["BT-89", "Mandatsreferenz", "ki"],
+  ["BT-90", "Gläubiger-ID", "ki"],
+  ["BT-91", "IBAN des Kunden (Lastschrift)", "ki"],
+  // Nachlässe und Zuschläge auf die ganze Rechnung
+  ["BT-92", "Betrag eines Nachlasses auf die Rechnung", "ki"],
+  ["BT-93", "Grundbetrag des Nachlasses", "ki"],
+  ["BT-94", "Prozentsatz des Nachlasses", "ki"],
+  ["BT-95", "Steuerkategorie des Nachlasses", "ki"],
+  ["BT-96", "Steuersatz des Nachlasses", "ki"],
+  ["BT-97", "Grund des Nachlasses", "ki"],
+  ["BT-98", "Code für den Grund des Nachlasses", "nein", "der Grund als Text genügt"],
+  ["BT-99", "Betrag eines Zuschlags auf die Rechnung (z.B. Fracht)", "ki"],
+  ["BT-100", "Grundbetrag des Zuschlags", "ki"],
+  ["BT-101", "Prozentsatz des Zuschlags", "ki"],
+  ["BT-102", "Steuerkategorie des Zuschlags", "ki"],
+  ["BT-103", "Steuersatz des Zuschlags", "ki"],
+  ["BT-104", "Grund des Zuschlags", "ki"],
+  ["BT-105", "Code für den Grund des Zuschlags", "nein", "der Grund als Text genügt"],
+  // Summen
+  ["BT-106", "Summe der Positionen", "xfact", "berechnet und mit der Rechnung verglichen"],
+  ["BT-107", "Summe der Nachlässe", "xfact", "berechnet"],
+  ["BT-108", "Summe der Zuschläge", "xfact", "berechnet"],
+  ["BT-109", "Nettobetrag", "xfact", "berechnet und mit der Rechnung verglichen"],
+  ["BT-110", "Umsatzsteuer", "xfact", "berechnet und mit der Rechnung verglichen"],
+  ["BT-111", "Umsatzsteuer in Buchungswährung", "nein", "nur bei fremder Währung"],
+  ["BT-112", "Gesamtbetrag", "xfact", "berechnet und mit der Rechnung verglichen"],
+  ["BT-113", "Bereits gezahlt (Anzahlungen, Abschläge)", "ki"],
+  ["BT-114", "Rundung", "ki"],
+  ["BT-115", "Zahlbetrag", "xfact", "berechnet und mit der Rechnung verglichen"],
+  // Umsatzsteuer je Kategorie und Satz
+  ["BT-116", "Steuerbasis je Satz", "xfact", "berechnet"],
+  ["BT-117", "Steuerbetrag je Satz", "xfact", "berechnet und mit der Rechnung verglichen"],
+  ["BT-118", "Steuerkategorie", "ki", "S, Z, E, AE, O; K, G, L, M betreffen Empfänger im Ausland bzw. Sondergebiete und werden abgelehnt"],
+  ["BT-119", "Steuersatz", "ki"],
+  ["BT-120", "Grund der Steuerbefreiung", "ki", "ohne Angabe ein Standardtext, bei § 19 UStG der übliche Hinweis"],
+  ["BT-121", "Code für den Grund der Steuerbefreiung", "xfact", "VATEX-EU-AE bzw. VATEX-EU-O"],
+  // Anlagen
+  ["BT-122", "Kennung einer Anlage", "ki"],
+  ["BT-123", "Beschreibung einer Anlage", "ki", "in CII nur bei einer Anlage; bei weiteren steht sie mit der Kennung"],
+  ["BT-124", "Link zu einer Anlage", "ki"],
+  ["BT-125", "Eingebettete Datei", "nein", "Dateien kann eine PDF-Rechnung nicht mitliefern"],
+  // Positionen
+  ["BT-126", "Positionsnummer", "ki"],
+  ["BT-127", "Bemerkung zur Position", "ki"],
+  ["BT-128", "Objektkennung der Position", "ki"],
+  ["BT-129", "Menge", "ki"],
+  ["BT-130", "Einheit", "ki"],
+  ["BT-131", "Nettobetrag der Position", "ki"],
+  ["BT-132", "Position der Bestellung", "ki"],
+  ["BT-133", "Buchungsreferenz der Position", "ki"],
+  ["BT-134", "Leistungsbeginn der Position", "ki"],
+  ["BT-135", "Leistungsende der Position", "ki"],
+  ["BT-136", "Betrag eines Nachlasses auf die Position", "ki"],
+  ["BT-137", "Grundbetrag des Nachlasses", "ki"],
+  ["BT-138", "Prozentsatz des Nachlasses", "ki"],
+  ["BT-139", "Grund des Nachlasses", "ki"],
+  ["BT-140", "Code für den Grund des Nachlasses", "nein", "der Grund als Text genügt"],
+  ["BT-141", "Betrag eines Zuschlags auf die Position", "ki"],
+  ["BT-142", "Grundbetrag des Zuschlags", "ki"],
+  ["BT-143", "Prozentsatz des Zuschlags", "ki"],
+  ["BT-144", "Grund des Zuschlags", "ki"],
+  ["BT-145", "Code für den Grund des Zuschlags", "nein", "der Grund als Text genügt"],
+  ["BT-146", "Nettopreis", "ki"],
+  ["BT-147", "Preisnachlass", "ki"],
+  ["BT-148", "Bruttopreis", "ki"],
+  ["BT-149", "Preisbasismenge (z.B. je 100 Stück)", "ki"],
+  ["BT-150", "Einheit der Preisbasismenge", "xfact", "dieselbe wie BT-130"],
+  ["BT-151", "Steuerkategorie der Position", "ki"],
+  ["BT-152", "Steuersatz der Position", "ki"],
+  ["BT-153", "Bezeichnung", "ki"],
+  ["BT-154", "Beschreibung", "ki"],
+  ["BT-155", "Artikelnummer des Verkäufers", "ki"],
+  ["BT-156", "Artikelnummer des Käufers", "ki"],
+  ["BT-157", "GTIN bzw. EAN", "ki"],
+  ["BT-158", "Warenklassifizierung (z.B. Zolltarifnummer)", "nein", "braucht ein Schema, das auf PDF-Rechnungen fehlt"],
+  ["BT-159", "Ursprungsland", "ki"],
+  ["BT-160", "Name eines Artikelmerkmals (z.B. Farbe)", "ki"],
+  ["BT-161", "Wert eines Artikelmerkmals", "ki"],
+];
+
+/** Wie XFact ein Feld der Norm behandelt: { nr, name, umsetzung, hinweis } */
+const feldDerNorm = (nr) => {
+  const eintrag = STANDARD.find(([n]) => n === nr);
+  return eintrag && { nr: eintrag[0], name: eintrag[1], umsetzung: eintrag[2], hinweis: eintrag[3] || null };
 };
 
 // === REGELN ===================================================================
@@ -758,12 +1031,22 @@ const REGELN = {
 
   // Einheiten der XRechnung (UN/ECE Rec. 20), die XFact anbietet
   einheiten: [
-    { code: "HUR", name: "Stunde" }, { code: "DAY", name: "Tag" }, { code: "LS", name: "Pauschale" },
-    { code: "C62", name: "Stück" }, { code: "KMT", name: "Kilometer" }, { code: "MON", name: "Monat" }, { code: "ANN", name: "Jahr" },
-    { code: "WEE", name: "Woche" }, { code: "MIN", name: "Minute" }, { code: "MTR", name: "Meter" },
-    { code: "MTK", name: "Quadratmeter" }, { code: "MTQ", name: "Kubikmeter" }, { code: "KGM", name: "Kilogramm" },
-    { code: "LTR", name: "Liter" },
+    { code: "HUR", name: "Stunde" }, { code: "DAY", name: "Tag" }, { code: "WEE", name: "Woche" }, { code: "MON", name: "Monat" },
+    { code: "ANN", name: "Jahr" }, { code: "MIN", name: "Minute" }, { code: "LS", name: "Pauschale" }, { code: "C62", name: "Stück" },
+    { code: "SET", name: "Satz" }, { code: "PR", name: "Paar" }, { code: "KMT", name: "Kilometer" }, { code: "MTR", name: "Meter" },
+    { code: "CMT", name: "Zentimeter" }, { code: "MMT", name: "Millimeter" }, { code: "MTK", name: "Quadratmeter" },
+    { code: "MTQ", name: "Kubikmeter" }, { code: "KGM", name: "Kilogramm" }, { code: "GRM", name: "Gramm" }, { code: "TNE", name: "Tonne" },
+    { code: "LTR", name: "Liter" }, { code: "KWH", name: "Kilowattstunde" }, { code: "XBX", name: "Karton" }, { code: "XPK", name: "Packung" },
   ],
+
+  // Rechnungsarten (BT-3), die die XRechnung erlaubt (BR-DE-17)
+  rechnungsarten: {
+    380: "Rechnung", 381: "Gutschrift (Minderung)", 384: "Rechnungskorrektur", 389: "Gutschrift (Gutschriftverfahren)",
+    326: "Teil- bzw. Abschlagsrechnung", 875: "Abschlagsrechnung (Bau)", 876: "Teilschlussrechnung (Bau)", 877: "Schlussrechnung (Bau)",
+  },
+
+  // Zahlungsarten und ihr Code (BT-81, UNTDID 4461)
+  zahlungsarten: { ueberweisung: "58", lastschrift: "59", kreditkarte: "54", debitkarte: "55", bar: "10", verrechnung: "97", online: "68", sonstige: "ZZZ" },
 
   // Aufbau der Leitweg-ID: Grobadressierung (2–12 Ziffern), optional
   // Feinadressierung (bis 30 Buchstaben/Ziffern), Prüfziffer (2 Ziffern)
@@ -773,8 +1056,10 @@ const REGELN = {
   // (z.B. ZZZ, zählt nicht für die Prüfziffer), nationale Kennung (DE: 11 Ziffern)
   glaeubigerId: /^([A-Z]{2})(\d{2})[A-Z0-9]{3}([A-Z0-9]{1,28})$/,
 
-  // Steuerkategorien (BT-151), die XFact unterstützt, und ihr Steuerfall
-  steuerfaelle: { S: "standard", AE: "reverse_charge", E: "kleinunternehmer" },
+  // Umsatzsteuerkategorien (BT-118, BT-151), die XFact unterstützt
+  steuerkategorien: { S: "Umsatzsteuer", Z: "Nullsatz", E: "steuerbefreit", AE: "Steuerschuldnerschaft des Leistungsempfängers", O: "nicht steuerbar" },
+  // ... und die, die Empfänger im Ausland oder Sondergebiete betreffen: XFact lehnt sie ab
+  steuerkategorienNicht: { K: "innergemeinschaftliche Lieferung", G: "Ausfuhr", L: "IGIC (Kanarische Inseln)", M: "IPSI (Ceuta und Melilla)" },
 
   // Ländernamen für die Anzeige
   laender: {
@@ -832,7 +1117,8 @@ function stehtImText(wert, text) {
 }
 
 // === PRÜFUNGEN ================================================================
-// Was rot (fehlt) oder gelb (unsicher) markiert wird.
+// Was rot (fehlt – ohne das wäre die XRechnung ungültig) oder gelb (bitte
+// prüfen) markiert wird. In Klammern die Regeln der Norm bzw. der XRechnung.
 // =============================================================================
 const PRUEFUNGEN = {
   // Erlaubte Abweichung beim Nachrechnen, in Euro
@@ -847,45 +1133,116 @@ const PRUEFUNGEN = {
 function pruefeRechnung(r) {
   const fehlt = [];
   const p = TEXTE.pflicht;
-  const pflicht = (feld, wert, text) => { if (!wert) fehlt.push({ feld, text }); };
+  const pflicht = (feld, ok, text, kurz) => { if (!ok) fehlt.push(kurz ? { feld, text, kurz } : { feld, text }); };
   const codes = REGELN.einheiten.map((x) => x.code);
+  const kategorien = steuerkategorienDerRechnung(r);
+
+  // Was eine XRechnung von XFact nicht abbilden kann
+  pflicht("waehrung", r.waehrung === "EUR", p.waehrung(r.waehrung), TEXTE.pruefer.nurEuro);
+  pflicht("steuervertreter", !r.steuervertreter, p.steuervertreter, TEXTE.pruefer.nichtUnterstuetzt);
+
   pflicht("nummer", r.nummer, p.nummer);
   pflicht("datum", r.datum, p.datum);
-  // Bei Lastschrift und Kreditkarte zieht der Rechnungssteller ein: keine eigene IBAN, keine Fälligkeit
-  const art = r.zahlungsart || "ueberweisung";
-  if (art === "ueberweisung") pflicht("faellig", r.faellig, p.faellig);
-  if (art === "ueberweisung") pflicht("iban", r.bank.iban, p.iban);
-  pflicht("steuerfall", r.steuerfall.kategorie, p.steuerfall);
-  for (const feld of ["name", "plz", "ort"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
-  pflicht("absender.ustId", r.absender.ustId || r.absender.steuernummer, p.absender.ustId);
-  for (const feld of ["kontakt", "telefon", "email"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
-  for (const feld of ["name", "plz", "ort", "email"]) pflicht(`empfaenger.${feld}`, r.empfaenger[feld], p.empfaenger[feld]);
-  if (r.steuerfall.art === "reverse_charge") pflicht("empfaenger.ustId", r.empfaenger.ustId, p.empfaenger.ustId);
-  if (art === "lastschrift") {
-    pflicht("absender.glaeubigerId", r.absender.glaeubigerId, p.absender.glaeubigerId);
-    pflicht("empfaenger.iban", r.empfaenger.iban, p.empfaenger.iban);
+  pflicht("art", REGELN.rechnungsarten[r.art], p.art);
+
+  // Rechnungssteller (BR-6, BR-8, BR-9, BR-DE-2 … BR-DE-7, BR-DE-16, PEPPOL-R020)
+  const a = r.absender;
+  for (const feld of ["name", "plz", "ort"]) pflicht(`absender.${feld}`, a[feld], p.absender[feld]);
+  if (kategorien.some((k) => k !== "O")) pflicht("absender.ustId", a.ustId || a.steuernummer, p.absender.ustId);
+  for (const feld of ["kontakt", "telefon", "email"]) pflicht(`absender.${feld}`, a[feld], p.absender[feld]);
+
+  // Empfänger (BR-7, BR-DE-8, BR-DE-9, PEPPOL-R010); bei § 13b seine Kennung (BR-AE-02)
+  const e = r.empfaenger;
+  for (const feld of ["name", "plz", "ort", "email"]) pflicht(`empfaenger.${feld}`, e[feld], p.empfaenger[feld]);
+  if (kategorien.includes("AE")) pflicht("empfaenger.ustId", e.ustId || e.register, p.empfaenger.ustId);
+
+  // Lieferanschrift: wenn eine da ist, mit PLZ und Ort (BR-DE-10, BR-DE-11)
+  if (mitLieferanschrift(r.lieferung)) {
+    pflicht("lieferung.plz", r.lieferung.plz, p.lieferung.plz);
+    pflicht("lieferung.ort", r.lieferung.ort, p.lieferung.ort);
   }
-  if (art === "kreditkarte") pflicht("empfaenger.karte", /^\d{4}$/.test(r.empfaenger.karte || ""), p.empfaenger.karte);
+
+  // Zahlung (BR-DE-1, BR-DE-23 … BR-DE-25, BR-DE-30, BR-DE-31, PEPPOL-R061, BR-CO-25)
+  const art = r.zahlungsart;
+  pflicht("zahlungsart", REGELN.zahlungsarten[art], p.zahlungsart);
+  if (art === "ueberweisung") {
+    if (!r.zahlung.konten.length) pflicht("zahlung.konten.1.iban", false, p.iban);
+    r.zahlung.konten.forEach((k, i) => pflicht(`zahlung.konten.${i + 1}.iban`, k.iban, p.iban));
+    pflicht("faellig", r.faellig || r.zahlungsbedingungen || r.skonto.length || summenDerRechnung(r).zahlbetrag <= 0, p.faellig);
+  }
+  if (art === "lastschrift") {
+    pflicht("absender.glaeubigerId", a.glaeubigerId, p.absender.glaeubigerId);
+    pflicht("empfaenger.iban", e.iban, p.empfaenger.iban);
+    pflicht("empfaenger.mandatsreferenz", e.mandatsreferenz, p.empfaenger.mandatsreferenz);
+  }
+  if (art === "kreditkarte" || art === "debitkarte") pflicht("empfaenger.karte", /^\d{4}$/.test(e.karte || ""), p.empfaenger.karte);
+  r.skonto.forEach((k, i) => pflicht(`skonto.${i + 1}`, k.tage > 0, p.skontoFrist(k.prozent)));
+
+  // Umsatzsteuer: nur unterstützte Kategorien; Befreiungen mit Grund (BR-E-10, BR-AE-10, BR-O-10);
+  // "nicht steuerbar" nur allein (BR-O-11)
+  for (const k of kategorien) {
+    if (["E", "AE", "O"].includes(k)) pflicht(`steuerText.${k}`, r.steuerTexte[k], p.steuerText(TEXTE.ansicht.steuerArten[k]));
+  }
+  if (kategorien.includes("O") && kategorien.length > 1) pflicht("steuer", false, p.nichtSteuerbarAllein);
+
+  // Leistungszeitraum der ganzen Rechnung (BR-29, BR-30)
+  if (r.leistungVon || r.leistungBis) {
+    pflicht("leistungVon", r.leistungVon, p.leistungVon);
+    pflicht("leistungBis", r.leistungBis, p.leistungBis);
+    if (r.leistungVon && r.leistungBis && r.leistungBis < r.leistungVon) {
+      fehlt.push({ feld: "leistungBis", text: p.zeitraumVerkehrtGesamt, kurz: TEXTE.pruefer.zeitraumVerkehrt });
+    }
+  }
+
+  // Nachlässe und Zuschläge auf die ganze Rechnung: mit Steuer (BR-32, BR-37)
+  for (const [liste, name] of [["nachlaesse", p.nachlass], ["zuschlaege", p.zuschlag]]) {
+    r[liste].forEach((n, i) => {
+      pflicht(`${liste}.${i + 1}.betrag`, n.betrag > 0, name(i + 1));
+      pflicht(`${liste}.${i + 1}.kategorie`, REGELN.steuerkategorien[n.kategorie], p.steuerVon(name(i + 1)));
+    });
+  }
+
   pflicht("positionen", r.positionen.length, p.positionen);
-  (r.skonto || []).forEach((k, i) => pflicht(`skonto.${i + 1}`, k.tage > 0, p.skontoFrist(k.prozent)));
+  const mitDatumFuerAlle = r.leistungsdatum || r.leistungVon;
   for (const pos of r.positionen) {
     const nummer = pos.posNr || pos.nr;
-    pflicht(`position.${pos.nr}.einheit`, codes.includes(pos.einheitCode), p.einheit(nummer, pos.einheit));
-    pflicht(`position.${pos.nr}.datum`, pos.von, p.leistungsdatum(nummer));
-    // Ein Zeitraum, der vor seinem Beginn endet, lehnt die XRechnung ab (Regel BR-30)
+    const pf = (name) => `position.${pos.nr}.${name}`;
+    pflicht(pf("einheit"), codes.includes(pos.einheitCode), p.einheit(nummer, pos.einheit));
+    pflicht(pf("steuer"), REGELN.steuerkategorien[pos.kategorie],
+      REGELN.steuerkategorienNicht[pos.kategorie] ? p.kategorieNicht(nummer, REGELN.steuerkategorienNicht[pos.kategorie]) : p.steuersatz(nummer),
+      REGELN.steuerkategorienNicht[pos.kategorie] ? TEXTE.pruefer.nichtUnterstuetzt : undefined);
+    if (pos.kategorie === "S") pflicht(pf("steuer"), pos.satz > 0, p.steuersatz(nummer));
+    // Leistungsdatum: eigenes oder das der ganzen Rechnung (§ 14 UStG; BR-DE-TMP-32)
+    pflicht(pf("datum"), pos.von || mitDatumFuerAlle, p.leistungsdatum(nummer));
     if (pos.von && pos.bis && pos.bis < pos.von) {
-      fehlt.push({ feld: `position.${pos.nr}.datum`, text: p.zeitraumVerkehrt(nummer), kurz: TEXTE.pruefer.zeitraumVerkehrt });
+      fehlt.push({ feld: pf("datum"), text: p.zeitraumVerkehrt(nummer), kurz: TEXTE.pruefer.zeitraumVerkehrt });
     }
-    pflicht(`position.${pos.nr}.satz`, pos.kategorie !== "S" || pos.satz > 0, p.steuersatz(nummer));
+    // Innerhalb des Abrechnungszeitraums der Rechnung (PEPPOL-R110, PEPPOL-R111)
+    if (pos.von && r.leistungVon && r.leistungBis && (pos.von < r.leistungVon || (pos.bis || pos.von) > r.leistungBis)) {
+      fehlt.push({ feld: pf("datum"), text: p.ausserhalbZeitraum(nummer), kurz: TEXTE.pruefer.ausserhalbZeitraum });
+    }
+    // Nettopreis = Bruttopreis − Preisnachlass (PEPPOL-R046)
+    if (pos.bruttopreis !== null && Math.abs(pos.bruttopreis - (pos.preisnachlass || 0) - pos.einzelpreis) > 0.0001) {
+      fehlt.push({ feld: pf("einzelpreis"), text: p.bruttoNetto(nummer), kurz: TEXTE.pruefer.bruttoNetto });
+    }
+    pflicht(pf("einzelpreis"), pos.einzelpreis >= 0, p.preis(nummer));
   }
   return fehlt;
 }
+
+/** Alle Steuerkategorien der Rechnung: aus Positionen, Nachlässen und Zuschlägen */
+function steuerkategorienDerRechnung(r) {
+  return [...new Set([...r.positionen, ...r.nachlaesse, ...r.zuschlaege].map((x) => x.kategorie).filter(Boolean))];
+}
+
+const mitLieferanschrift = (l) => Boolean(l && (l.strasse || l.zusatz || l.zeile3 || l.plz || l.ort));
 
 /**
  * Hinweise zur (ggf. bearbeiteten) Rechnung, für die Prüfansicht. Liste von
  * { feld, stufe: "fehlt" | "unsicher" | "ok", text }. Quellen:
  *   - pruefeRechnung (rot)
  *   - formale Regeln und Nachrechnen (gelb)
+ *   - Angaben der Rechnung, die die KI keinem Feld zuordnen konnte (gelb)
  *   - die Urteile des Prüfers Jev, falls vorhanden (gelb)
  * "bestaetigt" enthält die Felder, die der Nutzer mit "Stimmt" bestätigt hat;
  * dort entfallen alle gelben Hinweise. "geaendert" enthält die Felder, die er
@@ -902,9 +1259,10 @@ function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null,
   const unsicher = (feld, text) => { if (!geaendert.has(feld)) regel(feld, text); };
   const t = TEXTE.pruefer;
 
-  // Formale Regeln
-  if (r.steuerfall.art === null) unsicher("steuerfall", t.steuerfallNicht(befund.positionen[0]?.steuerkategorie || "?"));
-  if ((r.zahlungsart || "ueberweisung") === "ueberweisung" && r.bank.iban && !ibanPruefzifferOk(r.bank.iban)) regel("iban", TEXTE.ibanPruefziffer);
+  // Formale Regeln: Prüfziffern, Aufbau, Daten
+  r.zahlung.konten.forEach((k, i) => {
+    if (r.zahlungsart === "ueberweisung" && k.iban && !ibanPruefzifferOk(k.iban)) regel(`zahlung.konten.${i + 1}.iban`, TEXTE.ibanPruefziffer);
+  });
   if (r.empfaenger.iban && !ibanPruefzifferOk(r.empfaenger.iban)) regel("empfaenger.iban", TEXTE.ibanPruefziffer);
   if (r.absender.glaeubigerId && !glaeubigerIdOk(r.absender.glaeubigerId)) regel("absender.glaeubigerId", t.glaeubigerIdAufbau);
   for (const rolle of ["absender", "empfaenger"]) {
@@ -912,37 +1270,52 @@ function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null,
     if (p.ustId && !ustIdAufbauOk(p.ustId)) regel(`${rolle}.ustId`, t.ustIdAufbau);
     if (p.land && p.land !== "DE") hinweise.push({ feld: `${rolle}.land`, stufe: "unsicher", text: TEXTE.nichtDeutschland });
   }
+  // Telefon mit mindestens drei Ziffern, E-Mail mit genau einem @ (BR-DE-27, BR-DE-28)
+  if (r.absender.telefon && (r.absender.telefon.match(/\d/g) || []).length < 3) regel("absender.telefon", t.telefon);
+  for (const feld of ["absender.email", "absender.kontaktEmail", "empfaenger.email"]) {
+    const wert = holeWert(r, feld);
+    if (wert && !emailOk(wert)) regel(feld, t.email);
+  }
   if (r.leitwegId && !leitwegIdOk(r.leitwegId)) regel("leitwegId", t.leitwegIdAufbau);
   if (!r.leitwegId && r.empfaenger.oeffentlich) unsicher("leitwegId", t.leitwegIdBehoerde);
-  for (const [feld, wert] of [["datum", r.datum], ["faellig", r.faellig]]) {
+  const daten = [["datum", r.datum], ["faellig", r.faellig], ["leistungsdatum", r.leistungsdatum], ["leistungVon", r.leistungVon],
+    ["leistungBis", r.leistungBis], ...r.vorherigeRechnungen.map((v, i) => [`vorherigeRechnungen.${i + 1}.datum`, v.datum]),
+    ...r.positionen.flatMap((p) => [[`position.${p.nr}.datum`, p.von], [`position.${p.nr}.datum`, p.bis]])];
+  for (const [feld, wert] of daten) {
     if (wert && !datumGueltig(wert)) regel(feld, t.datumUngueltig);
   }
   if (datumGueltig(r.datum) && datumGueltig(r.faellig) && r.faellig < r.datum) regel("faellig", t.faelligVorDatum);
+  // Eine Rechnungskorrektur soll die korrigierte Rechnung nennen (BR-DE-26)
+  if (r.art === "384" && !r.vorherigeRechnungen.length) regel("art", t.korrekturOhneBezug);
 
   // Steht es wörtlich in der Rechnung? (gegen erfundene Werte)
   if (befund.text) {
-    for (const [feld, wert] of [["nummer", r.nummer], ["iban", r.bank.iban], ["absender.ustId", r.absender.ustId],
-      ["empfaenger.ustId", r.empfaenger.ustId], ["absender.glaeubigerId", r.absender.glaeubigerId], ["empfaenger.iban", r.empfaenger.iban]]) {
+    const kennungen = [["nummer", r.nummer], ["absender.ustId", r.absender.ustId], ["empfaenger.ustId", r.empfaenger.ustId],
+      ["absender.glaeubigerId", r.absender.glaeubigerId], ["empfaenger.iban", r.empfaenger.iban],
+      ...r.zahlung.konten.map((k, i) => [`zahlung.konten.${i + 1}.iban`, k.iban]),
+      ...["bestellnummer", "auftragsnummer", "vertrag", "lieferschein", "wareneingang", "leitwegId"].map((f) => [f, r[f]])];
+    for (const [feld, wert] of kennungen) {
       if (wert && !stehtImText(wert, befund.text)) unsicher(feld, t.nichtImText);
     }
   }
 
-  // Nachrechnen
+  // Nachrechnen: jede Position (PEPPOL-R120), dann die Summen gegen die Rechnung
   for (const p of r.positionen) {
-    if (p.von && !datumGueltig(p.von)) regel(`position.${p.nr}.datum`, t.datumUngueltig);
-    const soll = runde(p.menge * p.einzelpreis - (p.nachlass || 0));
-    if (Math.abs(soll - p.gesamt) > PRUEFUNGEN.rundungstoleranz) {
-      regel(`position.${p.nr}.gesamt`, TEXTE.mengeMalPreis(alsBetrag(soll)));
-    }
+    const soll = runde(sollBetragDerPosition(p));
+    if (Math.abs(soll - p.gesamt) > PRUEFUNGEN.rundungstoleranz) regel(`position.${p.nr}.gesamt`, TEXTE.mengeMalPreis(alsBetrag(soll)));
   }
   const summen = summenDerRechnung(r);
   const vergleiche = [];
-  if (befund.summen.netto) vergleiche.push(["netto", summen.netto, befund.summen.netto]);
-  if (befund.summen.brutto) vergleiche.push(["brutto", summen.brutto, befund.summen.brutto]);
+  const vergleich = (feld, berechnet, aufRechnung) => { if (aufRechnung) vergleiche.push([feld, berechnet, aufRechnung]); };
+  vergleich("positionen", summen.positionen, befund.summen.positionen);
+  vergleich("netto", summen.netto, befund.summen.netto);
+  vergleich("steuer", summen.steuer, befund.summen.steuer);
+  vergleich("brutto", summen.brutto, befund.summen.brutto);
+  vergleich("zahlbetrag", summen.zahlbetrag, befund.summen.zahlbetrag);
   for (const s of befund.steuer) {
     if (s.kategorie !== "S") continue;
-    const gruppe = summen.gruppen.find((g) => g.satz === s.satz);
-    vergleiche.push([`steuer.${s.satz}`, gruppe ? gruppe.betrag : 0, s.betrag]);
+    const gruppe = summen.gruppen.find((g) => g.kategorie === "S" && g.satz === s.satz);
+    vergleiche.push([`steuer.S${s.satz}`, gruppe ? gruppe.betrag : 0, s.betrag]);
   }
   for (const [feld, berechnet, aufRechnung] of vergleiche) {
     if (Math.abs(berechnet - aufRechnung) > PRUEFUNGEN.rundungstoleranz) {
@@ -950,7 +1323,7 @@ function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null,
     }
   }
   // Skontobetrag: so, wie er auf der Rechnung steht?
-  (r.skonto || []).forEach((k, i) => {
+  r.skonto.forEach((k, i) => {
     const berechnet = betragMitSkonto(r, k);
     if (k.betrag && Math.abs(berechnet - k.betrag) > PRUEFUNGEN.rundungstoleranz) {
       regel(`skonto.${i + 1}`, t.skontoBetrag(alsBetrag(k.betrag), alsBetrag(berechnet)));
@@ -960,19 +1333,44 @@ function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null,
     hinweise.push({ feld: "summe.brutto", stufe: "ok", text: TEXTE.summenWieAufRechnung });
   }
 
+  // Was auf der Rechnung steht, aber in keinem Feld gelandet ist
+  (befund.nichtZugeordnet || []).forEach((n, i) => regel(`nichtZugeordnet.${i + 1}`, n.text));
+
   // Urteile des Prüfers
   if (pruefung?.fehler) hinweise.push({ feld: "pruefer", stufe: "unsicher", text: TEXTE.ki.jevNichtMoeglich });
   for (const [id, frage] of Object.entries(pruefung?.felder || {})) {
     const antwort = pruefung.antworten[id];
     if (!antwort) continue;
-    if (frage.art === "noul" && antwort.noul < KI.jevSchwelle) unsicher(frage.pfad, t.nichtBestaetigt);
+    // Ein Feld, das der Nutzer inzwischen geleert hat, braucht keinen Zweifel mehr
+    if (frage.art === "noul" && antwort.noul < KI.jevSchwelle && holeWert(r, frage.pfad) !== null) unsicher(frage.pfad, t.nichtBestaetigt);
     if (frage.art === "choice" && antwort.choice && antwort.choice !== frage.erwartet) {
-      const name = REGELN.einheiten.find((x) => x.code === antwort.choice)?.name
-        || TEXTE.ansicht.steuerfaelle[REGELN.steuerfaelle[antwort.choice]] || TEXTE.ansicht.zahlungsarten[antwort.choice] || antwort.choice;
-      unsicher(frage.pfad, t.eher(name));
+      unsicher(frage.pfad, t.eher(frage.namen?.[antwort.choice] || antwort.choice));
     }
   }
   return hinweise;
+}
+
+/** Was eine Position nach Menge und Preis ergeben müsste (PEPPOL-R120) */
+function sollBetragDerPosition(p) {
+  const summe = (liste) => liste.reduce((s, n) => s + (n.betrag || 0), 0);
+  return (p.menge || 0) * (p.einzelpreis || 0) / (p.basismenge || 1) - summe(p.nachlaesse) + summe(p.zuschlaege);
+}
+
+/** Genau ein @, links und rechts mindestens zwei Zeichen, kein Leerzeichen (BR-DE-28) */
+function emailOk(email) {
+  return /^[^\s@]{2,}@[^\s@]{2,}$/.test(email) && !/^\.|\.$/.test(email) && !/@\.|\.@/.test(email);
+}
+
+/**
+ * Wert zu einem Pfad der Prüfansicht wie "absender.email", "zahlung.konten.1.iban"
+ * oder "position.3.menge" (Positionen nach ihrer Nummer "nr").
+ */
+function holeWert(r, pfad) {
+  const [kopf, ...rest] = pfad.split(".");
+  if (kopf === "position") return holeWert(r.positionen.find((p) => String(p.nr) === rest[0]) || {}, rest.slice(1).join("."));
+  const start = { einheit: r.einheitCode, steuer: r.kategorie }[kopf];
+  return rest.reduce((wert, teil) => (wert === null || wert === undefined ? wert
+    : Array.isArray(wert) ? wert[Number(teil) - 1] : wert[teil]), start !== undefined ? start : r[kopf]) ?? null;
 }
 
 // === KI =======================================================================
@@ -1000,118 +1398,219 @@ const KI = {
 const KI_ANWEISUNG = `Du bist Experte für elektronische Rechnungen nach EN 16931 / XRechnung 3.0.
 Du erhältst den Text einer PDF-Rechnung. Er wurde aus dem PDF extrahiert: Spalten stehen ungefähr untereinander, manche Wörter können doppelt vorkommen (z.B. "Total Total"), Zeilen aus nebeneinander stehenden Blöcken können vermischt sein.
 
-Aufgabe: Bilde die Rechnung auf die Felder der XRechnung ab (Schema). Die BT-Nummern im Schema sind die Felder der Norm.
+Aufgabe: Bilde die Rechnung vollständig auf die Felder der XRechnung ab. Das Schema enthält alle Felder, die eine XRechnung haben kann; die BT- und BG-Nummern sind die Felder der Norm. Prüfe für jedes Feld, ob die Rechnung es enthält.
 
 Vorgehen:
-1. Lies die ganze Rechnung und erkenne ihre Teile: Rechnungssteller (meist Briefkopf, Absenderzeile oder Fußzeile), Rechnungsempfänger (Anschriftfeld), Kopfdaten, Positionen, Summen, Steuerhinweise, Zahlungsangaben.
-2. Übernimm Werte, die auf der Rechnung stehen. Ein Layout ist nicht vorgegeben; Beschriftungen können beliebig lauten ("Ausgangsrechnung", "Beleg-Nr.", "Invoice No.", ...).
-3. Leite ab, was eindeutig ableitbar ist:
-   - Einheitencode (UN/ECE Rec. 20): Stunde HUR, Tag DAY, Pauschale LS, Stück C62, Kilometer KMT, Monat MON, Jahr ANN, Woche WEE, Minute MIN, Meter MTR, Quadratmeter MTK, Kubikmeter MTQ, Kilogramm KGM, Liter LTR.
-   - Steuerkategorie: S = Umsatzsteuer wird ausgewiesen (19 %, 7 %); AE = Steuerschuldnerschaft des Leistungsempfängers / Reverse Charge (§ 13b UStG, auch EU-Reverse-Charge), Satz 0; E = steuerbefreit, z.B. Kleinunternehmer § 19 UStG, Satz 0; K = innergemeinschaftliche Lieferung von Waren; Z = Nullsatz; G = Ausfuhr außerhalb der EU; O = nicht steuerbar.
-   - Rabatt auf eine Position: Steht direkt bei oder unter einer Position ein Rabatt oder Nachlass, der nur diese Position betrifft, gehört er als "nachlass" (positiver Betrag) mit "nachlassGrund" zu dieser Position. "einzelpreis" bleibt der Preis vor Rabatt, "gesamt" = menge × einzelpreis − nachlass. Verrechne den Rabatt nicht in den Einzelpreis, lege keine eigene Position dafür an und nimm den Rabatttext nicht in die Beschreibung.
-   - Leistungsdatum einer Position: aus der Datumsspalte, sonst aus der Beschreibung (z.B. "06.02.26, 10-12 Uhr" → 2026-02-06), sonst aus einem Leistungszeitraum der ganzen Rechnung. Ein einzelner Tag: von = bis.
-   - Fälligkeit: aus "zahlbar bis" oder Rechnungsdatum + Zahlungsziel in Tagen (beim Skonto: die Frist ohne Abzug, "rein netto"). Bei Lastschrift das Datum des Einzugs, falls genannt.
-   - Skonto: jede Stufe ("bis 30.05. mit 2 % Skonto", "innerhalb 10 Tagen 3 %") mit Satz, Frist und ggf. dem genannten Betrag. Keine Stufe für die Zahlung ohne Abzug.
-   - Zahlungsart: "lastschrift", wenn der Betrag vom Konto des Kunden eingezogen bzw. abgebucht wird (SEPA-Lastschrift); "kreditkarte", wenn er einer Kreditkarte belastet wird; sonst "ueberweisung". Bei Kreditkarte die letzten 4 Ziffern der Karte, falls angegeben. Bei Lastschrift außerdem Gläubiger-ID, Mandatsreferenz und IBAN des Kunden, soweit angegeben; eine gekürzte oder maskierte IBAN (z.B. DE12 **** 3456) als "".
-   - Zweistellige Jahre: 26 = 2026.
+1. Teile die Rechnung in ihre Bereiche: Briefkopf und Fußzeile (Rechnungssteller, Bankverbindungen, Register, Geschäftsführung, Sitz), Anschriftfeld (Empfänger; "z. Hd." ist der Ansprechpartner beim Empfänger), Kopfdaten (Nummer, Datum, Referenzen), Positionen (jede einzeln, mit allen Zeilen ihrer Beschreibung), Nachlässe und Zuschläge auf die ganze Rechnung, Summenblock, Steuerhinweise, Zahlungsangaben, sonstige Texte.
+2. Übernimm, was auf der Rechnung steht. Ein Layout ist nicht vorgegeben; Beschriftungen können beliebig lauten ("Beleg-Nr.", "Invoice No.", "Ihr Zeichen", "Vorgang", "BV", ...).
+3. Ordne zu und leite ab, was eindeutig ableitbar ist:
+   - Referenzen: Bestellnummer des Kunden (BT-13, "Ihre Bestellung"), eigene Auftrags- oder Vorgangsnummer (BT-14), Lieferschein (BT-16), Projekt oder Bauvorhaben (BT-11), Vertrag (BT-12), Kostenstelle des Kunden (BT-19), Kundennummer (BT-46), Referenz des Kunden bzw. "Ihr Zeichen" (BT-10), Leitweg-ID öffentlicher Auftraggeber.
+   - Positionen: Zwischensummen, Überträge und Überschriften von Positionsgruppen sind keine Positionen; eine Gruppenüberschrift kommt als Bemerkung (notiz) an die erste Position der Gruppe. Artikelnummern, EAN/GTIN, Merkmale wie "Farbe: weiß" und Bemerkungen gehören in die Felder der Position.
+   - Preise: Der Nettopreis (BT-146) ist der Preis je Einheit, mit dem gerechnet wird. Steht ein Listenpreis mit Preisnachlass je Einheit ("Listenpreis 100,00, abzgl. 10 %"), ist der Listenpreis der Bruttopreis (BT-148), der Nachlass je Einheit der Preisnachlass (BT-147) und Nettopreis = Bruttopreis − Preisnachlass. Gilt ein Preis je 100 Stück, ist die Preisbasismenge 100.
+   - Rabatt oder Zuschlag auf eine Position (z.B. eine Rabattzeile direkt unter der Position): in "nachlaesse" bzw. "zuschlaege" dieser Position, Betrag positiv, ggf. mit Prozentsatz und Grundbetrag. Der Nettopreis bleibt der Preis vor dem Rabatt; gesamt = Menge × Nettopreis / Preisbasismenge − Nachlässe + Zuschläge. Verrechne den Rabatt nicht in den Preis und lege keine eigene Position dafür an.
+   - Rabatt oder Zuschlag auf die ganze Rechnung (unter der Summe der Positionen, z.B. "abzgl. 3 % Treuerabatt", "zzgl. Fracht", "Mindermengenzuschlag"): in "nachlaesse" bzw. "zuschlaege" der Rechnung, mit Steuerkategorie und Steuersatz. Steht Fracht als nummerierte Zeile zwischen den Positionen, ist sie eine Position.
+   - Umsatzsteuer je Position: S = Umsatzsteuer wird berechnet (Satz z.B. 19 oder 7); Z = Nullsatz (z.B. Photovoltaik nach § 12 Abs. 3 UStG), Satz 0; E = steuerbefreit (Kleinunternehmer § 19 UStG, Befreiungen nach § 4 UStG), Satz 0; AE = Steuerschuldnerschaft des Leistungsempfängers / Reverse Charge (§ 13b UStG), Satz 0; O = nicht steuerbar (z.B. echter Schadenersatz, durchlaufende Posten), Satz 0; K = innergemeinschaftliche Lieferung; G = Ausfuhr; L/M nur Kanarische Inseln bzw. Ceuta/Melilla. Verschiedene Sätze in einer Rechnung sind möglich: Ordne jede Position ihrem Satz zu. Den Hinweis zur Steuerbefreiung übernimm wörtlich als Befreiungsgrund.
+   - Einheiten (UN/ECE Rec. 20): Stunde HUR, Tag DAY, Woche WEE, Monat MON, Jahr ANN, Minute MIN, Pauschale LS, Stück C62, Satz SET, Paar PR, Kilometer KMT, Meter MTR, Zentimeter CMT, Millimeter MMT, Quadratmeter MTK, Kubikmeter MTQ, Kilogramm KGM, Gramm GRM, Tonne TNE, Liter LTR, Kilowattstunde KWH, Karton XBX, Packung XPK. Steht keine Einheit dabei: C62.
+   - Leistungsdatum: Gilt ein Datum oder Zeitraum für die ganze Rechnung ("Leistungsdatum", "Lieferdatum", "Leistungszeitraum", "Rechnungsdatum gleich Leistungsdatum"), steht es bei der Rechnung (BT-72 bzw. BT-73/74). Hat eine Position ein eigenes Datum (Datumsspalte, Datum in der Beschreibung wie "06.02.26, 10-12 Uhr"), steht es bei der Position; ein einzelner Tag: von = bis.
+   - Fälligkeit: aus "zahlbar bis" oder Rechnungsdatum + Zahlungsziel in Tagen (beim Skonto: die Frist ohne Abzug, "rein netto"). Bei Lastschrift oder Kartenzahlung das Datum der Abbuchung, falls genannt. Nennt die Rechnung weder Datum noch Zahlungsziel, oder ist sie schon bezahlt: keine Fälligkeit.
+   - Zahlungsbedingungen: alle Sätze zur Zahlung wörtlich, z.B. "Zahlbar bis … ohne Abzug", "Der Betrag wird am … von Ihrem Konto eingezogen", "… wird der Kreditkarte belastet", "… wird mit Ihrer Rechnung … verrechnet", "Betrag dankend erhalten". Nicht die bloße Angabe der Zahlungsart und nicht die Bankverbindung.
+   - Skonto: jede Stufe ("bis 30.05. mit 2 % Skonto", "innerhalb 10 Tagen 3 %") mit Satz, Frist und ggf. dem genannten Betrag. Keine Stufe für die Zahlung ohne Abzug. Ein Abzug ohne Frist (z.B. "10 % Skonto bei Zahlung mit Bitcoin") ist kein Skonto im Sinn der XRechnung: Er bleibt nur in den Zahlungsbedingungen.
+   - Zahlungsart: "ueberweisung" (Überweisung auf ein Konto, auch wenn nichts dazu gesagt ist), "lastschrift" (der Betrag wird vom Konto des Kunden eingezogen oder abgebucht), "kreditkarte", "debitkarte" (EC-, Girocard), "bar", "verrechnung" (wird verrechnet mit einer Gutschrift o.ä.), "online" (PayPal, Stripe, Klarna u.ä.), "sonstige". Ist die Rechnung schon bezahlt, die Zahlungsart, mit der bezahlt wurde, und den Betrag in "gezahlt".
+   - Konten: alle Bankverbindungen des Rechnungsstellers. Bei Lastschrift außerdem Gläubiger-ID, Mandatsreferenz und IBAN des Kunden; eine gekürzte oder maskierte IBAN (z.B. DE12 **** 3456) als "". Bei Karten nur die letzten 4 Ziffern.
+   - Anzahlungen, abgezogene Abschläge, "bereits gezahlt": gezahlt (BT-113). Rundung (BT-114) nur, wenn ausgewiesen.
+   - Abschlags-, Teil-, Schluss- und Korrekturrechnungen sowie Gutschriften: Rechnungsart; frühere Rechnungen, auf die sich die Rechnung bezieht, in "vorherigeRechnungen".
+   - Anlagen: Verweise auf beigefügte Unterlagen ("Anlage: Aufmaß", "Stundenzettel anbei") in "anlagen".
+   - Bemerkungen: Texte an den Empfänger, die in kein anderes Feld gehören (Dank, Hinweise, Gewährleistung), je Text ein Eintrag. Steuerhinweise, Zahlungsbedingungen, Angaben zur Zahlungsart und Bankverbindung sind keine Bemerkungen, sie haben eigene Felder.
+   - Rechtliche Angaben des Rechnungsstellers (BT-33): Sitz, Registergericht, Geschäftsführung, Komplementärin u.ä. aus der Fußzeile; die Registernummer selbst in "register".
+   - Lieferanschrift nur, wenn sie von der Rechnungsanschrift abweicht, und nur mit den Angaben, die dort stehen; ergänze keinen Ort und keine PLZ.
+   - Zahlungsempfänger: Ist an jemand anderen als den Rechnungssteller zu zahlen ("mit befreiender Wirkung nur an …", Abtretung, Factoring), steht dieser in "zahlungsempfaenger" mit Name, Kennung und Registernummer; seine Bankverbindung unter "konten".
    - Öffentliche Stelle: Ist der Rechnungsempfänger eine Behörde oder ein öffentlicher Auftraggeber (Bund, Land, Kommune, Amt, öffentliche Hochschule, Anstalt oder Körperschaft des öffentlichen Rechts)? Firmen in Privatrechtsform (GmbH, AG, KG, e.V., …) sind es nicht, auch wenn sie der öffentlichen Hand gehören.
-4. Nichts erfinden. Was weder steht noch eindeutig ableitbar ist: leerer Text "" bzw. Zahl 0.
-5. Liste unter "fehlt" die Pflichtangaben der XRechnung, die nicht auf der Rechnung stehen, z.B. BT-49 (elektronische Adresse des Käufers), BT-41 (Ansprechpartner Verkäufer), BT-72/BT-134 (Leistungsdatum).
+   - Zweistellige Jahre: 26 = 2026.
+4. Nichts erfinden. Was weder steht noch eindeutig ableitbar ist: leerer Text "", Zahl 0 bzw. leere Liste. Übernimm Werte aber auch dann, wenn sie dir falsch erscheinen (z.B. ein Zeitraum, der vor seinem Beginn endet, oder ein Betrag, der nicht aufgeht): XFact prüft sie und zeigt dem Nutzer den Fehler.
+5. Liste unter "fehlt" die Pflichtangaben der XRechnung, die nicht auf der Rechnung stehen, z.B. BT-49 (elektronische Adresse des Käufers), BT-41 (Ansprechpartner Verkäufer).
+6. Liste unter "nichtZugeordnet" jede Angabe der Rechnung, die du in keinem Feld unterbringen konntest – wörtlich und mit dem Bereich, in dem sie steht. Nicht dazu gehören Seitenzahlen, Wiederholungen des Briefkopfs auf Folgeseiten, Beschriftungen ohne Wert, Grußformeln und Angaben, für die eine XRechnung kein Feld hat und die für die Rechnung unerheblich sind: Internetadresse und Social-Media-Angaben des Rechnungsstellers, Name der Bank, Werbesprüche. Melde lieber eine Angabe zu viel, als eine stillschweigend wegzulassen.
 
-Formate: Datum JJJJ-MM-TT. Zahlen als JSON-Zahl mit Punkt ("1.080" = 1080, "1.500,00" = 1500, "10,5" = 10.5). USt-IdNr. und IBAN ohne Leerzeichen. Ländercode zweistellig (DE, BG, AT, ...).`;
+Formate: Datum JJJJ-MM-TT. Zahlen als JSON-Zahl mit Punkt ("1.080" = 1080, "1.500,00" = 1500, "10,5" = 10.5). USt-IdNr., IBAN und BIC ohne Leerzeichen. Ländercode zweistellig (DE, AT, ...).`;
 
 /**
- * Das Antwortschema: die Felder der XRechnung. Alle Felder sind Pflicht und
- * haben einen einfachen Typ – fehlende Werte kommen als "" bzw. 0. So
- * akzeptieren es alle Anbieter (manche lehnen viele optionale Felder ab).
+ * Das Antwortschema: alle Felder der XRechnung, die XFact unterstützt (siehe
+ * STANDARD). Alle Felder sind Pflicht und haben einen einfachen Typ – fehlende
+ * Werte kommen als "", 0 bzw. leere Liste. So akzeptieren es alle Anbieter.
  */
 const KI_SCHEMA = (() => {
   const T = (description) => ({ type: "string", description });
   const Z = (description) => ({ type: "number", description });
-  const K = (description) => ({ type: "string", enum: ["S", "Z", "E", "AE", "K", "G", "O", "L", "M"], description });
-  const objekt = (properties) => ({ type: "object", additionalProperties: false, required: Object.keys(properties), properties });
-  const liste = (properties) => ({ type: "array", items: objekt(properties) });
-  const partei = (wer, weitere = {}) => objekt({
-    name: T(`${wer}: Name (BT-27 bzw. BT-44)`),
-    strasse: T("Straße und Hausnummer oder Postfach (BT-35 bzw. BT-50)"),
-    zusatz: T("Adresszusatz, z.B. Abteilung (BT-36 bzw. BT-51)"),
-    plz: T("Postleitzahl (BT-38 bzw. BT-53)"),
-    ort: T("Ort (BT-37 bzw. BT-52)"),
-    land: T("Ländercode ISO 3166-1 alpha-2 (BT-40 bzw. BT-55)"),
-    ustId: T("Umsatzsteuer-Identifikationsnummer ohne Leerzeichen (BT-31 bzw. BT-48)"),
-    steuernummer: T("Deutsche Steuernummer (BT-32), nur Verkäufer"),
-    email: T("E-Mail (Verkäufer: BT-34/BT-43, Käufer: BT-49)"),
-    telefon: T("Telefon (BT-42), nur Verkäufer"),
-    kontakt: T("Ansprechpartner, Name einer Person (BT-41), nur Verkäufer"),
-    ...weitere,
+  const B = (description) => ({ type: "boolean", description });
+  const W = (werte, description) => ({ type: "string", enum: werte, description });
+  const objekt = (properties, description) => ({ type: "object", additionalProperties: false, required: Object.keys(properties), properties, ...(description ? { description } : {}) });
+  const liste = (properties, description) => ({ type: "array", description, items: objekt(properties) });
+  const texte = (description) => ({ type: "array", description, items: { type: "string" } });
+  const KAT = (description) => W(["S", "Z", "E", "AE", "O", "K", "G", "L", "M"], description);
+  // bt: Straße, Zusatz, 3. Zeile, Ort, PLZ, Region, Land
+  const anschrift = (bt) => ({
+    strasse: T(`Straße und Hausnummer oder Postfach (${bt[0]})`),
+    zusatz: T(`Anschriftzusatz, z.B. Abteilung oder Gebäude (${bt[1]})`),
+    zeile3: T(`weitere Anschriftzeile (${bt[2]})`),
+    ort: T(`Ort (${bt[3]})`),
+    plz: T(`Postleitzahl (${bt[4]})`),
+    region: T(`Bundesland bzw. Region, nur wenn angegeben (${bt[5]})`),
+    land: T(`Ländercode ISO 3166-1 alpha-2 (${bt[6]})`),
   });
+  // bt: Betrag, Grundbetrag, Prozent, Grund, [Kategorie, Satz]
+  const nachlassZuschlag = (description, bt) => liste({
+    betrag: Z(`Betrag, positiv (${bt[0]})`),
+    basis: Z(`Grundbetrag, auf den sich ein Prozentsatz bezieht (${bt[1]}); sonst 0`),
+    prozent: Z(`Prozentsatz, falls angegeben (${bt[2]}); sonst 0`),
+    grund: T(`Bezeichnung bzw. Grund, z.B. "Treuerabatt", "Fracht" (${bt[3]})`),
+    ...(bt[4] ? { kategorie: KAT(`Umsatzsteuerkategorie (${bt[4]})`), satz: Z(`Steuersatz in Prozent (${bt[5]})`) } : {}),
+  }, description);
   return objekt({
     rechnung: objekt({
       nummer: T("Rechnungsnummer (BT-1)"),
       datum: T("Rechnungsdatum JJJJ-MM-TT (BT-2)"),
-      art: { type: "string", enum: ["380", "381", "384", "389", "875", "876", "877"],
-        description: "Rechnungsart (BT-3): 380 Rechnung, 381 Gutschrift, 384 Korrekturrechnung, 875/876/877 Teil-/Schlussrechnung" },
-      faellig: T("Fälligkeitsdatum JJJJ-MM-TT (BT-9); aus 'zahlbar bis' oder Rechnungsdatum + Zahlungsziel"),
-      zahlungsbedingungen: T("Zahlungsbedingungen als Text (BT-20)"),
-      bestellnummer: T("Bestell- oder Auftragsnummer des Käufers (BT-13), Projekt- oder Referenzangabe"),
+      art: W(["380", "381", "384", "389", "326", "875", "876", "877"],
+        "Rechnungsart (BT-3): 380 Rechnung, 381 Gutschrift (mindert eine Rechnung), 384 Rechnungskorrektur, 389 Gutschrift im Gutschriftverfahren (der Empfänger rechnet ab), 326 Teil- oder Abschlagsrechnung, 875 Abschlagsrechnung Bau, 876 Teilschlussrechnung Bau, 877 Schlussrechnung Bau"),
+      waehrung: T("Währung ISO 4217 (BT-5), z.B. EUR"),
+      faellig: T("Fälligkeitsdatum JJJJ-MM-TT (BT-9)"),
+      leistungsdatum: T("Liefer- bzw. Leistungsdatum für die ganze Rechnung JJJJ-MM-TT (BT-72)"),
+      leistungVon: T("Beginn des Leistungs- bzw. Abrechnungszeitraums der ganzen Rechnung JJJJ-MM-TT (BT-73)"),
+      leistungBis: T("Ende des Leistungs- bzw. Abrechnungszeitraums der ganzen Rechnung JJJJ-MM-TT (BT-74)"),
+      kaeuferreferenz: T("Referenz des Käufers, z.B. 'Ihr Zeichen', 'Ihre Referenz' (BT-10)"),
       leitwegId: T("Leitweg-ID öffentlicher Auftraggeber (BT-10), Muster wie 04011000-1234512345-06"),
-      leistungVon: T("Beginn des Leistungszeitraums der ganzen Rechnung JJJJ-MM-TT (BT-73)"),
-      leistungBis: T("Ende des Leistungszeitraums der ganzen Rechnung JJJJ-MM-TT (BT-74)"),
+      bestellnummer: T("Bestellnummer des Käufers (BT-13)"),
+      auftragsnummer: T("Auftrags- oder Vorgangsnummer des Rechnungsstellers (BT-14)"),
+      vertrag: T("Vertragsnummer (BT-12)"),
+      projekt: T("Projekt bzw. Bauvorhaben, Nummer und/oder Name (BT-11)"),
+      wareneingang: T("Nummer der Wareneingangsmeldung des Käufers (BT-15)"),
+      lieferschein: T("Lieferscheinnummer (BT-16)"),
+      ausschreibung: T("Vergabe-, Ausschreibungs- oder Losnummer (BT-17)"),
+      objekt: T("Kennung des abgerechneten Objekts, z.B. Zähler-, Abonnement- oder Kennzeichen (BT-18)"),
+      buchungsreferenz: T("Buchungsreferenz des Käufers, z.B. Kostenstelle (BT-19)"),
+      vorherigeRechnungen: liste({ nummer: T("Rechnungsnummer (BT-25)"), datum: T("Rechnungsdatum JJJJ-MM-TT (BT-26)") },
+        "Frühere Rechnungen, auf die sich diese bezieht (BG-3), z.B. die korrigierte Rechnung oder Abschlagsrechnungen einer Schlussrechnung"),
+      bemerkungen: texte("Bemerkungen an den Empfänger (BG-1, BT-22), je Text ein Eintrag"),
+      zahlungsbedingungen: T("Zahlungsbedingungen wörtlich (BT-20)"),
       skonto: liste({
         prozent: Z("Skontosatz in Prozent"),
         tage: Z("Skontofrist in Tagen ab Rechnungsdatum; aus einem Datum errechnet, sonst 0"),
         bis: T("Letzter Tag der Skontofrist JJJJ-MM-TT, falls ein Datum genannt ist"),
         betrag: Z("Zahlbetrag mit Skonto, wie er auf der Rechnung steht; 0, wenn keiner"),
-      }),
-      bemerkung: T("Sonstiger Hinweis/Kommentar zur Rechnung (BT-22)"),
+      }, "Skontostufen (BT-20)"),
+      gezahlt: Z("Bereits gezahlter Betrag, Anzahlungen bzw. abgezogene Abschläge (BT-113); 0, wenn keiner"),
+      rundung: Z("Ausgewiesener Rundungsbetrag (BT-114); 0, wenn keiner"),
+      anlagen: liste({
+        kennung: T("Kennung bzw. Name der Anlage (BT-122)"),
+        beschreibung: T("Beschreibung der Anlage (BT-123)"),
+        link: T("Internetadresse der Anlage, falls angegeben (BT-124)"),
+      }, "Anlagen und Belege, auf die die Rechnung verweist (BG-24)"),
     }),
-    verkaeufer: partei("Rechnungssteller"),
-    kaeufer: partei("Rechnungsempfänger", {
-      oeffentlich: { type: "boolean", description: "Ist der Rechnungsempfänger eine Behörde bzw. ein öffentlicher Auftraggeber? (dann braucht er meist eine Leitweg-ID)" },
+    verkaeufer: objekt({
+      name: T("Name des Rechnungsstellers (BT-27)"),
+      handelsname: T("Handels- bzw. Markenname, falls vom Namen abweichend (BT-28)"),
+      kennung: T("Kennung des Rechnungsstellers, z.B. Lieferantennummer beim Kunden (BT-29)"),
+      register: T("Handelsregisternummer mit Gericht, z.B. 'HRB 12345, Amtsgericht Köln' (BT-30)"),
+      ustId: T("Umsatzsteuer-Identifikationsnummer ohne Leerzeichen (BT-31)"),
+      steuernummer: T("Steuernummer (BT-32)"),
+      rechtlicheAngaben: T("Weitere rechtliche Angaben: Sitz, Registergericht, Geschäftsführung, Komplementärin (BT-33)"),
+      email: T("E-Mail-Adresse des Rechnungsstellers (BT-34)"),
+      ...anschrift(["BT-35", "BT-36", "BT-162", "BT-37", "BT-38", "BT-39", "BT-40"]),
+      kontakt: T("Ansprechpartner, Name einer Person oder Abteilung (BT-41)"),
+      telefon: T("Telefonnummer (BT-42)"),
+      kontaktEmail: T("E-Mail des Ansprechpartners, falls eigene (BT-43)"),
     }),
+    kaeufer: objekt({
+      name: T("Name des Rechnungsempfängers (BT-44)"),
+      handelsname: T("Handelsname, falls vom Namen abweichend (BT-45)"),
+      kennung: T("Kundennummer bzw. Kennung des Empfängers (BT-46)"),
+      register: T("Handelsregisternummer des Empfängers (BT-47)"),
+      ustId: T("Umsatzsteuer-Identifikationsnummer des Empfängers ohne Leerzeichen (BT-48)"),
+      email: T("E-Mail-Adresse des Empfängers für Rechnungen (BT-49)"),
+      ...anschrift(["BT-50", "BT-51", "BT-163", "BT-52", "BT-53", "BT-54", "BT-55"]),
+      kontakt: T("Ansprechpartner beim Empfänger, z.B. nach 'z. Hd.' (BT-56)"),
+      telefon: T("Telefon des Ansprechpartners beim Empfänger (BT-57)"),
+      kontaktEmail: T("E-Mail des Ansprechpartners beim Empfänger (BT-58)"),
+      oeffentlich: B("Ist der Rechnungsempfänger eine Behörde bzw. ein öffentlicher Auftraggeber? (dann braucht er meist eine Leitweg-ID)"),
+    }),
+    zahlungsempfaenger: objekt({
+      name: T("Name des Zahlungsempfängers (BT-59)"),
+      kennung: T("Kennung des Zahlungsempfängers (BT-60)"),
+      register: T("Registernummer des Zahlungsempfängers (BT-61)"),
+    }, "Nur wenn an jemand anderen als den Rechnungssteller zu zahlen ist, z.B. an eine Factoring-Gesellschaft (BG-10)"),
+    steuervertreter: T("Name eines Steuervertreters des Rechnungsstellers, falls einer genannt ist (BG-11)"),
+    lieferung: objekt({
+      name: T("Name des Warenempfängers bzw. Leistungsorts (BT-70)"),
+      ortKennung: T("Kennung des Lieferorts, z.B. Filialnummer (BT-71)"),
+      ...anschrift(["BT-75", "BT-76", "BT-165", "BT-77", "BT-78", "BT-79", "BT-80"]),
+    }, "Lieferanschrift bzw. Leistungsort, nur wenn abweichend von der Rechnungsanschrift (BG-13, BG-15)"),
     zahlung: objekt({
-      art: { type: "string", enum: ["ueberweisung", "lastschrift", "kreditkarte"], description: "Zahlungsart (BT-81): Überweisung (58), SEPA-Lastschrift (59) oder Kreditkarte (54)" },
-      karte: T("Bei Kreditkarte: die letzten 4 Ziffern der Kartennummer, falls angegeben (BT-87)"),
-      iban: T("IBAN des Rechnungsstellers ohne Leerzeichen (BT-84), bei Überweisung"),
+      art: W(["ueberweisung", "lastschrift", "kreditkarte", "debitkarte", "bar", "verrechnung", "online", "sonstige"], "Zahlungsart (BT-81)"),
+      text: T("Zahlungsart, wie sie auf der Rechnung genannt ist (BT-82)"),
+      verwendungszweck: T("Verwendungszweck (BT-83), falls angegeben"),
+      konten: liste({
+        iban: T("IBAN des Rechnungsstellers ohne Leerzeichen (BT-84)"),
+        bic: T("BIC (BT-86)"),
+        inhaber: T("Kontoinhaber, falls vom Rechnungssteller abweichend (BT-85)"),
+      }, "Bankverbindungen des Rechnungsstellers (BG-17)"),
+      karte: T("Bei Kartenzahlung: die letzten 4 Ziffern der Kartennummer (BT-87)"),
+      karteninhaber: T("Bei Kartenzahlung: Karteninhaber (BT-88)"),
       glaeubigerId: T("Gläubiger-Identifikationsnummer des Rechnungsstellers (BT-90), bei Lastschrift"),
       mandatsreferenz: T("Mandatsreferenz (BT-89), bei Lastschrift"),
       kundenIban: T("IBAN des Kunden, von der abgebucht wird, ohne Leerzeichen (BT-91), bei Lastschrift"),
-      bic: T("BIC (BT-86)"),
-      verwendungszweck: T("Verwendungszweck (BT-83)"),
     }),
+    nachlaesse: nachlassZuschlag("Nachlässe auf die ganze Rechnung (BG-20)", ["BT-92", "BT-93", "BT-94", "BT-97", "BT-95", "BT-96"]),
+    zuschlaege: nachlassZuschlag("Zuschläge auf die ganze Rechnung, z.B. Fracht, Verpackung (BG-21)", ["BT-99", "BT-100", "BT-101", "BT-104", "BT-102", "BT-103"]),
     positionen: liste({
       posNr: T("Positionsnummer, wie sie auf der Rechnung steht (BT-126); leer, wenn keine"),
-      name: T("Bezeichnung der Leistung (BT-153)"),
+      name: T("Bezeichnung der Leistung bzw. des Artikels (BT-153)"),
       beschreibung: T("Weiterer Text zur Position, der nicht schon in der Bezeichnung steht (BT-154)"),
+      notiz: T("Bemerkung zur Position, z.B. Überschrift ihrer Gruppe (BT-127)"),
+      artikelnummer: T("Artikelnummer des Rechnungsstellers (BT-155)"),
+      kundenArtikelnummer: T("Artikelnummer des Kunden (BT-156)"),
+      gtin: T("GTIN bzw. EAN, nur Ziffern (BT-157)"),
+      ursprungsland: T("Ursprungsland als Ländercode, falls angegeben (BT-159)"),
+      merkmale: liste({ name: T("Name des Merkmals, z.B. Farbe (BT-160)"), wert: T("Wert, z.B. weiß (BT-161)") }, "Artikelmerkmale (BG-32)"),
+      objekt: T("Kennung eines abgerechneten Objekts dieser Position, z.B. Zählernummer (BT-128)"),
+      bestellposition: T("Positionsnummer in der Bestellung des Kunden (BT-132)"),
+      buchungsreferenz: T("Buchungsreferenz des Kunden für diese Position, z.B. Kostenstelle (BT-133)"),
       menge: Z("Menge (BT-129)"),
       einheitText: T("Einheit, wie sie auf der Rechnung steht"),
       einheitCode: T("Einheit als UN/ECE-Rec.-20-Code (BT-130)"),
-      einzelpreis: Z("Nettopreis je Einheit vor einem Rabatt auf die Position (BT-146)"),
-      nachlass: Z("Rabatt bzw. Nachlass nur auf diese Position, als positiver Betrag (BT-136); 0, wenn keiner"),
-      nachlassGrund: T("Grund bzw. Bezeichnung des Rabatts auf die Position (BT-139)"),
+      nettopreis: Z("Nettopreis je Einheit, mit dem gerechnet wird, vor Rabatten auf die Position (BT-146)"),
+      bruttopreis: Z("Listen- bzw. Bruttopreis je Einheit vor einem Preisnachlass (BT-148); 0, wenn keiner"),
+      preisnachlass: Z("Preisnachlass je Einheit (BT-147); 0, wenn keiner"),
+      basismenge: Z("Preisbasismenge, z.B. 100 bei einem Preis je 100 Stück (BT-149); 0, wenn der Preis je Einheit gilt"),
+      nachlaesse: nachlassZuschlag("Rabatte auf diese Position (BG-27)", ["BT-136", "BT-137", "BT-138", "BT-139"]),
+      zuschlaege: nachlassZuschlag("Zuschläge auf diese Position (BG-28)", ["BT-141", "BT-142", "BT-143", "BT-144"]),
       gesamt: Z("Nettobetrag der Position (BT-131)"),
-      steuerkategorie: K("Umsatzsteuerkategorie (BT-151)"),
+      steuerkategorie: KAT("Umsatzsteuerkategorie (BT-151)"),
       steuersatz: Z("Steuersatz in Prozent (BT-152)"),
       von: T("Leistungsdatum bzw. Beginn JJJJ-MM-TT (BT-134)"),
       bis: T("Leistungsdatum bzw. Ende JJJJ-MM-TT (BT-135)"),
-    }),
+    }, "Positionen (BG-25)"),
     steuer: liste({
-      kategorie: K("BT-118"),
-      satz: Z("BT-119"),
+      kategorie: KAT("Umsatzsteuerkategorie (BT-118)"),
+      satz: Z("Steuersatz (BT-119)"),
       basis: Z("Steuerbasis (BT-116)"),
       betrag: Z("Steuerbetrag (BT-117)"),
-      befreiungsgrund: T("Befreiungsgrund wörtlich von der Rechnung (BT-120), bei AE/E/K/G/Z"),
-    }),
+      befreiungsgrund: T("Hinweis zur Steuerbefreiung wörtlich von der Rechnung (BT-120), bei Z, E, AE, O"),
+    }, "Umsatzsteuer je Kategorie und Satz, wie sie auf der Rechnung steht (BG-23)"),
     summen: objekt({
-      netto: Z("Summe der Positionen (BT-106)"),
+      positionen: Z("Summe der Positionen (BT-106)"),
+      nachlaesse: Z("Summe der Nachlässe auf die Rechnung (BT-107)"),
+      zuschlaege: Z("Summe der Zuschläge auf die Rechnung (BT-108)"),
+      netto: Z("Nettobetrag (BT-109)"),
       steuer: Z("Summe Umsatzsteuer (BT-110)"),
       brutto: Z("Gesamtbetrag (BT-112)"),
-      zahlbetrag: Z("Fälliger Betrag (BT-115)"),
-    }),
+      zahlbetrag: Z("Zu zahlender Betrag (BT-115)"),
+    }, "Summen, wie sie auf der Rechnung stehen (BG-22)"),
     fehlt: liste({
       feld: T("BT-Nummer des fehlenden Pflichtfelds, z.B. BT-49"),
       grund: T("kurz, warum es fehlt"),
     }),
+    nichtZugeordnet: liste({
+      text: T("die Angabe, wörtlich von der Rechnung"),
+      bereich: W(["kopf", "positionen", "summen", "zahlung", "fuss", "sonstiges"], "wo sie auf der Rechnung steht"),
+    }, "Angaben der Rechnung, die in keinem anderen Feld Platz gefunden haben"),
   });
 })();
 
@@ -1174,57 +1673,60 @@ async function pruefeVerbindung(einstellungen, holen) {
   return true;
 }
 
+/** Bringt einen Wert in die Form, die das Schema beschreibt: Texte ohne Leerraum (leer: null), Zahlen, Listen. */
+function nachSchema(schema, wert) {
+  if (schema.type === "object") {
+    return Object.fromEntries(Object.entries(schema.properties).map(([name, s]) => [name, nachSchema(s, wert?.[name])]));
+  }
+  if (schema.type === "array") return (Array.isArray(wert) ? wert : []).map((w) => nachSchema(schema.items, w));
+  if (schema.type === "number") return wert !== null && wert !== "" && Number.isFinite(Number(wert)) ? Number(wert) : 0;
+  if (schema.type === "boolean") return wert === true;
+  return typeof wert === "string" && wert.trim() ? wert.trim() : null;
+}
+
 /**
- * Bringt die Antwort der KI in eine feste Form, den "Befund": leere Texte
- * werden null, Zahlen werden Zahlen, fehlende Listen leere Listen. Der
- * Rechnungstext wird mitgemerkt, damit die Prüfungen darauf zugreifen können.
+ * Bringt die Antwort der KI in eine feste Form, den "Befund": genau die
+ * Felder des Schemas, leere Texte als null, Zahlen als Zahl, leere Einträge
+ * aus Listen entfernt. Der Rechnungstext wird mitgemerkt, damit die
+ * Prüfungen darauf zugreifen können.
  */
 function befundAusKi(daten, text) {
-  const t = (wert) => (typeof wert === "string" && wert.trim() ? wert.trim() : null);
-  const z = (wert) => (Number.isFinite(Number(wert)) ? Number(wert) : 0);
-  const felder = (quelle, namen, umwandeln = t) => Object.fromEntries(namen.map((n) => [n, umwandeln((quelle || {})[n])]));
-  const partei = ["name", "strasse", "zusatz", "plz", "ort", "land", "ustId", "steuernummer", "email", "telefon", "kontakt"];
+  const b = nachSchema(KI_SCHEMA, daten || {});
   const ohneLeerzeichen = (wert) => (wert ? wert.replace(/\s/g, "").toUpperCase() : null);
-  const verkaeufer = felder(daten.verkaeufer, partei);
-  const kaeufer = felder(daten.kaeufer, partei);
-  for (const p of [verkaeufer, kaeufer]) { p.ustId = ohneLeerzeichen(p.ustId); p.land = p.land ? p.land.toUpperCase() : null; }
-  kaeufer.oeffentlich = daten.kaeufer?.oeffentlich === true;
-  return {
-    text,
-    rechnung: {
-      ...felder(daten.rechnung, ["nummer", "datum", "art", "faellig", "zahlungsbedingungen", "bestellnummer",
-        "leitwegId", "leistungVon", "leistungBis", "bemerkung"]),
-      skonto: (daten.rechnung?.skonto || []).map((k) => ({ ...felder(k, ["prozent", "tage", "betrag"], z), bis: t(k.bis) }))
-        .filter((k) => k.prozent > 0),
-    },
-    verkaeufer,
-    kaeufer,
-    zahlung: {
-      ...felder(daten.zahlung, ["bic", "verwendungszweck", "mandatsreferenz"]),
-      art: ["lastschrift", "kreditkarte"].includes(daten.zahlung?.art) ? daten.zahlung.art : "ueberweisung",
-      // Von einer Kartennummer nur die letzten 4 Ziffern – mehr gehört nicht in eine Rechnung
-      karte: [String(daten.zahlung?.karte || "").replace(/\D/g, "")].map((z) => (z.length >= 4 ? z.slice(-4) : null))[0],
-      iban: ohneLeerzeichen(t(daten.zahlung?.iban)),
-      glaeubigerId: ohneLeerzeichen(t(daten.zahlung?.glaeubigerId)),
-      // Eine maskierte IBAN (DE12****3456) taugt nicht für den Einzug
-      kundenIban: [ohneLeerzeichen(t(daten.zahlung?.kundenIban))].map((i) => (i && /^[A-Z0-9]+$/.test(i) ? i : null))[0],
-    },
-    positionen: (daten.positionen || []).map((p, i) => ({
-      nr: i + 1,
-      ...felder(p, ["posNr", "name", "beschreibung", "einheitText", "einheitCode", "steuerkategorie", "von", "bis", "nachlassGrund"]),
-      ...felder(p, ["menge", "einzelpreis", "gesamt", "steuersatz", "nachlass"], z),
-    })),
-    steuer: (daten.steuer || []).map((s) => ({ ...felder(s, ["kategorie", "befreiungsgrund"]), ...felder(s, ["satz", "basis", "betrag"], z) })),
-    summen: felder(daten.summen, ["netto", "steuer", "brutto", "zahlbetrag"], z),
-    fehlt: (daten.fehlt || []).map((f) => felder(f, ["feld", "grund"])),
-  };
+  const nurMit = (liste, ...felder) => liste.filter((x) => felder.some((f) => x[f]));
+  for (const p of [b.verkaeufer, b.kaeufer, b.lieferung]) p.land = p.land ? p.land.toUpperCase() : null;
+  for (const p of [b.verkaeufer, b.kaeufer]) p.ustId = ohneLeerzeichen(p.ustId);
+  const z = b.zahlung;
+  z.konten = nurMit(z.konten, "iban").map((k) => ({ ...k, iban: ohneLeerzeichen(k.iban), bic: ohneLeerzeichen(k.bic) }));
+  z.glaeubigerId = ohneLeerzeichen(z.glaeubigerId);
+  // Eine maskierte IBAN (DE12****3456) taugt nicht für den Einzug
+  z.kundenIban = [ohneLeerzeichen(z.kundenIban)].map((i) => (i && /^[A-Z0-9]+$/.test(i) ? i : null))[0];
+  // Von einer Kartennummer nur die letzten 4 Ziffern – mehr gehört nicht in eine Rechnung
+  z.karte = [String(z.karte || "").replace(/\D/g, "")].map((ziffern) => (ziffern.length >= 4 ? ziffern.slice(-4) : null))[0];
+  const k = b.rechnung;
+  k.skonto = k.skonto.filter((s) => s.prozent > 0);
+  k.vorherigeRechnungen = nurMit(k.vorherigeRechnungen, "nummer");
+  k.bemerkungen = k.bemerkungen.filter(Boolean);
+  k.anlagen = nurMit(k.anlagen, "kennung", "beschreibung", "link");
+  const mitBetrag = (liste) => liste.filter((n) => n.betrag > 0 || n.prozent > 0);
+  b.nachlaesse = mitBetrag(b.nachlaesse);
+  b.zuschlaege = mitBetrag(b.zuschlaege);
+  b.positionen = b.positionen.map((p, i) => ({
+    nr: i + 1, ...p,
+    gtin: p.gtin ? p.gtin.replace(/\D/g, "") || null : null,
+    ursprungsland: p.ursprungsland ? p.ursprungsland.toUpperCase() : null,
+    merkmale: nurMit(p.merkmale, "name").filter((m) => m.wert),
+    nachlaesse: mitBetrag(p.nachlaesse), zuschlaege: mitBetrag(p.zuschlaege),
+  }));
+  b.nichtZugeordnet = nurMit(b.nichtZugeordnet, "text");
+  return { text, ...b };
 }
 
 // --- Prüfer Jev --------------------------------------------------------------------
 
 /**
  * Die Fragen an den Prüfer zu einer Rechnung. Jev beantwortet sie alle in
- * einer Anfrage. Ergebnis: { fragen: { id: Frage }, felder: { id: { pfad, art, erwartet } } }
+ * einer Anfrage. Ergebnis: { fragen: { id: Frage }, felder: { id: { pfad, art, erwartet, namen } } }
  * "pfad" ist das Feld der Prüfansicht, bei dem ein Zweifel angezeigt wird.
  */
 function jevFragen(r) {
@@ -1242,64 +1744,105 @@ function jevFragen(r) {
     };
     felder[id] = { pfad, art: "noul" };
   };
+  // optionen: { schlüssel: { text, name } } – "text" bekommt Jev, "name" sieht der Nutzer
   const auswahl = (id, pfad, was, optionen, erwartet) => {
-    fragen[id] = { type: "choice", instructions: `${was} in der Rechnung \`rechnung\`?`, criteria: optionen };
-    felder[id] = { pfad, art: "choice", erwartet };
+    fragen[id] = { type: "choice", instructions: `${was} in der Rechnung \`rechnung\`?`,
+      criteria: Object.fromEntries(Object.entries(optionen).map(([s, o]) => [s, o.text])) };
+    felder[id] = { pfad, art: "choice", erwartet, namen: Object.fromEntries(Object.entries(optionen).map(([s, o]) => [s, o.name])) };
   };
+  const datum = (iso) => iso && alsDatum(iso);
+  const zahl = (wert) => (wert === null || wert === undefined ? null : alsZahl(wert));
+  const euro = (wert) => (wert === null || wert === undefined ? null
+    : `${wert.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} €`);
 
   stimmt("nummer", "nummer", "die Rechnungsnummer", r.nummer);
-  stimmt("datum", "datum", "das Rechnungsdatum", r.datum && alsDatum(r.datum));
-  const lastschrift = r.zahlungsart === "lastschrift";
-  stimmt("faellig", "faellig", r.zahlungsart === "kreditkarte" ? "das Datum, an dem der Betrag der Kreditkarte belastet wird"
-    : lastschrift ? "das Datum, an dem der Betrag eingezogen wird"
-    : "das Fälligkeitsdatum (zahlbar bis, ggf. aus dem Zahlungsziel errechnet)", r.faellig && alsDatum(r.faellig));
+  stimmt("datum", "datum", "das Rechnungsdatum", datum(r.datum));
+  const abbuchung = { lastschrift: "das Datum, an dem der Betrag eingezogen wird", kreditkarte: "das Datum, an dem der Betrag der Karte belastet wird",
+    debitkarte: "das Datum, an dem der Betrag der Karte belastet wird" }[r.zahlungsart];
+  stimmt("faellig", "faellig", abbuchung || "das Fälligkeitsdatum (zahlbar bis, ggf. aus dem Zahlungsziel errechnet)", datum(r.faellig));
+  if (!r.leistungAbgeleitet) {
+    stimmt("leistungsdatum", "leistungsdatum", "das Liefer- bzw. Leistungsdatum", datum(r.leistungsdatum));
+    stimmt("leistungVon", "leistungVon", "der Beginn des Leistungszeitraums", datum(r.leistungVon));
+    stimmt("leistungBis", "leistungBis", "das Ende des Leistungszeitraums", datum(r.leistungBis));
+  }
   for (const [rolle, wer] of [["absender", "des Rechnungsstellers (Verkäufer, Absender)"], ["empfaenger", "des Rechnungsempfängers (Käufer, Kunde)"]]) {
     const p = r[rolle];
     stimmt(`${rolle}_name`, `${rolle}.name`, `der Name ${wer}`, p.name);
     stimmt(`${rolle}_ort`, `${rolle}.plz`, `PLZ und Ort ${wer}`, p.plz && p.ort ? `${p.plz} ${p.ort}` : null);
     stimmt(`${rolle}_ust`, `${rolle}.ustId`, `die USt-IdNr. ${wer}`, p.ustId);
-  }
-  if (lastschrift) {
-    stimmt("glaeubiger", "absender.glaeubigerId", "die Gläubiger-ID des Rechnungsstellers", r.absender.glaeubigerId);
-    stimmt("kunden_iban", "empfaenger.iban", "die IBAN des Kunden, von der abgebucht wird", r.empfaenger.iban);
-  } else if (r.zahlungsart !== "kreditkarte") {
-    stimmt("iban", "iban", "die IBAN des Rechnungsstellers", r.bank.iban);
+    stimmt(`${rolle}_register`, `${rolle}.register`, `die Registernummer ${wer}`, p.register);
+    stimmt(`${rolle}_kennung`, `${rolle}.kennung`, rolle === "empfaenger" ? "die Kundennummer bzw. Kennung des Empfängers" : "die Kennung des Rechnungsstellers", p.kennung);
   }
   stimmt("kontakt", "absender.kontakt", "der Ansprechpartner beim Rechnungssteller", r.absender.kontakt);
-  const einheiten = Object.fromEntries(REGELN.einheiten.map((x) => [x.code, x.name]));
+  stimmt("empfaenger_kontakt", "empfaenger.kontakt", "der Ansprechpartner beim Empfänger", r.empfaenger.kontakt);
+  for (const [feld, was] of [["referenz", "die Referenz des Käufers („Ihr Zeichen“)"], ["bestellnummer", "die Bestellnummer des Käufers"],
+    ["auftragsnummer", "die Auftrags- oder Vorgangsnummer des Rechnungsstellers"], ["vertrag", "die Vertragsnummer"],
+    ["projekt", "das Projekt bzw. Bauvorhaben"], ["lieferschein", "die Lieferscheinnummer"], ["wareneingang", "die Wareneingangsmeldung"],
+    ["ausschreibung", "die Ausschreibungs- bzw. Losnummer"], ["objekt", "die Kennung des abgerechneten Objekts"],
+    ["buchungsreferenz", "die Buchungsreferenz (z.B. Kostenstelle) des Käufers"]]) {
+    stimmt(feld, feld, was, r[feld]);
+  }
+  r.vorherigeRechnungen.forEach((v, i) => stimmt(`vorherige${i + 1}`, `vorherigeRechnungen.${i + 1}.nummer`, "die Nummer einer früheren Rechnung, auf die sich diese bezieht", v.nummer));
+  if (r.zahlungsart === "lastschrift") {
+    stimmt("glaeubiger", "absender.glaeubigerId", "die Gläubiger-ID des Rechnungsstellers", r.absender.glaeubigerId);
+    stimmt("kunden_iban", "empfaenger.iban", "die IBAN des Kunden, von der abgebucht wird", r.empfaenger.iban);
+    stimmt("mandat", "empfaenger.mandatsreferenz", "die Mandatsreferenz", r.empfaenger.mandatsreferenz);
+  }
+  r.zahlung.konten.forEach((k, i) => stimmt(i ? `iban${i + 1}` : "iban", `zahlung.konten.${i + 1}.iban`,
+    "eine IBAN, auf die der Rechnungsbetrag gezahlt werden kann", k.iban));
+  if (r.gezahlt) stimmt("gezahlt", "gezahlt", "der bereits gezahlte Betrag (Anzahlung, Abschläge)", euro(r.gezahlt));
+  for (const [liste, was] of [["nachlaesse", "ein Nachlass auf die ganze Rechnung"], ["zuschlaege", "ein Zuschlag auf die ganze Rechnung"]]) {
+    r[liste].forEach((n, i) => stimmt(`${liste}${i + 1}`, `${liste}.${i + 1}.betrag`, `${was}${n.grund ? ` („${n.grund}“)` : ""}`, euro(n.betrag)));
+  }
+
+  const einheiten = Object.fromEntries(REGELN.einheiten.map((x) => [x.code, { text: x.name, name: x.name }]));
   for (const p of r.positionen) {
     // So, wie die Position auf der Rechnung steht: mit ihrer Nummer, bei gleichen Namen mit dem Anfang der Beschreibung
     const gleichNamig = r.positionen.filter((q) => q.name === p.name).length > 1;
     const zusatz = gleichNamig && p.beschreibung ? `, ${p.beschreibung.slice(0, 60)}` : "";
     const bez = `Position ${p.posNr || p.nr} („${p.name}“${zusatz})`;
-    stimmt(`p${p.nr}_menge`, `position.${p.nr}.menge`, `die Menge von ${bez}`, p.menge);
-    stimmt(`p${p.nr}_preis`, `position.${p.nr}.einzelpreis`, `der Einzelpreis von ${bez}`, p.einzelpreis);
-    if (p.nachlass) {
-      stimmt(`p${p.nr}_nachlass`, `position.${p.nr}.nachlass`, `der Rabatt auf ${bez}`, p.nachlass);
-      stimmt(`p${p.nr}_gesamt`, `position.${p.nr}.gesamt`, `der Betrag von ${bez} nach Abzug des Rabatts (er darf aus Preis und Rabatt errechnet und auf Cent gerundet sein)`, p.gesamt);
-    } else {
-      stimmt(`p${p.nr}_gesamt`, `position.${p.nr}.gesamt`, `der Gesamtbetrag von ${bez} (auf Cent gerundet)`, p.gesamt);
-    }
-    if (p.einheitCode) auswahl(`p${p.nr}_einheit`, `position.${p.nr}.einheit`,
+    const pf = (name) => `position.${p.nr}.${name}`;
+    stimmt(`p${p.nr}_menge`, pf("menge"), `die Menge von ${bez}`, zahl(p.menge));
+    stimmt(`p${p.nr}_preis`, pf("einzelpreis"), p.basismenge
+      ? `der Preis je ${alsZahl(p.basismenge)} Einheiten von ${bez}` : `der Einzelpreis (netto, mit dem gerechnet wird) von ${bez}`, euro(p.einzelpreis));
+    stimmt(`p${p.nr}_gesamt`, pf("gesamt"), `der Betrag von ${bez} (wie in der Betragsspalte; steht dort keiner, aus Menge, Preis, Rabatten und Zuschlägen errechnet, auf Cent gerundet)`, euro(p.gesamt));
+    p.nachlaesse.forEach((n, i) => stimmt(`p${p.nr}_nachlass${i + 1}`, pf(`nachlaesse.${i + 1}.betrag`), `ein Rabatt auf ${bez}`, euro(n.betrag)));
+    stimmt(`p${p.nr}_artikel`, pf("artikelnummer"), `die Artikelnummer von ${bez}`, p.artikelnummer);
+    if (p.einheitCode) auswahl(`p${p.nr}_einheit`, pf("einheit"),
       `Welche Einheit nennt die Rechnung für ${bez} (steht keine Einheit dabei, gilt „Stück“)`, einheiten, p.einheitCode);
+    auswahl(`p${p.nr}_steuer`, pf("steuer"), `Wie wird ${bez} umsatzsteuerlich behandelt`, steuerOptionen(p), steuerSchluessel(p));
   }
-  if (r.steuerfall.kategorie) {
-    auswahl("steuerfall", "steuerfall", "Welcher Umsatzsteuerfall liegt vor", {
-      S: "Normale Umsatzsteuer wird ausgewiesen (z.B. 19 % oder 7 %).",
-      AE: "Steuerschuldnerschaft des Leistungsempfängers / Reverse Charge, keine Steuer ausgewiesen.",
-      E: "Steuerbefreit, z.B. Kleinunternehmer nach § 19 UStG.",
-      K: "Innergemeinschaftliche Lieferung von Waren.",
-      O: "Nicht steuerbar.",
-    }, r.steuerfall.kategorie);
-  }
-  (r.skonto || []).forEach((k, i) => stimmt(`skonto${i + 1}`, `skonto.${i + 1}`,
+  r.skonto.forEach((k, i) => stimmt(`skonto${i + 1}`, `skonto.${i + 1}`,
     `der Skonto bei Zahlung ${k.bis ? `bis ${alsDatum(k.bis)}` : `innerhalb von ${k.tage} Tagen`}`, `${k.prozent} %`));
+  const zahlungsarten = TEXTE.ansicht.zahlungsarten;
   auswahl("zahlungsart", "zahlungsart", "Wie wird der Rechnungsbetrag bezahlt", {
-    ueberweisung: "Der Kunde überweist den Betrag (oder es ist nichts dazu angegeben).",
-    lastschrift: "Der Betrag wird per Lastschrift vom Konto des Kunden eingezogen bzw. abgebucht.",
-    kreditkarte: "Der Betrag wird einer Kreditkarte des Kunden belastet.",
-  }, r.zahlungsart || "ueberweisung");
+    ueberweisung: { text: "Der Kunde überweist den Betrag auf ein Konto (oder es ist nichts dazu angegeben).", name: zahlungsarten.ueberweisung },
+    lastschrift: { text: "Der Betrag wird per Lastschrift vom Konto des Kunden eingezogen bzw. abgebucht.", name: zahlungsarten.lastschrift },
+    kreditkarte: { text: "Der Betrag wird einer Kreditkarte des Kunden belastet.", name: zahlungsarten.kreditkarte },
+    debitkarte: { text: "Der Betrag wird mit einer Debit-, EC- oder Girocard bezahlt.", name: zahlungsarten.debitkarte },
+    bar: { text: "Der Betrag wird bar bezahlt.", name: zahlungsarten.bar },
+    verrechnung: { text: "Der Betrag wird verrechnet.", name: zahlungsarten.verrechnung },
+    online: { text: "Der Betrag wird über einen Online-Zahlungsdienst wie PayPal bezahlt.", name: zahlungsarten.online },
+  }, r.zahlungsart);
   return { fragen, felder };
+}
+
+/** Steuer einer Position als ein Schlüssel: "S19", "S7", "AE", "E", ... */
+function steuerSchluessel(p) {
+  return p.kategorie === "S" ? `S${p.satz}` : p.kategorie;
+}
+
+/** Die Auswahl der Steuer für eine Position: übliche Sätze, Befreiungen, dazu der eigene Satz der Position */
+function steuerOptionen(p = null) {
+  const a = TEXTE.ansicht.steuerArten;
+  const saetze = [...new Set([19, 7, ...(p && p.kategorie === "S" && p.satz ? [p.satz] : [])])];
+  return {
+    ...Object.fromEntries(saetze.map((satz) => [`S${satz}`, { text: `Umsatzsteuer mit ${satz} %`, name: `${alsZahl(satz)} %` }])),
+    Z: { text: "Nullsatz (0 %, z.B. Photovoltaik nach § 12 Abs. 3 UStG)", name: a.Z },
+    E: { text: "Steuerbefreit, z.B. Kleinunternehmer nach § 19 UStG oder nach § 4 UStG", name: a.E },
+    AE: { text: "Steuerschuldnerschaft des Leistungsempfängers / Reverse Charge (§ 13b UStG)", name: a.AE },
+    O: { text: "Nicht steuerbar, z.B. Schadenersatz oder durchlaufender Posten", name: a.O },
+  };
 }
 
 /**
@@ -1320,89 +1863,176 @@ async function frageJev(r, text, einstellungen, holen) {
 // === RECHNUNG =================================================================
 // Aus dem Befund der KI und den Ergänzungen des Nutzers wird die Rechnung,
 // wie sie in die XRechnung geht. Prüfansicht, Gedächtnis und XML-Erzeugung
-// arbeiten nur mit dieser Rechnung.
+// arbeiten nur mit dieser Rechnung. Ihre Felder entsprechen denen der Norm
+// (siehe STANDARD und das Antwortschema der KI).
 // =============================================================================
 
 /**
- * "ergaenzungen" enthält, was der Nutzer ergänzt oder geändert hat; es hat
- * immer Vorrang, auch ein bewusst geleertes Feld (null):
- *   { nummer, datum, faellig, iban, bic, steuerfall: "standard" | "reverse_charge" | "kleinunternehmer",
- *     zahlungsart: "ueberweisung" | "lastschrift" | "kreditkarte",
- *     absender: { name, adresse: [...], plz, ort, ustId, steuernummer, email, telefon, kontakt, glaeubigerId },
- *     empfaenger: { …wie absender, iban, mandatsreferenz, karte },
- *     positionen: { 1: { name, beschreibung, menge, einheitCode, einzelpreis, gesamt, satz, von, bis } },
- *     kaeuferreferenz, leitwegId, leistungsdatum, einheiten: { "pauschale": "LS" },
- *     skonto: [{ prozent, tage, bis }] }
+ * "ergaenzungen" enthält, was der Nutzer ergänzt oder geändert hat, in der
+ * Form der Rechnung; es hat immer Vorrang, auch ein bewusst geleertes Feld
+ * (null). Listen werden als Ganzes ersetzt; Positionen nach ihrer Nummer:
+ *   { nummer, faellig, absender: { kontakt }, zahlung: { konten: [...] },
+ *     positionen: { 2: { menge, kategorie, satz } }, skonto: [...],
+ *     einheiten: { "pauschale": "LS" }, leistungsdatum, ... }
  */
 function baueRechnung(befund, ergaenzungen = {}) {
-  const e = ergaenzungen;
-  const partei = (p, geaendert = {}) => ({
-    name: p.name, adresse: [p.zusatz, p.strasse].filter(Boolean), plz: p.plz, ort: p.ort, land: p.land || "DE",
-    ustId: p.ustId, steuernummer: p.steuernummer, email: p.email, telefon: p.telefon, kontakt: p.kontakt,
-    // für die Lastschrift: Gläubiger-ID des Rechnungsstellers, IBAN und Mandat des Kunden
-    glaeubigerId: p.glaeubigerId ?? null, iban: p.iban ?? null, mandatsreferenz: p.mandatsreferenz ?? null,
-    karte: p.karte ?? null,
-    ...geaendert,
+  const { positionen: aenderungen = {}, einheiten = {}, ...weitere } = ergaenzungen;
+  const k = befund.rechnung;
+  const v = befund.verkaeufer;
+  const kf = befund.kaeufer;
+  const z = befund.zahlung;
+  const anschrift = (p) => ({
+    strasse: p.strasse, zusatz: p.zusatz, zeile3: p.zeile3, plz: p.plz, ort: p.ort, region: p.region, land: p.land || "DE",
   });
-  const zahlung = befund.zahlung;
-  const kiArt = steuerfallAusBefund(befund);
-  const art = waehle(e, "steuerfall", kiArt);
-  const kategorie = Object.entries(REGELN.steuerfaelle).find(([, a]) => a === art)?.[0] || null;
-  const grund = befund.steuer.find((s) => s.befreiungsgrund)?.befreiungsgrund;
-  const text = art === kiArt && grund ? grund : TEXTE.steuerfallText[art] || null;
-  const leistungsdatum = e.leistungsdatum || null;
-  const referenz = waehle(e, "kaeuferreferenz", befund.rechnung.bestellnummer);
-  const leitwegId = waehle(e, "leitwegId", befund.rechnung.leitwegId);
+  const befreiung = (kategorie) => befund.steuer.find((s) => s.kategorie === kategorie && s.befreiungsgrund)?.befreiungsgrund || null;
 
-  return {
-    nummer: waehle(e, "nummer", befund.rechnung.nummer),
-    datum: waehle(e, "datum", befund.rechnung.datum),
-    faellig: waehle(e, "faellig", befund.rechnung.faellig),
-    waehrung: "EUR",
-    zahlungsart: waehle(e, "zahlungsart", zahlung.art || "ueberweisung"),
-    zahlungsbedingungen: befund.rechnung.zahlungsbedingungen ?? null,
-    skonto: skontoStufen(waehle(e, "skonto", befund.rechnung.skonto || []), waehle(e, "datum", befund.rechnung.datum)),
-    referenz, leitwegId, leistungsdatum,
-    // BT-10: bei Behörden die Leitweg-ID, sonst die Referenz des Kunden
-    kaeuferreferenz: leitwegId || referenz || TEXTE.keineKaeuferreferenz,
-    bestellreferenz: leitwegId ? referenz : null,
-    steuerfall: { art, kategorie, text },
-    absender: partei({ ...befund.verkaeufer, glaeubigerId: zahlung.glaeubigerId }, e.absender),
-    empfaenger: {
-      ...partei({ ...befund.kaeufer, telefon: null, kontakt: null, steuernummer: null,
-        iban: zahlung.kundenIban, mandatsreferenz: zahlung.mandatsreferenz, karte: zahlung.karte }, e.empfaenger),
-      // Behörde laut KI: dann wird nach der Leitweg-ID gefragt
-      oeffentlich: Boolean(befund.kaeufer.oeffentlich),
+  const roh = {
+    nummer: k.nummer, datum: k.datum, art: k.art || "380", waehrung: k.waehrung || "EUR", faellig: k.faellig,
+    leistungsdatum: k.leistungsdatum, leistungVon: k.leistungVon, leistungBis: k.leistungBis,
+    referenz: k.kaeuferreferenz, leitwegId: k.leitwegId,
+    bestellnummer: k.bestellnummer, auftragsnummer: k.auftragsnummer, vertrag: k.vertrag, projekt: k.projekt,
+    wareneingang: k.wareneingang, lieferschein: k.lieferschein, ausschreibung: k.ausschreibung, objekt: k.objekt,
+    buchungsreferenz: k.buchungsreferenz,
+    vorherigeRechnungen: k.vorherigeRechnungen, bemerkungen: k.bemerkungen, anlagen: k.anlagen,
+    zahlungsbedingungen: k.zahlungsbedingungen, skonto: k.skonto, gezahlt: k.gezahlt || null, rundung: k.rundung || null,
+    absender: {
+      name: v.name, handelsname: v.handelsname, kennung: v.kennung, register: v.register, ustId: v.ustId,
+      steuernummer: v.steuernummer, rechtliches: v.rechtlicheAngaben, email: v.email, ...anschrift(v),
+      kontakt: v.kontakt, telefon: v.telefon, kontaktEmail: v.kontaktEmail, glaeubigerId: z.glaeubigerId,
     },
-    bank: { iban: waehle(e, "iban", befund.zahlung.iban), bic: waehle(e, "bic", befund.zahlung.bic) },
-    positionen: befund.positionen.map((p) => {
-      const g = (e.positionen || {})[p.nr] || {};
-      const eigeneEinheit = p.einheitText ? (e.einheiten || {})[einheitSchluessel(p.einheitText)] : null;
-      // Leistungsdatum: eigenes der Position, sonst das ergänzte, sonst der Zeitraum der ganzen Rechnung
-      const [von, bis] = p.von ? [p.von, p.bis || p.von]
-        : leistungsdatum ? [leistungsdatum, leistungsdatum]
-          : [befund.rechnung.leistungVon, befund.rechnung.leistungBis || befund.rechnung.leistungVon];
-      return {
-        nr: p.nr,
-        // Die Nummer, die auf der Rechnung steht (sie kann Lücken haben); "nr" zählt nur durch
-        posNr: p.posNr || String(p.nr),
-        name: waehle(g, "name", p.name),
-        beschreibung: waehle(g, "beschreibung", p.beschreibung),
-        menge: waehle(g, "menge", p.menge),
-        einheit: p.einheitText,
-        einheitCode: waehle(g, "einheitCode", eigeneEinheit || p.einheitCode),
-        einzelpreis: waehle(g, "einzelpreis", p.einzelpreis),
-        // Rabatt nur auf diese Position (BG-27)
-        nachlass: waehle(g, "nachlass", p.nachlass || null),
-        nachlassGrund: p.nachlassGrund ?? null,
-        gesamt: waehle(g, "gesamt", p.gesamt),
-        kategorie,
-        satz: kategorie === "S" ? waehle(g, "satz", p.steuersatz || null) : 0,
-        von: waehle(g, "von", von),
-        bis: waehle(g, "bis", bis),
-      };
-    }),
+    empfaenger: {
+      name: kf.name, handelsname: kf.handelsname, kennung: kf.kennung, register: kf.register, ustId: kf.ustId,
+      email: kf.email, ...anschrift(kf), kontakt: kf.kontakt, telefon: kf.telefon, kontaktEmail: kf.kontaktEmail,
+      // Behörde laut KI: dann wird nach der Leitweg-ID gefragt
+      oeffentlich: Boolean(kf.oeffentlich),
+      // Lastschrift und Karte: die Angaben des Kunden
+      iban: z.kundenIban, mandatsreferenz: z.mandatsreferenz, karte: z.karte, karteninhaber: z.karteninhaber,
+    },
+    zahlungsempfaenger: { ...befund.zahlungsempfaenger },
+    lieferung: { name: befund.lieferung.name, ortKennung: befund.lieferung.ortKennung, ...anschrift(befund.lieferung) },
+    steuervertreter: befund.steuervertreter,
+    zahlungsart: z.art || "ueberweisung",
+    zahlung: { text: z.text, verwendungszweck: z.verwendungszweck, konten: z.konten },
+    nachlaesse: befund.nachlaesse, zuschlaege: befund.zuschlaege,
+    // Grund der Steuerbefreiung je Kategorie (BT-120); ohne Angabe ein Standardtext, wo es einen gibt
+    steuerTexte: { E: befreiung("E"), AE: befreiung("AE") || TEXTE.steuerText.AE, O: befreiung("O") || TEXTE.steuerText.O },
+    positionen: befund.positionen.map((p) => ({
+      nr: p.nr,
+      // Die Nummer, die auf der Rechnung steht (sie kann Lücken haben); "nr" zählt nur durch
+      posNr: p.posNr || String(p.nr),
+      name: p.name, beschreibung: p.beschreibung, notiz: p.notiz,
+      artikelnummer: p.artikelnummer, kundenArtikelnummer: p.kundenArtikelnummer, gtin: p.gtin, ursprungsland: p.ursprungsland,
+      merkmale: p.merkmale, objekt: p.objekt, bestellposition: p.bestellposition, buchungsreferenz: p.buchungsreferenz,
+      menge: p.menge, einheit: p.einheitText,
+      // Eine eigene Zuordnung der Einheit (gemerkt je Firma) hat Vorrang vor der KI
+      einheitCode: (p.einheitText && einheiten[einheitSchluessel(p.einheitText)]) || p.einheitCode,
+      einzelpreis: p.nettopreis, bruttopreis: p.bruttopreis || null, preisnachlass: p.preisnachlass || null,
+      basismenge: p.basismenge || null,
+      nachlaesse: p.nachlaesse, zuschlaege: p.zuschlaege,
+      gesamt: p.gesamt,
+      kategorie: p.steuerkategorie || "S",
+      satz: ["S", null].includes(p.steuerkategorie) ? p.steuersatz || null : 0,
+      von: p.von, bis: p.von ? p.bis || p.von : p.bis,
+    })),
   };
+
+  const r = mitErgaenzungen(roh, weitere);
+  r.positionen = roh.positionen.map((p) => mitErgaenzungen(p, aenderungen[p.nr] || {}));
+  return vervollstaendige(r);
+}
+
+/**
+ * Ergänzung, die der ganzen Rechnung dieselbe Umsatzsteuer gibt: allen
+ * Positionen und den Nachlässen und Zuschlägen auf die Rechnung. "S19", "S7",
+ * "Z", "E", "AE" oder "O" (siehe steuerSchluessel).
+ */
+function steuerFuerAlle(r, schluessel) {
+  const [kategorie, satz] = schluessel.startsWith("S") ? ["S", Number(schluessel.slice(1))] : [schluessel, 0];
+  const ergaenzung = { positionen: Object.fromEntries(r.positionen.map((p) => [p.nr, { kategorie, satz }])) };
+  for (const liste of ["nachlaesse", "zuschlaege"]) {
+    if (r[liste]?.length) ergaenzung[liste] = r[liste].map((n) => ({ ...n, kategorie, satz }));
+  }
+  return ergaenzung;
+}
+
+/** Legt die Ergänzungen über die Rechnung: Objekte Feld für Feld, Listen und Werte als Ganzes. */
+function mitErgaenzungen(basis, ergaenzungen) {
+  const ergebnis = { ...basis };
+  for (const [feld, wert] of Object.entries(ergaenzungen || {})) {
+    const alt = basis[feld];
+    ergebnis[feld] = wert && typeof wert === "object" && !Array.isArray(wert) && alt && typeof alt === "object" && !Array.isArray(alt)
+      ? mitErgaenzungen(alt, wert)
+      : wert;
+  }
+  return ergebnis;
+}
+
+/**
+ * Was sich aus den Angaben ergibt: Käuferreferenz, Skontofristen, Steuer und
+ * Grundbeträge von Nachlässen, Nettopreis aus Bruttopreis, Leistungszeitraum.
+ */
+function vervollstaendige(r) {
+  // Eine Referenz, die nur die Leitweg-ID wiederholt, ist keine eigene Angabe
+  if (r.referenz && r.referenz === r.leitwegId) r.referenz = null;
+  // BT-10: bei Behörden die Leitweg-ID, sonst die Referenz des Kunden, sonst seine Bestellnummer
+  r.kaeuferreferenz = r.leitwegId || r.referenz || r.bestellnummer || TEXTE.keineKaeuferreferenz;
+  r.skonto = skontoStufen(r.skonto, r.datum);
+  // Eine Bemerkung, die nur Zahlungsbedingungen oder einen Steuerhinweis wiederholt, entfällt
+  const schonDa = [r.zahlungsbedingungen, ...Object.values(r.steuerTexte)].filter(Boolean).map(ohneLeerraum);
+  r.bemerkungen = r.bemerkungen.filter((b) => !schonDa.includes(ohneLeerraum(b)));
+  // Die Registernummer steht in BT-30, nicht noch einmal in den rechtlichen Angaben (BT-33)
+  const a = r.absender;
+  if (a.register && a.rechtliches && a.register.includes(a.rechtliches)) a.rechtliches = null;
+  if (a.register && a.rechtliches?.includes(a.register)) {
+    a.rechtliches = a.rechtliches.replace(a.register, "").replace(/^[\s·,;|-]+|[\s·,;|-]+$/g, "").replace(/\s*[·,;|]\s*[·,;|]\s*/g, " · ") || null;
+  }
+  r.zahlung = { text: null, verwendungszweck: null, konten: [], ...r.zahlung };
+  r.zahlungsempfaenger = r.zahlungsempfaenger?.name ? r.zahlungsempfaenger : null;
+  r.lieferung = r.lieferung && (r.lieferung.name || r.lieferung.ortKennung || mitLieferanschrift(r.lieferung)) ? r.lieferung : null;
+
+  for (const p of r.positionen) {
+    if (p.kategorie !== "S") p.satz = 0;
+    // Nettopreis = Bruttopreis − Preisnachlass (PEPPOL-R046)
+    if (p.bruttopreis !== null && p.einzelpreis === null) p.einzelpreis = p.bruttopreis - (p.preisnachlass || 0);
+    if (p.bruttopreis !== null && p.preisnachlass === null && p.bruttopreis > p.einzelpreis) p.preisnachlass = runde4(p.bruttopreis - p.einzelpreis);
+    if (p.basismenge !== null && p.basismenge <= 0) p.basismenge = null;
+    const grundbetrag = (p.menge || 0) * (p.einzelpreis || 0) / (p.basismenge || 1);
+    p.nachlaesse = mitGrundbetrag(p.nachlaesse, grundbetrag);
+    p.zuschlaege = mitGrundbetrag(p.zuschlaege, grundbetrag);
+  }
+  // Nachlässe und Zuschläge auf die Rechnung: ohne Angabe mit der Steuer der Positionen, wenn es nur eine gibt
+  const steuerDerPositionen = [...new Set(r.positionen.map(steuerSchluessel))];
+  const einzigeSteuer = steuerDerPositionen.length === 1 ? r.positionen[0] : null;
+  const summePositionen = r.positionen.reduce((s, p) => s + runde(p.gesamt || 0), 0);
+  for (const liste of ["nachlaesse", "zuschlaege"]) {
+    r[liste] = mitGrundbetrag(r[liste], summePositionen).map((n) => ({
+      ...n,
+      kategorie: n.kategorie || einzigeSteuer?.kategorie || null,
+      satz: (n.kategorie || einzigeSteuer?.kategorie) === "S" ? n.satz || einzigeSteuer?.satz || null : 0,
+    }));
+  }
+  // Ohne Datum für die ganze Rechnung: aus den Positionen, ein Tag oder der Zeitraum vom ersten bis zum letzten Tag
+  if (!r.leistungsdatum && !r.leistungVon && !r.leistungBis && r.positionen.length && r.positionen.every((p) => p.von)) {
+    const von = r.positionen.map((p) => p.von).sort()[0];
+    const bis = r.positionen.map((p) => p.bis || p.von).sort().at(-1);
+    if (von === bis) r.leistungsdatum = von;
+    else Object.assign(r, { leistungVon: von, leistungBis: bis });
+    // Steht so nicht auf der Rechnung – der Prüfer fragt deshalb nicht danach
+    r.leistungAbgeleitet = true;
+  }
+  return r;
+}
+
+const ohneLeerraum = (text) => String(text).replace(/\s+/g, " ").trim().toLowerCase();
+
+/** Nachlass bzw. Zuschlag: Betrag aus Prozent und Grundbetrag, Grundbetrag zum Prozent (PEPPOL-R040 … R042) */
+function mitGrundbetrag(liste, grundbetrag) {
+  return (liste || []).map((n) => {
+    const prozent = n.prozent || null;
+    const basis = prozent ? n.basis || runde(grundbetrag) : null;
+    const betrag = n.betrag || (prozent ? runde(basis * prozent / 100) : 0);
+    return { ...n, prozent, basis, betrag };
+  });
 }
 
 /**
@@ -1419,7 +2049,7 @@ function skontoStufen(stufen, rechnungsdatum) {
 
 /** Was mit Skonto zu zahlen ist */
 function betragMitSkonto(r, stufe) {
-  return runde(summenDerRechnung(r).brutto * (1 - stufe.prozent / 100));
+  return runde(summenDerRechnung(r).zahlbetrag * (1 - stufe.prozent / 100));
 }
 
 function tageZwischen(von, bis) {
@@ -1430,30 +2060,46 @@ function plusTage(iso, tage) {
   return new Date(Date.parse(`${iso}T00:00:00Z`) + tage * 86400000).toISOString().slice(0, 10);
 }
 
-/** Steuerfall nach der Kategorie, die die KI am häufigsten vergeben hat; null, wenn XFact sie nicht kennt. */
-function steuerfallAusBefund(befund) {
-  const kategorien = [...befund.positionen.map((p) => p.steuerkategorie), ...befund.steuer.map((s) => s.kategorie)].filter(Boolean);
-  if (!kategorien.length) return "standard";
-  const haeufigste = kategorien.sort((a, b) => kategorien.filter((k) => k === b).length - kategorien.filter((k) => k === a).length)[0];
-  return REGELN.steuerfaelle[haeufigste] || null;
-}
-
-/** Wert aus den Ergänzungen, wenn der Nutzer ihn gesetzt hat (auch null), sonst der erkannte. */
-function waehle(ergaenzungen, schluessel, erkannt) {
-  return ergaenzungen && Object.hasOwn(ergaenzungen, schluessel) ? ergaenzungen[schluessel] : erkannt ?? null;
-}
-
-/** Summen, wie sie in die XRechnung gehen: Netto, Steuer je Satz, Gesamt. */
-function summenDerRechnung(r) {
-  const gruppen = steuergruppen(r.positionen);
-  const netto = runde(gruppen.reduce((s, g) => s + g.basis, 0));
-  const steuer = runde(gruppen.reduce((s, g) => s + g.betrag, 0));
-  return { gruppen, netto, steuer, brutto: runde(netto + steuer) };
-}
-
 /** "Std." → "std": so wird eine Einheit nachgeschlagen und gemerkt. */
 function einheitSchluessel(einheit) {
   return einheit.trim().toLowerCase().replace(/\.$/, "");
+}
+
+/**
+ * Die Summen, wie sie in die XRechnung gehen (BG-22, BG-23). Jede Position
+ * zählt auf Cent gerundet, wie in der XML; so gehen die Summen auf (BR-CO-10 …).
+ */
+function summenDerRechnung(r) {
+  const summe = (liste) => runde(liste.reduce((s, x) => s + runde(x.betrag ?? x.gesamt ?? 0), 0));
+  const positionen = summe(r.positionen);
+  const nachlaesse = summe(r.nachlaesse);
+  const zuschlaege = summe(r.zuschlaege);
+  const netto = runde(positionen - nachlaesse + zuschlaege);
+  const gruppen = steuergruppen(r);
+  const steuer = runde(gruppen.reduce((s, g) => s + g.betrag, 0));
+  const brutto = runde(netto + steuer);
+  const zahlbetrag = runde(brutto - (r.gezahlt || 0) + (r.rundung || 0));
+  return { positionen, nachlaesse, zuschlaege, netto, gruppen, steuer, brutto, gezahlt: r.gezahlt || 0, rundung: r.rundung || 0, zahlbetrag };
+}
+
+/** Ein Steuerblock je Kategorie und Satz: Basis aus Positionen, Nachlässen und Zuschlägen; Steuer = Basis × Satz (BR-CO-17) */
+function steuergruppen(r) {
+  const gruppen = [];
+  const gruppe = (kategorie, satz) => {
+    let g = gruppen.find((x) => x.kategorie === kategorie && x.satz === satz);
+    if (!g) gruppen.push(g = { kategorie, satz, basis: 0 });
+    return g;
+  };
+  for (const p of r.positionen) gruppe(p.kategorie, p.satz).basis += runde(p.gesamt || 0);
+  for (const n of r.nachlaesse) gruppe(n.kategorie, n.satz).basis -= runde(n.betrag);
+  for (const n of r.zuschlaege) gruppe(n.kategorie, n.satz).basis += runde(n.betrag);
+  for (const g of gruppen) {
+    g.basis = runde(g.basis);
+    g.betrag = runde(g.basis * (g.satz || 0) / 100);
+    // Grund nur bei Befreiungen; beim Nullsatz ist keiner erlaubt (BR-Z-10)
+    g.grund = ["E", "AE", "O"].includes(g.kategorie) ? r.steuerTexte[g.kategorie] || null : null;
+  }
+  return gruppen;
 }
 
 // === XML-ERZEUGUNG ============================================================
@@ -1466,276 +2112,302 @@ function einheitSchluessel(einheit) {
 const XRECHNUNG = {
   profil: "urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0",
   prozess: "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0",
-  rechnungsart: "380",          // Rechnung
-  zahlungsart: { ueberweisung: "58", lastschrift: "59", kreditkarte: "54" },   // SEPA-Überweisung, SEPA-Lastschrift, Kreditkarte
-  befreiungscode: { AE: "VATEX-EU-AE" },
+  // Code für den Grund einer Steuerbefreiung (BT-121), wo die Norm einen vorsieht
+  befreiungscode: { AE: "VATEX-EU-AE", O: "VATEX-EU-O" },
 };
+
+/**
+ * Baut XML aus Zeilen: el("ram:Name", wert) ergibt <ram:Name>wert</ram:Name>,
+ * leere Werte ergeben nichts (leere Elemente sind verboten, PEPPOL-R008).
+ * Kinder sind Listen weiterer Elemente; Attribute kommen als Objekt.
+ */
+function xmlElement(name, inhalt, attribute = {}) {
+  const attr = Object.entries(attribute).filter(([, w]) => w !== null && w !== undefined && w !== "")
+    .map(([n, w]) => ` ${n}="${x(w)}"`).join("");
+  if (Array.isArray(inhalt)) {
+    const kinder = inhalt.flat(Infinity).filter(Boolean);
+    return kinder.length ? `<${name}${attr}>${kinder.join("")}</${name}>` : "";
+  }
+  return inhalt === null || inhalt === undefined || inhalt === "" ? "" : `<${name}${attr}>${x(inhalt)}</${name}>`;
+}
+const E = xmlElement;
+const datumE = (name, iso, typ = "udt") => (iso ? `<${name}><${typ}:DateTimeString format="102">${iso.replace(/-/g, "")}</${typ}:DateTimeString></${name}>` : "");
 
 /** Erzeugt die XRechnung als Text. Vorher mit pruefeRechnung() prüfen. */
 function erzeugeXml(r) {
-  const { gruppen, netto, steuer, brutto } = summenDerRechnung(r);
-  const zeitraum = leistungszeitraumGesamt(r.positionen);
-  const lastschrift = r.zahlungsart === "lastschrift";
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<rsm:CrossIndustryInvoice
-    xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
-    xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
-    xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100"
-    xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
-  <rsm:ExchangedDocumentContext>
-    <ram:BusinessProcessSpecifiedDocumentContextParameter>
-      <ram:ID>${XRECHNUNG.prozess}</ram:ID>
-    </ram:BusinessProcessSpecifiedDocumentContextParameter>
-    <ram:GuidelineSpecifiedDocumentContextParameter>
-      <ram:ID>${XRECHNUNG.profil}</ram:ID>
-    </ram:GuidelineSpecifiedDocumentContextParameter>
-  </rsm:ExchangedDocumentContext>
-  <rsm:ExchangedDocument>
-    <ram:ID>${x(r.nummer)}</ram:ID>
-    <ram:TypeCode>${XRECHNUNG.rechnungsart}</ram:TypeCode>
-    <ram:IssueDateTime>${datum102(r.datum)}</ram:IssueDateTime>
-  </rsm:ExchangedDocument>
-  <rsm:SupplyChainTradeTransaction>
-${r.positionen.map((p) => positionXml(p, eindeutigeNummern(r.positionen))).join("")}    <ram:ApplicableHeaderTradeAgreement>
-      <ram:BuyerReference>${x(r.kaeuferreferenz)}</ram:BuyerReference>
-${verkaeuferXml(r.absender)}${kaeuferXml(r.empfaenger)}${r.bestellreferenz ? `      <ram:BuyerOrderReferencedDocument>
-        <ram:IssuerAssignedID>${x(r.bestellreferenz)}</ram:IssuerAssignedID>
-      </ram:BuyerOrderReferencedDocument>
-` : ""}    </ram:ApplicableHeaderTradeAgreement>
-${zeitraum.einTag ? `    <ram:ApplicableHeaderTradeDelivery>
-      <ram:ActualDeliverySupplyChainEvent>
-        <ram:OccurrenceDateTime>${datum102(zeitraum.von)}</ram:OccurrenceDateTime>
-      </ram:ActualDeliverySupplyChainEvent>
-    </ram:ApplicableHeaderTradeDelivery>
-` : `    <ram:ApplicableHeaderTradeDelivery/>
-`}    <ram:ApplicableHeaderTradeSettlement>
-${lastschrift ? `      <ram:CreditorReferenceID>${x(r.absender.glaeubigerId)}</ram:CreditorReferenceID>
-` : ""}      <ram:PaymentReference>${x(r.nummer)}</ram:PaymentReference>
-      <ram:InvoiceCurrencyCode>${r.waehrung}</ram:InvoiceCurrencyCode>
-${{ lastschrift: lastschriftXml, kreditkarte: kreditkarteXml }[r.zahlungsart]?.(r) || ueberweisungXml(r)}${gruppen.map((g) => steuerXml(g, r.steuerfall)).join("")}${zeitraum.einTag || !zeitraum.von ? "" : `      <ram:BillingSpecifiedPeriod>
-        <ram:StartDateTime>${datum102(zeitraum.von)}</ram:StartDateTime>
-        <ram:EndDateTime>${datum102(zeitraum.bis)}</ram:EndDateTime>
-      </ram:BillingSpecifiedPeriod>
-`}${zahlungsbedingungXml(r)}      <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
-        <ram:LineTotalAmount>${betrag(netto)}</ram:LineTotalAmount>
-        <ram:TaxBasisTotalAmount>${betrag(netto)}</ram:TaxBasisTotalAmount>
-        <ram:TaxTotalAmount currencyID="${r.waehrung}">${betrag(steuer)}</ram:TaxTotalAmount>
-        <ram:GrandTotalAmount>${betrag(brutto)}</ram:GrandTotalAmount>
-        <ram:DuePayableAmount>${betrag(brutto)}</ram:DuePayableAmount>
-      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
-    </ram:ApplicableHeaderTradeSettlement>
-  </rsm:SupplyChainTradeTransaction>
-</rsm:CrossIndustryInvoice>
-`;
+  const s = summenDerRechnung(r);
+  const nurSteuerfrei = s.gruppen.every((g) => g.kategorie === "O");
+  const nummernDerRechnung = eindeutigeNummern(r.positionen);
+  const inhalt = E("rsm:CrossIndustryInvoice", [
+    E("rsm:ExchangedDocumentContext", [
+      E("ram:BusinessProcessSpecifiedDocumentContextParameter", [E("ram:ID", XRECHNUNG.prozess)]),
+      E("ram:GuidelineSpecifiedDocumentContextParameter", [E("ram:ID", XRECHNUNG.profil)]),
+    ]),
+    E("rsm:ExchangedDocument", [
+      E("ram:ID", r.nummer),                                                         // BT-1
+      E("ram:TypeCode", r.art),                                                       // BT-3
+      datumE("ram:IssueDateTime", r.datum),                                           // BT-2
+      [...r.bemerkungen, ...weitereVorherige(r)].map((b) => E("ram:IncludedNote", [E("ram:Content", b)])),  // BG-1
+    ]),
+    E("rsm:SupplyChainTradeTransaction", [
+      r.positionen.map((p) => positionXml(p, nummernDerRechnung)),
+      vereinbarungXml(r, nurSteuerfrei),
+      lieferungXml(r),
+      abrechnungXml(r, s),
+    ]),
+  ], {
+    "xmlns:rsm": "urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100",
+    "xmlns:ram": "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100",
+    "xmlns:qdt": "urn:un:unece:uncefact:data:standard:QualifiedDataType:100",
+    "xmlns:udt": "urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100",
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>\n${einruecken(inhalt)}\n`;
 }
 
-/** Zahlung per Überweisung (BG-17): IBAN und BIC des Rechnungsstellers */
-function ueberweisungXml(r) {
-  return `      <ram:SpecifiedTradeSettlementPaymentMeans>
-        <ram:TypeCode>${XRECHNUNG.zahlungsart.ueberweisung}</ram:TypeCode>
-        <ram:PayeePartyCreditorFinancialAccount>
-          <ram:IBANID>${x(r.bank.iban)}</ram:IBANID>
-          <ram:AccountName>${x(r.absender.name)}</ram:AccountName>
-        </ram:PayeePartyCreditorFinancialAccount>
-${r.bank.bic ? `        <ram:PayeeSpecifiedCreditorFinancialInstitution>
-          <ram:BICID>${x(r.bank.bic)}</ram:BICID>
-        </ram:PayeeSpecifiedCreditorFinancialInstitution>
-` : ""}      </ram:SpecifiedTradeSettlementPaymentMeans>
-`;
+/** Ab der zweiten früheren Rechnung: eine Bemerkung, weil CII nur einen Verweis kennt */
+function weitereVorherige(r) {
+  // Steht der Bezug schon in einer Bemerkung (z.B. von der Rechnung übernommen), nicht noch einmal
+  const weitere = r.vorherigeRechnungen.slice(1).filter((v) => !r.bemerkungen.some((b) => b.includes(v.nummer)));
+  return weitere.length ? [TEXTE.weitereVorherige(weitere.map((v) => (v.datum ? `${v.nummer} (${alsDatum(v.datum)})` : v.nummer)).join(", "))] : [];
 }
 
-/** Zahlung per SEPA-Lastschrift (BG-19): das Konto des Kunden (BT-91); die Gläubiger-ID steht weiter oben */
-function lastschriftXml(r) {
-  return `      <ram:SpecifiedTradeSettlementPaymentMeans>
-        <ram:TypeCode>${XRECHNUNG.zahlungsart.lastschrift}</ram:TypeCode>
-        <ram:PayerPartyDebtorFinancialAccount>
-          <ram:IBANID>${x(r.empfaenger.iban)}</ram:IBANID>
-        </ram:PayerPartyDebtorFinancialAccount>
-      </ram:SpecifiedTradeSettlementPaymentMeans>
-`;
-}
-
-/** Zahlung per Kreditkarte (BG-18): nur die letzten 4 Ziffern der Karte (BT-87) */
-function kreditkarteXml(r) {
-  return `      <ram:SpecifiedTradeSettlementPaymentMeans>
-        <ram:TypeCode>${XRECHNUNG.zahlungsart.kreditkarte}</ram:TypeCode>
-        <ram:ApplicableTradeSettlementFinancialCard>
-          <ram:ID>${x(r.empfaenger.karte)}</ram:ID>
-        </ram:ApplicableTradeSettlementFinancialCard>
-      </ram:SpecifiedTradeSettlementPaymentMeans>
-`;
-}
-
-/** Zahlungsbedingungen (BT-20), Fälligkeit bzw. Einzugsdatum (BT-9), Mandatsreferenz (BT-89) */
-function zahlungsbedingungXml(r) {
-  const lastschrift = r.zahlungsart === "lastschrift";
-  const datum = r.faellig && alsDatum(r.faellig);
-  const text = lastschrift ? r.zahlungsbedingungen || TEXTE.lastschrift(datum)
-    : r.zahlungsart === "kreditkarte" ? r.zahlungsbedingungen || TEXTE.kreditkarte(datum)
-      : TEXTE.zahlbarBis(datum);
-  // Skonto im Format der XRechnung: je Stufe eine Zeile #SKONTO#TAGE=n#PROZENT=n.nn#
-  const skonto = (r.skonto || []).map((k) => `#SKONTO#TAGE=${k.tage}#PROZENT=${k.prozent.toFixed(2)}#\n`).join("");
-  return `      <ram:SpecifiedTradePaymentTerms>
-        <ram:Description>${x(skonto + text)}</ram:Description>
-${r.faellig ? `        <ram:DueDateDateTime>${datum102(r.faellig)}</ram:DueDateDateTime>
-` : ""}${lastschrift && r.empfaenger.mandatsreferenz ? `        <ram:DirectDebitMandateID>${x(r.empfaenger.mandatsreferenz)}</ram:DirectDebitMandateID>
-` : ""}      </ram:SpecifiedTradePaymentTerms>
-`;
-}
-
-/** Die Nummern der Rechnung, wenn jede nur einmal vorkommt; sonst wird durchgezählt (BT-126 muss eindeutig sein) */
+/** Die Positionsnummern der Rechnung, wenn jede nur einmal vorkommt; sonst wird durchgezählt (BT-126 muss eindeutig sein) */
 function eindeutigeNummern(positionen) {
   const nummern = positionen.map((p) => p.posNr || String(p.nr));
   return new Set(nummern).size === nummern.length;
 }
 
 function positionXml(p, nummerDerRechnung = true) {
-  return `    <ram:IncludedSupplyChainTradeLineItem>
-      <ram:AssociatedDocumentLineDocument>
-        <ram:LineID>${x(nummerDerRechnung ? p.posNr || p.nr : p.nr)}</ram:LineID>
-      </ram:AssociatedDocumentLineDocument>
-      <ram:SpecifiedTradeProduct>
-        <ram:Name>${x(p.name)}</ram:Name>
-${p.beschreibung ? `        <ram:Description>${x(p.beschreibung)}</ram:Description>
-` : ""}      </ram:SpecifiedTradeProduct>
-      <ram:SpecifiedLineTradeAgreement>
-        <ram:NetPriceProductTradePrice>
-          <ram:ChargeAmount>${preis(p.einzelpreis)}</ram:ChargeAmount>
-        </ram:NetPriceProductTradePrice>
-      </ram:SpecifiedLineTradeAgreement>
-      <ram:SpecifiedLineTradeDelivery>
-        <ram:BilledQuantity unitCode="${x(p.einheitCode)}">${menge(p.menge)}</ram:BilledQuantity>
-      </ram:SpecifiedLineTradeDelivery>
-      <ram:SpecifiedLineTradeSettlement>
-        <ram:ApplicableTradeTax>
-          <ram:TypeCode>VAT</ram:TypeCode>
-          <ram:CategoryCode>${p.kategorie}</ram:CategoryCode>
-          <ram:RateApplicablePercent>${menge(p.satz)}</ram:RateApplicablePercent>
-        </ram:ApplicableTradeTax>
-        <ram:BillingSpecifiedPeriod>
-          <ram:StartDateTime>${datum102(p.von)}</ram:StartDateTime>
-          <ram:EndDateTime>${datum102(p.bis)}</ram:EndDateTime>
-        </ram:BillingSpecifiedPeriod>
-${p.nachlass ? `        <ram:SpecifiedTradeAllowanceCharge>
-          <ram:ChargeIndicator>
-            <udt:Indicator>false</udt:Indicator>
-          </ram:ChargeIndicator>
-          <ram:ActualAmount>${betrag(p.nachlass)}</ram:ActualAmount>
-          <ram:Reason>${x(p.nachlassGrund || TEXTE.nachlass)}</ram:Reason>
-        </ram:SpecifiedTradeAllowanceCharge>
-` : ""}        <ram:SpecifiedTradeSettlementLineMonetarySummation>
-          <ram:LineTotalAmount>${betrag(p.gesamt)}</ram:LineTotalAmount>
-        </ram:SpecifiedTradeSettlementLineMonetarySummation>
-      </ram:SpecifiedLineTradeSettlement>
-    </ram:IncludedSupplyChainTradeLineItem>
-`;
+  const basismenge = p.basismenge ? E("ram:BasisQuantity", menge(p.basismenge), { unitCode: p.einheitCode }) : "";   // BT-149, BT-150
+  return E("ram:IncludedSupplyChainTradeLineItem", [
+    E("ram:AssociatedDocumentLineDocument", [
+      E("ram:LineID", nummerDerRechnung ? p.posNr || p.nr : p.nr),                    // BT-126
+      p.notiz ? E("ram:IncludedNote", [E("ram:Content", p.notiz)]) : "",              // BT-127
+    ]),
+    E("ram:SpecifiedTradeProduct", [
+      p.gtin ? E("ram:GlobalID", p.gtin, { schemeID: "0160" }) : "",                  // BT-157 (GTIN)
+      E("ram:SellerAssignedID", p.artikelnummer),                                     // BT-155
+      E("ram:BuyerAssignedID", p.kundenArtikelnummer),                                // BT-156
+      E("ram:Name", p.name),                                                          // BT-153
+      E("ram:Description", p.beschreibung),                                           // BT-154
+      p.merkmale.map((m) => E("ram:ApplicableProductCharacteristic", [               // BG-32
+        E("ram:Description", m.name), E("ram:Value", m.wert)])),
+      p.ursprungsland ? E("ram:OriginTradeCountry", [E("ram:ID", p.ursprungsland)]) : "",  // BT-159
+    ]),
+    E("ram:SpecifiedLineTradeAgreement", [
+      p.bestellposition ? E("ram:BuyerOrderReferencedDocument", [E("ram:LineID", p.bestellposition)]) : "",  // BT-132
+      p.bruttopreis !== null ? E("ram:GrossPriceProductTradePrice", [                 // BT-148, BT-147
+        E("ram:ChargeAmount", preis(p.bruttopreis)), basismenge,
+        p.preisnachlass ? E("ram:AppliedTradeAllowanceCharge", [
+          E("ram:ChargeIndicator", [E("udt:Indicator", "false")]), E("ram:ActualAmount", preis(p.preisnachlass))]) : "",
+      ]) : "",
+      E("ram:NetPriceProductTradePrice", [E("ram:ChargeAmount", preis(p.einzelpreis)), basismenge]),  // BT-146
+    ]),
+    E("ram:SpecifiedLineTradeDelivery", [E("ram:BilledQuantity", menge(p.menge), { unitCode: p.einheitCode })]),  // BT-129, BT-130
+    E("ram:SpecifiedLineTradeSettlement", [
+      E("ram:ApplicableTradeTax", [E("ram:TypeCode", "VAT"), E("ram:CategoryCode", p.kategorie),
+        p.kategorie === "O" ? "" : E("ram:RateApplicablePercent", menge(p.satz))]),   // BT-151, BT-152 (bei O ohne Satz, BR-O-05)
+      p.von ? E("ram:BillingSpecifiedPeriod", [datumE("ram:StartDateTime", p.von), datumE("ram:EndDateTime", p.bis || p.von)]) : "",  // BG-26
+      p.nachlaesse.map((n) => nachlassXml(n, false, TEXTE.nachlass)),               // BG-27
+      p.zuschlaege.map((n) => nachlassXml(n, true, TEXTE.zuschlag)),                // BG-28
+      E("ram:SpecifiedTradeSettlementLineMonetarySummation", [E("ram:LineTotalAmount", betrag(p.gesamt))]),  // BT-131
+      p.objekt ? E("ram:AdditionalReferencedDocument", [E("ram:IssuerAssignedID", p.objekt), E("ram:TypeCode", "130")]) : "",  // BT-128
+      p.buchungsreferenz ? E("ram:ReceivableSpecifiedTradeAccountingAccount", [E("ram:ID", p.buchungsreferenz)]) : "",  // BT-133
+    ]),
+  ]);
 }
 
-function anschriftXml(p, einrueckung) {
-  // Bei mehreren Anschriftzeilen steht die letzte (meist die Straße) in LineOne
-  const [zeileEins, ...weitere] = [...p.adresse].reverse();
-  const e = einrueckung;
-  return `${e}<ram:PostalTradeAddress>
-${e}  <ram:PostcodeCode>${x(p.plz)}</ram:PostcodeCode>
-${zeileEins ? `${e}  <ram:LineOne>${x(zeileEins)}</ram:LineOne>
-` : ""}${weitere.length ? `${e}  <ram:LineTwo>${x(weitere.reverse().join(", "))}</ram:LineTwo>
-` : ""}${e}  <ram:CityName>${x(p.ort)}</ram:CityName>
-${e}  <ram:CountryID>${x(p.land)}</ram:CountryID>
-${e}</ram:PostalTradeAddress>
-`;
+/** Nachlass bzw. Zuschlag (BG-20/21 mit Steuer, BG-27/28 ohne) */
+function nachlassXml(n, zuschlag, grundErsatz, mitSteuer = false) {
+  return E("ram:SpecifiedTradeAllowanceCharge", [
+    E("ram:ChargeIndicator", [E("udt:Indicator", zuschlag ? "true" : "false")]),
+    n.prozent ? E("ram:CalculationPercent", menge(n.prozent)) : "",
+    n.prozent ? E("ram:BasisAmount", betrag(n.basis)) : "",
+    E("ram:ActualAmount", betrag(n.betrag)),
+    E("ram:Reason", n.grund || grundErsatz),
+    mitSteuer ? E("ram:CategoryTradeTax", [E("ram:TypeCode", "VAT"), E("ram:CategoryCode", n.kategorie),
+      n.kategorie === "O" ? "" : E("ram:RateApplicablePercent", menge(n.satz || 0))]) : "",
+  ]);
 }
 
-function verkaeuferXml(p) {
-  // Regel BR-CO-26: Der Verkäufer braucht eine Kennung (BT-29), eine Register-
-  // nummer (BT-30) oder eine USt-IdNr. (BT-31). Wer nur eine Steuernummer hat,
-  // bekommt sie zusätzlich als Kennung.
-  const kennung = !p.ustId && p.steuernummer ? `        <ram:ID>${x(p.steuernummer)}</ram:ID>
-` : "";
-  return `      <ram:SellerTradeParty>
-${kennung}        <ram:Name>${x(p.name)}</ram:Name>
-        <ram:DefinedTradeContact>
-          <ram:PersonName>${x(p.kontakt)}</ram:PersonName>
-          <ram:TelephoneUniversalCommunication>
-            <ram:CompleteNumber>${x(p.telefon)}</ram:CompleteNumber>
-          </ram:TelephoneUniversalCommunication>
-          <ram:EmailURIUniversalCommunication>
-            <ram:URIID>${x(p.email)}</ram:URIID>
-          </ram:EmailURIUniversalCommunication>
-        </ram:DefinedTradeContact>
-${anschriftXml(p, "        ")}        <ram:URIUniversalCommunication>
-          <ram:URIID schemeID="EM">${x(p.email)}</ram:URIID>
-        </ram:URIUniversalCommunication>
-${p.steuernummer ? `        <ram:SpecifiedTaxRegistration>
-          <ram:ID schemeID="FC">${x(p.steuernummer)}</ram:ID>
-        </ram:SpecifiedTaxRegistration>
-` : ""}${p.ustId ? `        <ram:SpecifiedTaxRegistration>
-          <ram:ID schemeID="VA">${x(p.ustId)}</ram:ID>
-        </ram:SpecifiedTaxRegistration>
-` : ""}      </ram:SellerTradeParty>
-`;
+function vereinbarungXml(r, nurSteuerfrei) {
+  return E("ram:ApplicableHeaderTradeAgreement", [
+    E("ram:BuyerReference", r.kaeuferreferenz),                                       // BT-10
+    parteiXml("ram:SellerTradeParty", r.absender, true, nurSteuerfrei),                 // BG-4
+    parteiXml("ram:BuyerTradeParty", r.empfaenger, false, nurSteuerfrei),               // BG-7
+    r.auftragsnummer ? E("ram:SellerOrderReferencedDocument", [E("ram:IssuerAssignedID", r.auftragsnummer)]) : "",  // BT-14
+    r.bestellnummer ? E("ram:BuyerOrderReferencedDocument", [E("ram:IssuerAssignedID", r.bestellnummer)]) : "",    // BT-13
+    r.vertrag ? E("ram:ContractReferencedDocument", [E("ram:IssuerAssignedID", r.vertrag)]) : "",                    // BT-12
+    // BG-24. In CII darf nur eine Anlage eine Beschreibung haben (CII-SR-475); bei den weiteren steht sie in der Kennung.
+    r.anlagen.map((a, i) => E("ram:AdditionalReferencedDocument", [
+      E("ram:IssuerAssignedID", i === 0 ? a.kennung || a.beschreibung || `${TEXTE.anlage} 1`
+        : [a.kennung, a.beschreibung].filter(Boolean).join(" – ") || `${TEXTE.anlage} ${i + 1}`),   // BT-122
+      /^https?:\/\/\S+$/.test(a.link || "") ? E("ram:URIID", a.link) : "",          // BT-124, absolute URL (BR-TMP-2)
+      E("ram:TypeCode", "916"),
+      i === 0 ? E("ram:Name", a.beschreibung) : "",                                     // BT-123
+    ])),
+    r.ausschreibung ? E("ram:AdditionalReferencedDocument", [E("ram:IssuerAssignedID", r.ausschreibung), E("ram:TypeCode", "50")]) : "",  // BT-17
+    r.objekt ? E("ram:AdditionalReferencedDocument", [E("ram:IssuerAssignedID", r.objekt), E("ram:TypeCode", "130")]) : "",              // BT-18
+    r.projekt ? E("ram:SpecifiedProcuringProject", [E("ram:ID", r.projekt), E("ram:Name", r.projekt)]) : "",                            // BT-11
+  ]);
 }
 
-function kaeuferXml(p) {
-  return `      <ram:BuyerTradeParty>
-        <ram:Name>${x(p.name)}</ram:Name>
-${anschriftXml(p, "        ")}        <ram:URIUniversalCommunication>
-          <ram:URIID schemeID="EM">${x(p.email)}</ram:URIID>
-        </ram:URIUniversalCommunication>
-${p.ustId ? `        <ram:SpecifiedTaxRegistration>
-          <ram:ID schemeID="VA">${x(p.ustId)}</ram:ID>
-        </ram:SpecifiedTaxRegistration>
-` : ""}      </ram:BuyerTradeParty>
-`;
+function parteiXml(name, p, istVerkaeufer, nurSteuerfrei) {
+  // Regel BR-CO-26: Der Verkäufer braucht eine Kennung (BT-29), eine Registernummer (BT-30) oder eine USt-IdNr.
+  // (BT-31). Wer nur eine Steuernummer hat, bekommt sie zusätzlich als Kennung.
+  // Bei "nicht steuerbar" sind keine USt-IdNrn. erlaubt (BR-O-02).
+  const ustId = nurSteuerfrei ? null : p.ustId;
+  const kennung = p.kennung || (istVerkaeufer && !ustId && !p.register ? p.steuernummer : null);
+  const kontakt = istVerkaeufer
+    ? { name: p.kontakt, telefon: p.telefon, email: p.kontaktEmail || p.email }
+    : { name: p.kontakt, telefon: p.telefon, email: p.kontaktEmail };
+  return E(name, [
+    E("ram:ID", kennung),                                                             // BT-29 / BT-46
+    E("ram:Name", p.name),                                                            // BT-27 / BT-44
+    istVerkaeufer ? E("ram:Description", p.rechtliches) : "",                          // BT-33
+    p.register || (p.handelsname && p.handelsname !== p.name)
+      ? E("ram:SpecifiedLegalOrganization", [E("ram:ID", p.register),                 // BT-30 / BT-47
+        p.handelsname !== p.name ? E("ram:TradingBusinessName", p.handelsname) : ""])  // BT-28 / BT-45
+      : "",
+    kontakt.name || kontakt.telefon || kontakt.email ? E("ram:DefinedTradeContact", [  // BG-6 / BG-9
+      E("ram:PersonName", kontakt.name),
+      kontakt.telefon ? E("ram:TelephoneUniversalCommunication", [E("ram:CompleteNumber", kontakt.telefon)]) : "",
+      kontakt.email ? E("ram:EmailURIUniversalCommunication", [E("ram:URIID", kontakt.email)]) : "",
+    ]) : "",
+    anschriftXml(p),                                                                  // BG-5 / BG-8
+    p.email ? E("ram:URIUniversalCommunication", [E("ram:URIID", p.email, { schemeID: "EM" })]) : "",  // BT-34 / BT-49
+    istVerkaeufer && p.steuernummer ? E("ram:SpecifiedTaxRegistration", [E("ram:ID", p.steuernummer, { schemeID: "FC" })]) : "",  // BT-32
+    ustId ? E("ram:SpecifiedTaxRegistration", [E("ram:ID", ustId, { schemeID: "VA" })]) : "",  // BT-31 / BT-48
+  ]);
 }
 
-function steuerXml(g, steuerfall) {
-  const befreit = g.kategorie !== "S";
-  const code = XRECHNUNG.befreiungscode[g.kategorie];
-  return `      <ram:ApplicableTradeTax>
-        <ram:CalculatedAmount>${betrag(g.betrag)}</ram:CalculatedAmount>
-        <ram:TypeCode>VAT</ram:TypeCode>
-${befreit ? `        <ram:ExemptionReason>${x(steuerfall.text)}</ram:ExemptionReason>
-` : ""}        <ram:BasisAmount>${betrag(g.basis)}</ram:BasisAmount>
-        <ram:CategoryCode>${g.kategorie}</ram:CategoryCode>
-${code ? `        <ram:ExemptionReasonCode>${code}</ram:ExemptionReasonCode>
-` : ""}        <ram:RateApplicablePercent>${menge(g.satz)}</ram:RateApplicablePercent>
-      </ram:ApplicableTradeTax>
-`;
+function anschriftXml(p) {
+  return E("ram:PostalTradeAddress", [
+    E("ram:PostcodeCode", p.plz),
+    E("ram:LineOne", p.strasse || p.zusatz),
+    E("ram:LineTwo", p.strasse ? p.zusatz : null),
+    E("ram:LineThree", p.zeile3),
+    E("ram:CityName", p.ort),
+    E("ram:CountryID", p.land || "DE"),
+    E("ram:CountrySubDivisionName", p.region),
+  ]);
 }
 
-/** Ein Steuerblock je Kategorie und Satz; Steuer = Basis × Satz, gerundet (Regel BR-CO-17). */
-function steuergruppen(positionen) {
-  const gruppen = [];
-  for (const p of positionen) {
-    let g = gruppen.find((gr) => gr.kategorie === p.kategorie && gr.satz === p.satz);
-    if (!g) gruppen.push(g = { kategorie: p.kategorie, satz: p.satz, basis: 0 });
-    // Jede Position auf Cent, wie in der XML: so geht die Summe der Positionen auf (BR-CO-10)
-    g.basis = runde(g.basis + runde(p.gesamt));
-  }
-  for (const g of gruppen) g.betrag = runde(g.basis * g.satz / 100);
-  return gruppen;
+function lieferungXml(r) {
+  const l = r.lieferung;
+  return E("ram:ApplicableHeaderTradeDelivery", [
+    l ? E("ram:ShipToTradeParty", [                                                   // BG-13
+      E("ram:ID", l.ortKennung),                                                      // BT-71
+      E("ram:Name", l.name),                                                          // BT-70
+      mitLieferanschrift(l) ? anschriftXml(l) : "",                                   // BG-15
+    ]) : "",
+    r.leistungsdatum ? E("ram:ActualDeliverySupplyChainEvent", [datumE("ram:OccurrenceDateTime", r.leistungsdatum)]) : "",  // BT-72
+    r.lieferschein ? E("ram:DespatchAdviceReferencedDocument", [E("ram:IssuerAssignedID", r.lieferschein)]) : "",  // BT-16
+    r.wareneingang ? E("ram:ReceivingAdviceReferencedDocument", [E("ram:IssuerAssignedID", r.wareneingang)]) : "",  // BT-15
+  ]) || "<ram:ApplicableHeaderTradeDelivery/>";
 }
 
-/** Ein einziger Leistungstag für alle Positionen, oder der Zeitraum vom ersten bis zum letzten Tag. */
-function leistungszeitraumGesamt(positionen) {
-  const von = positionen.map((p) => p.von).filter(Boolean).sort()[0] || null;
-  const bis = positionen.map((p) => p.bis).filter(Boolean).sort().at(-1) || null;
-  return { von, bis, einTag: Boolean(von) && von === bis };
+function abrechnungXml(r, s) {
+  const z = r.zahlung;
+  const art = r.zahlungsart;
+  const code = REGELN.zahlungsarten[art];
+  const zahlungsmittel = (inhalt = []) => E("ram:SpecifiedTradeSettlementPaymentMeans", [
+    E("ram:TypeCode", code), E("ram:Information", z.text), ...inhalt]);               // BT-81, BT-82
+  const mittel = art === "ueberweisung"
+    ? z.konten.map((k) => zahlungsmittel([                                           // BG-17, je Konto
+      E("ram:PayeePartyCreditorFinancialAccount", [E("ram:IBANID", k.iban), E("ram:AccountName", k.inhaber || r.absender.name)]),
+      k.bic ? E("ram:PayeeSpecifiedCreditorFinancialInstitution", [E("ram:BICID", k.bic)]) : "",
+    ]))
+    : art === "lastschrift"
+      ? zahlungsmittel([E("ram:PayerPartyDebtorFinancialAccount", [E("ram:IBANID", r.empfaenger.iban)])])   // BG-19
+      : art === "kreditkarte" || art === "debitkarte"
+        ? zahlungsmittel([E("ram:ApplicableTradeSettlementFinancialCard", [                                  // BG-18
+          E("ram:ID", r.empfaenger.karte), E("ram:CardholderName", r.empfaenger.karteninhaber)])])
+        : zahlungsmittel();
+  const ze = r.zahlungsempfaenger;
+  return E("ram:ApplicableHeaderTradeSettlement", [
+    art === "lastschrift" ? E("ram:CreditorReferenceID", r.absender.glaeubigerId) : "",  // BT-90
+    E("ram:PaymentReference", z.verwendungszweck || r.nummer),                         // BT-83
+    E("ram:InvoiceCurrencyCode", r.waehrung),                                          // BT-5
+    ze ? E("ram:PayeeTradeParty", [E("ram:ID", ze.kennung), E("ram:Name", ze.name),    // BG-10
+      ze.register ? E("ram:SpecifiedLegalOrganization", [E("ram:ID", ze.register)]) : ""]) : "",
+    mittel,
+    s.gruppen.map((g) => E("ram:ApplicableTradeTax", [                               // BG-23
+      E("ram:CalculatedAmount", betrag(g.betrag)),
+      E("ram:TypeCode", "VAT"),
+      g.kategorie === "S" ? "" : E("ram:ExemptionReason", g.grund),                    // BT-120
+      E("ram:BasisAmount", betrag(g.basis)),
+      E("ram:CategoryCode", g.kategorie),
+      E("ram:ExemptionReasonCode", XRECHNUNG.befreiungscode[g.kategorie]),             // BT-121
+      E("ram:RateApplicablePercent", menge(g.satz || 0)),
+    ])),
+    r.leistungVon ? E("ram:BillingSpecifiedPeriod", [datumE("ram:StartDateTime", r.leistungVon), datumE("ram:EndDateTime", r.leistungBis)]) : "",  // BG-14
+    r.nachlaesse.map((n) => nachlassXml(n, false, TEXTE.nachlass, true)),             // BG-20
+    r.zuschlaege.map((n) => nachlassXml(n, true, TEXTE.zuschlag, true)),              // BG-21
+    E("ram:SpecifiedTradePaymentTerms", [
+      E("ram:Description", zahlungsbedingungText(r)),                                  // BT-20
+      datumE("ram:DueDateDateTime", r.faellig),                                        // BT-9
+      art === "lastschrift" ? E("ram:DirectDebitMandateID", r.empfaenger.mandatsreferenz) : "",  // BT-89
+    ]),
+    E("ram:SpecifiedTradeSettlementHeaderMonetarySummation", [                       // BG-22
+      E("ram:LineTotalAmount", betrag(s.positionen)),
+      r.zuschlaege.length ? E("ram:ChargeTotalAmount", betrag(s.zuschlaege)) : "",
+      r.nachlaesse.length ? E("ram:AllowanceTotalAmount", betrag(s.nachlaesse)) : "",
+      E("ram:TaxBasisTotalAmount", betrag(s.netto)),
+      E("ram:TaxTotalAmount", betrag(s.steuer), { currencyID: r.waehrung }),
+      r.rundung ? E("ram:RoundingAmount", betrag(r.rundung)) : "",
+      E("ram:GrandTotalAmount", betrag(s.brutto)),
+      r.gezahlt ? E("ram:TotalPrepaidAmount", betrag(r.gezahlt)) : "",
+      E("ram:DuePayableAmount", betrag(s.zahlbetrag)),
+    ]),
+    // BG-3: Die Syntax CII hat Platz für genau eine; weitere stehen als Bemerkung (weitereVorherige)
+    r.vorherigeRechnungen.slice(0, 1).map((v) => E("ram:InvoiceReferencedDocument", [
+      E("ram:IssuerAssignedID", v.nummer), datumE("ram:FormattedIssueDateTime", v.datum, "qdt")])),
+    r.buchungsreferenz ? E("ram:ReceivableSpecifiedTradeAccountingAccount", [E("ram:ID", r.buchungsreferenz)]) : "",  // BT-19
+  ]);
+}
+
+/**
+ * Zahlungsbedingungen (BT-20): Skonto im Format der XRechnung, je Stufe eine
+ * Zeile #SKONTO#TAGE=n#PROZENT=n.nn# (BR-DE-18), dann der Text der Rechnung
+ * bzw. ein Standardtext zur Zahlungsart.
+ */
+function zahlungsbedingungText(r) {
+  const skonto = r.skonto.map((k) => `#SKONTO#TAGE=${k.tage}#PROZENT=${k.prozent.toFixed(2)}#\n`).join("");
+  const datum = r.faellig && alsDatum(r.faellig);
+  // Ein eigener Text der Rechnung, der mit # beginnt, würde als Skonto gelesen: entschärfen
+  const eigener = r.zahlungsbedingungen ? r.zahlungsbedingungen.replace(/^#/gm, "Nr. ") : null;
+  const text = r.zahlungsart === "ueberweisung" && !eigener ? (datum ? TEXTE.zahlbarBis(datum) : null) : eigener || TEXTE.zahlungsText[r.zahlungsart]?.(datum);
+  return skonto + (text || "") || null;
+}
+
+/**
+ * Rückt die XML ein, damit sie lesbar ist: ein Element je Zeile. Getrennt wird
+ * nur zwischen Elementen; Zeilenumbrüche im Text (z.B. beim Skonto) bleiben.
+ */
+function einruecken(xml) {
+  let tiefe = 0;
+  return xml.replace(/></g, ">\u0000<").split("\u0000").map((teil) => {
+    if (teil.startsWith("</")) tiefe--;
+    const eingerueckt = "  ".repeat(Math.max(tiefe, 0)) + teil;
+    // Ein öffnendes Element ohne eigenes Ende ("<ram:X>" statt "<ram:X>wert</ram:X>") rückt die folgenden ein
+    if (/^<[^/][^>]*[^/]>$/.test(teil) || /^<[^/>]>$/.test(teil)) tiefe++;
+    return eingerueckt;
+  }).join("\n");
 }
 
 /** Text für XML maskieren */
 function x(text) {
   return String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-const datum102 = (iso) => `<udt:DateTimeString format="102">${iso.replace(/-/g, "")}</udt:DateTimeString>`;
 const betrag = (wert) => runde(wert).toFixed(2);
 /** Einzelpreis mit mindestens 2, höchstens 4 Nachkommastellen: 0.30, 0.125 */
 const preis = (wert) => {
-  const gerundet = Math.round(wert * 10000) / 10000;
+  const gerundet = runde4(wert);
   return Number.isInteger(Math.round(gerundet * 10000) / 100) ? gerundet.toFixed(2) : String(gerundet);
 };
-const menge = (wert) => String(Math.round(wert * 10000) / 10000);
+const menge = (wert) => String(runde4(wert));
+const runde4 = (wert) => Math.round(wert * 10000) / 10000;
 
 /** Dateiname der XML: wie das PDF, nur mit .xml */
 function xmlDateiname(pdfName) {
@@ -2084,17 +2756,22 @@ function alsDatum(iso) {
   return `${tag}.${monat}.${jahr}`;
 }
 
+function alsZahl(zahl) {
+  return zahl.toLocaleString("de-DE", { maximumFractionDigits: 4 });
+}
+
 // Für die Oberfläche, für Tests und für Neugierige.
 window.XFact = {
-  TEXTE, REGELN, PRUEFUNGEN, KI, KI_ANWEISUNG, KI_SCHEMA,
+  TEXTE, STANDARD, feldDerNorm, REGELN, PRUEFUNGEN, KI, KI_ANWEISUNG, KI_SCHEMA,
   lesePdf, zuZeilen, ohneDoppelte, alsLayoutText, hatText,
   kiEingerichtet, ueberOpenRouter, frageKi, pruefeVerbindung, befundAusKi, jevFragen, frageJev,
-  baueRechnung, steuerfallAusBefund, summenDerRechnung, einheitSchluessel, betragMitSkonto,
+  nachSchema, baueRechnung, mitErgaenzungen, summenDerRechnung, steuergruppen, einheitSchluessel, betragMitSkonto,
+  steuerOptionen, steuerSchluessel, steuerFuerAlle, steuerkategorienDerRechnung, sollBetragDerPosition, holeWert, emailOk,
   pruefeRechnung, hinweiseZurRechnung, ibanPruefzifferOk, ustIdAufbauOk, leitwegIdOk, glaeubigerIdOk, datumGueltig, stehtImText,
   erzeugeXml, xmlDateiname,
   GEDAECHTNIS, leeresGedaechtnis, firmaSchluessel, kundeSchluessel, vorgabenAusGedaechtnis, merkeRechnung,
   insLogbuch, hinweiseAusGedaechtnis, exportiereGedaechtnis, importiereGedaechtnis, ladeGedaechtnis, speichereGedaechtnis,
-  alsBetrag, alsDatum,
+  alsBetrag, alsDatum, alsZahl,
 };
 </script>
 
@@ -2106,6 +2783,7 @@ window.XFact = {
 const { TEXTE, REGELN, lesePdf, alsLayoutText, hatText, kiEingerichtet, ueberOpenRouter, frageKi, frageJev,
   pruefeVerbindung, KI, baueRechnung,
   pruefeRechnung, hinweiseZurRechnung, summenDerRechnung, erzeugeXml, xmlDateiname, einheitSchluessel, betragMitSkonto,
+  steuerOptionen, steuerSchluessel, steuerFuerAlle, steuerkategorienDerRechnung, alsZahl,
   alsBetrag, alsDatum, GEDAECHTNIS, leeresGedaechtnis, vorgabenAusGedaechtnis, merkeRechnung, insLogbuch,
   hinweiseAusGedaechtnis, exportiereGedaechtnis, importiereGedaechtnis, ladeGedaechtnis, speichereGedaechtnis,
 } = window.XFact;
@@ -2290,42 +2968,67 @@ function zeigeStart() {
 // --- Ändern -------------------------------------------------------------------
 
 /**
- * Übernimmt eine Änderung des Nutzers. pfad z.B. "datum", "empfaenger.email",
- * "absender.adresse.0", "position.3.menge", "einheit.std".
+ * Ändert einen Wert der Rechnung. "pfad" wie in der Prüfansicht: "nummer",
+ * "absender.kontakt", "zahlung.konten.2.iban", "position.3.menge",
+ * "position.3.nachlaesse.1.betrag", "einheit.std". Listen werden als Ganzes
+ * in die Ergänzungen übernommen; wert null an einem Listeneintrag entfernt ihn.
  */
 function setze(pfad, wert) {
   const e = zustand.ergaenzungen;
-  const [bereich, a, b] = pfad.split(".");
-  if (bereich === "position") {
+  const r = aktuelleRechnung();
+  const [kopf, ...rest] = pfad.split(".");
+  if (kopf === "position") {
+    const [nr, ...feld] = rest;
     e.positionen ??= {};
-    const position = (e.positionen[a] ??= {});
-    position[b] = wert;
+    setzeTief((e.positionen[nr] ??= {}), r.positionen.find((p) => String(p.nr) === nr), feld, wert);
     // Ein einzelnes Datum gilt als Tag: von = bis
-    if (b === "von") { position.bis = wert; zustand.geaendert.add(`position.${a}.datum`); }
-  } else if (bereich === "absender" || bereich === "empfaenger") {
-    e[bereich] ??= {};
-    if (a === "adresse") {
-      const adresse = [...aktuelleRechnung()[bereich].adresse];
-      adresse[Number(b)] = wert;
-      e[bereich].adresse = adresse.filter(Boolean);
-    } else {
-      e[bereich][a] = wert;
-    }
-  } else if (bereich === "skonto") {
-    // Die Skontostufen werden als Ganzes ersetzt; ein neues Datum bestimmt die Frist neu
-    const stufen = aktuelleRechnung().skonto.map((k) => ({ ...k }));
-    if (b === undefined) stufen.splice(Number(a) - 1, 1);
-    else Object.assign(stufen[Number(a) - 1], { [b]: wert }, b === "bis" ? { tage: null } : {});
-    e.skonto = stufen;
-  } else if (bereich === "einheit") {
-    e.einheiten ??= {};
-    e.einheiten[a] = wert;
+    if (feld.join(".") === "von") { e.positionen[nr].bis = wert; zustand.geaendert.add(`position.${nr}.datum`); }
+  } else if (kopf === "einheit") {
+    (e.einheiten ??= {})[rest[0]] = wert;
   } else {
-    e[bereich] = wert;
+    setzeTief(e, r, [kopf, ...rest], wert);
+    // Ein neues Skontodatum bestimmt die Frist neu
+    if (kopf === "skonto" && rest[1] === "bis") e.skonto[Number(rest[0]) - 1].tage = null;
   }
   // Eine neue Eingabe wird wieder geprüft, auch wenn der alte Wert bestätigt war
   zustand.geaendert.add(pfad);
   zustand.bestaetigt.delete(pfad);
+  neuZeichnen();
+}
+
+/** Setzt ziel[teile] = wert; Listen werden dazu aus "aktuell" kopiert (Nummern ab 1). */
+function setzeTief(ziel, aktuell, teile, wert) {
+  const [kopf, ...rest] = teile;
+  if (!rest.length) { ziel[kopf] = wert; return; }
+  const jetzt = aktuell?.[kopf];
+  if (Array.isArray(jetzt)) {
+    const liste = Array.isArray(ziel[kopf]) ? ziel[kopf] : JSON.parse(JSON.stringify(jetzt));
+    ziel[kopf] = liste;
+    const i = Number(rest[0]) - 1;
+    if (rest.length === 1) {
+      if (wert === null) liste.splice(i, 1); else liste[i] = wert;
+      return;
+    }
+    liste[i] ??= {};
+    setzeTief(liste[i], liste[i], rest.slice(1), wert);
+    return;
+  }
+  if (!ziel[kopf] || typeof ziel[kopf] !== "object") ziel[kopf] = {};
+  setzeTief(ziel[kopf], jetzt, rest, wert);
+}
+
+/** Gibt Positionen eine Umsatzsteuer ("S19", "AE", …): eine (nr) oder alle (nr = null) */
+function setzeSteuer(nr, schluessel) {
+  const r = aktuelleRechnung();
+  const e = zustand.ergaenzungen;
+  const { positionen, ...listen } = steuerFuerAlle(nr === null ? r : { positionen: r.positionen.filter((p) => p.nr === nr) }, schluessel);
+  Object.assign(e, listen);
+  e.positionen ??= {};
+  for (const [n, steuer] of Object.entries(positionen)) {
+    Object.assign((e.positionen[n] ??= {}), steuer);
+    zustand.geaendert.add(`position.${n}.steuer`);
+    zustand.bestaetigt.delete(`position.${n}.steuer`);
+  }
   neuZeichnen();
 }
 
@@ -2392,7 +3095,7 @@ function feld({ pfad, wert, art = "text", hinweise: hinweisFelder = [pfad], klas
       type: art === "datum" ? "date" : "text",
       "data-pfad": pfad,
       placeholder: platzhalter || TEXTE.ansicht.eingeben,
-      size: Math.max(8, Math.min(40, String(leer ? platzhalter || "" : darstellung[art](wert)).length + 2)),
+      size: Math.max(8, Math.min(48, String(leer ? platzhalter || "" : darstellung[art](wert)).length + 2)),
     });
     eingabe.value = leer ? "" : art === "datum" ? wert
       : art === "betrag" || art === "preis" || art === "zahl" || art === "satz" ? darstellung.zahl(wert) : String(wert);
@@ -2438,6 +3141,16 @@ function feld({ pfad, wert, art = "text", hinweise: hinweisFelder = [pfad], klas
   return huelle;
 }
 
+/** Auswahlliste, die beim Ändern setze() bzw. "aendern" aufruft */
+function auswahl(pfad, wert, optionen, aendern = (neu) => setze(pfad, neu), hinweise = [pfad]) {
+  const liste = el("select", { class: "eingabe", "data-pfad": pfad, onchange: (ereignis) => aendern(ereignis.target.value) },
+    Object.entries(optionen).map(([schluessel, name]) => el("option", { value: schluessel, selected: String(wert) === schluessel }, name)));
+  return el("span", { class: "feld" }, liste, hinweisMarken(zustand.hinweise, ...hinweise));
+}
+
+/** Kleiner Knopf, z.B. "+ Konto" oder "×" */
+const knopf = (text, aktion, titel) => el("button", { class: "knopf klein", title: titel || null, onclick: aktion }, text);
+
 /**
  * Die Hinweise zu einem oder mehreren Feldern als farbige Marken. Gelbe
  * Hinweise zu einzelnen Werten lassen sich mit "Stimmt" bestätigen.
@@ -2471,46 +3184,71 @@ function zeigeRechnung() {
   const a = TEXTE.ansicht;
 
   const kopf = el("div", { class: "rechnung-kopf" },
-    el("div", { class: "titel" }, `${a.rechnung} `, feld({ pfad: "nummer", wert: r.nummer })),
+    el("div", { class: "titel" }, auswahl("art", r.art, REGELN.rechnungsarten), " ", feld({ pfad: "nummer", wert: r.nummer })),
     el("div", {}, el("span", { class: "leise" }, `${a.datum} `), feld({ pfad: "datum", wert: r.datum, art: "datum" })));
 
-  $("rechnung").replaceChildren(
+  $("rechnung").replaceChildren(...[
+    nichtZugeordnet(),
     kopf,
     el("div", { class: "parteien" }, partei("absender", r), partei("empfaenger", r)),
     positionen(r),
+    nachlaesseZuschlaege(r),
     summen(r),
     zahlung(r),
-    weitereAngaben(r));
+    weitereAngaben(r)].filter(Boolean));
   zeigePflichtangaben(r);
 }
+
+/** Was auf der Rechnung steht, aber in keinem Feld gelandet ist – damit nichts stillschweigend verloren geht */
+function nichtZugeordnet() {
+  const offen = zustand.hinweise.filter((h) => h.feld.startsWith("nichtZugeordnet."));
+  if (!offen.length) return null;
+  return el("div", { class: "nicht-zugeordnet" },
+    el("div", {}, el("strong", {}, TEXTE.ansicht.nichtZugeordnet), " ", el("span", { class: "leise" }, TEXTE.ansicht.nichtZugeordnetHinweis)),
+    el("ul", {}, offen.map((h) => el("li", {}, hinweisMarken([h], h.feld)))));
+}
+
+/** Eine Zeile "Bezeichnung: Wert" in den Angabenlisten */
+const angabe = (bezeichnung, inhalt) => (inhalt === null ? null : [el("dt", {}, bezeichnung), el("dd", {}, inhalt)]);
 
 function partei(rolle, r) {
   const p = r[rolle];
   const a = TEXTE.ansicht;
-  const pf = TEXTE.parteiFelder;
+  const f = a.felder;
   const pfad = (name) => `${rolle}.${name}`;
-  const land = p.land;
+  const wert = (name, optionen = {}) => feld({ pfad: pfad(name), wert: p[name], ...optionen });
+  // Seltene Angaben nur, wenn sie da sind (oder fehlen)
+  const wennDa = (name, bezeichnung, optionen = {}) => (p[name] || zustand.hinweise.some((h) => h.feld === pfad(name))
+    ? angabe(bezeichnung, wert(name, { optional: true, ...optionen })) : null);
   const zeilen = [
-    el("div", { class: "zeile name" }, feld({ pfad: pfad("name"), wert: p.name })),
-    ...p.adresse.map((zeile, i) => el("div", { class: "zeile" }, feld({ pfad: pfad(`adresse.${i}`), wert: zeile, hinweise: [] }))),
-    el("div", { class: "zeile" }, feld({ pfad: pfad("plz"), wert: p.plz }), " ", feld({ pfad: pfad("ort"), wert: p.ort })),
-    land ? el("div", { class: "zeile" }, REGELN.laender[land] || land, ...hinweisMarken(zustand.hinweise, pfad("land"))) : null,
+    el("div", { class: "zeile name" }, wert("name")),
+    p.handelsname ? el("div", { class: "zeile" }, wert("handelsname", { optional: true })) : null,
+    el("div", { class: "zeile" }, wert("strasse")),
+    el("div", { class: "zeile" }, wert("zusatz", { optional: true, hinweise: [] })),
+    p.zeile3 ? el("div", { class: "zeile" }, wert("zeile3", { optional: true, hinweise: [] })) : null,
+    el("div", { class: "zeile" }, wert("plz"), " ", wert("ort")),
+    p.region ? el("div", { class: "zeile" }, wert("region", { optional: true, hinweise: [] })) : null,
+    p.land ? el("div", { class: "zeile" }, REGELN.laender[p.land] || p.land, ...hinweisMarken(zustand.hinweise, pfad("land"))) : null,
   ];
-  const eintrag = (bezeichnung, name, optionen = {}) => [
-    el("dt", {}, bezeichnung),
-    el("dd", {}, feld({ pfad: pfad(name), wert: p[name], ...optionen })),
-  ];
+  const kategorien = steuerkategorienDerRechnung(r);
   const details = rolle === "absender"
-    ? [eintrag(pf.ustId, "ustId", { optional: Boolean(p.steuernummer) }),
-      eintrag(pf.steuernummer, "steuernummer", { optional: true, hinweise: [] }),
-      eintrag(a.ansprechpartner, "kontakt"), eintrag(pf.telefon, "telefon"), eintrag(pf.email, "email")]
-    : [eintrag(pf.ustId, "ustId", { optional: r.steuerfall.art !== "reverse_charge" }),
-      eintrag(a.emailFuerRechnungen, "email")];
+    ? [angabe(f.ustId, wert("ustId", { optional: Boolean(p.steuernummer) })),
+      angabe(f.steuernummer, wert("steuernummer", { optional: true, hinweise: [] })),
+      wennDa("register", f.register), wennDa("kennung", f.kennungAbsender), wennDa("rechtliches", f.rechtliches),
+      angabe(a.ansprechpartner, wert("kontakt")), angabe(f.telefon, wert("telefon")), angabe(f.email, wert("email")),
+      wennDa("kontaktEmail", f.kontaktEmail)]
+    : [angabe(f.kennungEmpfaenger, wert("kennung", { optional: true })),
+      angabe(f.ustId, wert("ustId", { optional: !kategorien.includes("AE") })),
+      wennDa("register", f.register),
+      angabe(a.ansprechpartner, wert("kontakt", { optional: true })),
+      wennDa("telefon", f.telefon), wennDa("kontaktEmail", f.kontaktEmail),
+      angabe(a.emailFuerRechnungen, wert("email"))];
   return el("div", { class: "partei" }, el("h3", {}, TEXTE.parteien[rolle]), zeilen, el("dl", {}, details));
 }
 
 function positionen(r) {
   const t = TEXTE.spaltenTitel;
+  const a = TEXTE.ansicht;
   const bereich = el("div", { class: "positionen" }, el("h3", {}, TEXTE.positionenTitel));
   if (!r.positionen.length) {
     bereich.append(...hinweisMarken(zustand.hinweise, "positionen"));
@@ -2523,25 +3261,38 @@ function positionen(r) {
     const datum = p.von && p.bis && p.von !== p.bis
       ? [feld({ pfad: pfad("von"), wert: p.von, art: "datum", hinweise: [] }), " – ",
         feld({ pfad: pfad("bis"), wert: p.bis, art: "datum", hinweise: [] }), hinweisMarken(zustand.hinweise, pfad("datum"))]
-      : feld({ pfad: pfad("von"), wert: p.von, art: "datum", hinweise: [pfad("datum")] });
-    // Die Hinweise zu Menge, Einheit, Preis und Betrag stehen gesammelt unter der Zeile; sie nennen deshalb ihr Feld
+      : feld({ pfad: pfad("von"), wert: p.von, art: "datum", hinweise: [pfad("datum")], optional: Boolean(r.leistungsdatum || r.leistungVon) });
+    // Die Hinweise zu Menge, Einheit, Preis, Steuer und Betrag stehen gesammelt unter der Zeile; sie nennen deshalb ihr Feld
     const spalten = { [pfad("menge")]: t.menge, [pfad("einheit")]: t.einheit, [pfad("einzelpreis")]: t.einzelpreis,
-      [pfad("nachlass")]: TEXTE.nachlass, [pfad("gesamt")]: t.gesamt };
+      [pfad("steuer")]: t.steuersatz, [pfad("gesamt")]: t.gesamt, [pfad("artikelnummer")]: a.felder.artikelnummer };
     const mitFeld = zustand.hinweise.map((h) => (spalten[h.feld] ? { ...h, text: `${spalten[h.feld]}: ${h.text}` } : h));
     const marken = hinweisMarken(mitFeld, ...Object.keys(spalten));
+    const detail = (bezeichnung, name, optionen = {}) => (p[name] !== null && p[name] !== undefined && p[name] !== ""
+      ? el("div", { class: "beschreibung" }, `${bezeichnung} `, feld({ pfad: pfad(name), wert: p[name], hinweise: [], ...optionen })) : null);
+    const nachlassZeilen = (liste, art, vorzeichen) => p[liste].map((n, i) => el("div", { class: "beschreibung" },
+      `${n.grund || TEXTE[art]}${n.prozent ? ` (${alsZahl(n.prozent)} %)` : ""}: ${vorzeichen}`,
+      feld({ pfad: pfad(`${liste}.${i + 1}.betrag`), wert: n.betrag, art: "betrag", hinweise: [] }),
+      knopf("×", () => setze(pfad(`${liste}.${i + 1}`), null), a.entfernen)));
     rumpf.append(el("tr", { class: marken.length ? "mit-hinweis" : "" },
       el("td", { class: "zahl leise" }, p.posNr || p.nr),
       el("td", { class: "datum" }, datum),
       el("td", {},
+        p.notiz ? el("div", { class: "beschreibung notiz" }, feld({ pfad: pfad("notiz"), wert: p.notiz, hinweise: [] })) : null,
         el("div", { class: "name" }, feld({ pfad: pfad("name"), wert: p.name })),
         p.beschreibung ? el("div", { class: "beschreibung" }, feld({ pfad: pfad("beschreibung"), wert: p.beschreibung })) : null,
-        p.nachlass ? el("div", { class: "beschreibung" }, `${p.nachlassGrund || TEXTE.nachlass}: −`,
-          feld({ pfad: pfad("nachlass"), wert: p.nachlass, art: "betrag", hinweise: [] })) : null),
+        detail(a.felder.artikelnummer, "artikelnummer"), detail(a.felder.kundenArtikelnummer, "kundenArtikelnummer"),
+        detail(a.felder.gtin, "gtin"), detail(a.felder.ursprungsland, "ursprungsland"), detail(a.felder.objekt, "objekt"),
+        detail(a.felder.bestellposition, "bestellposition"), detail(a.felder.buchungsreferenz, "buchungsreferenz"),
+        p.merkmale.map((m) => el("div", { class: "beschreibung" }, `${m.name}: ${m.wert}`)),
+        p.bruttopreis !== null ? el("div", { class: "beschreibung" }, `${a.listenpreis} `,
+          feld({ pfad: pfad("bruttopreis"), wert: p.bruttopreis, art: "preis", hinweise: [] }), ` ${a.abzueglich} `,
+          feld({ pfad: pfad("preisnachlass"), wert: p.preisnachlass, art: "preis", hinweise: [], optional: true })) : null,
+        nachlassZeilen("nachlaesse", "nachlass", "−"), nachlassZeilen("zuschlaege", "zuschlag", "+")),
       el("td", { class: "zahl" }, feld({ pfad: pfad("menge"), wert: p.menge, art: "zahl", hinweise: [] })),
       el("td", {}, einheit(p)),
-      el("td", { class: "zahl" }, feld({ pfad: pfad("einzelpreis"), wert: p.einzelpreis, art: "preis", hinweise: [] })),
-      el("td", { class: "zahl" }, p.kategorie === "S"
-        ? feld({ pfad: pfad("satz"), wert: p.satz || null, art: "satz" }) : "–"),
+      el("td", { class: "zahl" }, feld({ pfad: pfad("einzelpreis"), wert: p.einzelpreis, art: "preis", hinweise: [] }),
+        p.basismenge ? el("div", { class: "beschreibung" }, a.jeMenge(alsZahl(p.basismenge))) : null),
+      el("td", { class: "zahl" }, steuerAuswahl(p)),
       el("td", { class: "zahl" }, feld({ pfad: pfad("gesamt"), wert: p.gesamt, art: "betrag", hinweise: [] }))));
     if (marken.length) rumpf.append(el("tr", { class: "hinweise" }, el("td", { colSpan: 8 }, marken)));
   }
@@ -2552,6 +3303,16 @@ function positionen(r) {
       el("th", { class: "zahl" }, t.gesamt))),
     rumpf));
   return bereich;
+}
+
+/** Umsatzsteuer einer Position als Auswahl: 19 %, 7 %, Nullsatz, steuerfrei, § 13b, nicht steuerbar */
+function steuerAuswahl(p) {
+  const optionen = Object.fromEntries(Object.entries(steuerOptionen(p)).map(([s, o]) => [s, o.name]));
+  const jetzt = steuerSchluessel(p);
+  if (!optionen[jetzt]) optionen[jetzt] = REGELN.steuerkategorienNicht[p.kategorie] || jetzt;
+  return el("select", { class: `eingabe${REGELN.steuerkategorien[p.kategorie] ? "" : " fehlt"}`, "data-pfad": `position.${p.nr}.steuer`,
+    onchange: (ereignis) => setzeSteuer(p.nr, ereignis.target.value) },
+  Object.entries(optionen).map(([s, name]) => el("option", { value: s, selected: s === jetzt }, name)));
 }
 
 /**
@@ -2576,66 +3337,144 @@ function einheit(p) {
   return auswahl;
 }
 
+/** Nachlässe und Zuschläge auf die ganze Rechnung (BG-20, BG-21) */
+function nachlaesseZuschlaege(r) {
+  const a = TEXTE.ansicht;
+  const steuer = Object.fromEntries(Object.entries(steuerOptionen()).map(([s, o]) => [s, o.name]));
+  const zeilen = (liste, art) => r[liste].map((n, i) => {
+    const pfad = (name) => `${liste}.${i + 1}.${name}`;
+    const schluessel = n.kategorie ? steuerSchluessel(n) : "";
+    return el("tr", {},
+      el("td", {}, TEXTE[art]),
+      el("td", {}, feld({ pfad: pfad("grund"), wert: n.grund, optional: true })),
+      el("td", { class: "zahl" }, n.prozent ? `${alsZahl(n.prozent)} %` : ""),
+      el("td", {}, auswahl(pfad("kategorie"), schluessel, { ...(schluessel ? {} : { "": a.steuerWaehlen }), ...steuer }, (s) => {
+        const [kategorie, satz] = s.startsWith("S") ? ["S", Number(s.slice(1))] : [s, 0];
+        setze(pfad("kategorie"), kategorie);
+        setze(pfad("satz"), satz);
+      })),
+      el("td", { class: "zahl" }, feld({ pfad: pfad("betrag"), wert: n.betrag, art: "betrag" })),
+      el("td", {}, knopf("×", () => setze(`${liste}.${i + 1}`, null), a.entfernen)));
+  });
+  const neu = { betrag: null, basis: null, prozent: null, grund: null, kategorie: null, satz: null };
+  return el("div", { class: "positionen nachlaesse" },
+    r.nachlaesse.length || r.zuschlaege.length ? [el("h3", {}, a.nachlaesseZuschlaege),
+      el("table", {}, el("tbody", {}, zeilen("nachlaesse", "nachlass"), zeilen("zuschlaege", "zuschlag")))] : null,
+    el("div", { class: "knoepfe" },
+      knopf(a.nachlassHinzufuegen, () => setze(`nachlaesse.${r.nachlaesse.length + 1}`, neu)),
+      knopf(a.zuschlagHinzufuegen, () => setze(`zuschlaege.${r.zuschlaege.length + 1}`, neu))));
+}
+
 function summen(r) {
   const s = summenDerRechnung(r);
   const a = TEXTE.ansicht;
   const marken = (feld) => hinweisMarken(zustand.hinweise, `summe.${feld}`);
   const zeile = (bezeichnung, betrag, feld, klasse = "") => el("div", { class: `summe ${klasse}` },
     el("span", {}, bezeichnung), el("span", { class: "zahl" }, alsBetrag(betrag)), el("span", {}, marken(feld)));
+  const mitNachlass = r.nachlaesse.length || r.zuschlaege.length;
   return el("div", { class: "summen" },
-    zeile(a.netto, s.netto, "netto"),
-    s.gruppen.map((g) => zeile(g.kategorie === "S" ? a.umsatzsteuer(g.satz) : a.steuerBefreit[g.kategorie],
-      g.betrag, `steuer.${g.satz}`)),
-    zeile(a.gesamt, s.brutto, "brutto", "gesamt"));
+    mitNachlass ? zeile(a.summePositionen, s.positionen, "positionen") : null,
+    r.nachlaesse.length ? zeile(a.nachlaesse, -s.nachlaesse, "nachlaesse") : null,
+    r.zuschlaege.length ? zeile(a.zuschlaege, s.zuschlaege, "zuschlaege") : null,
+    zeile(a.netto, s.netto, mitNachlass ? "netto" : "positionen"),
+    s.gruppen.map((g) => zeile(g.kategorie === "S" ? a.umsatzsteuer(alsZahl(g.satz)) : `USt 0 % – ${a.steuerArten[g.kategorie] || g.kategorie}`,
+      g.betrag, `steuer.${g.kategorie}${g.kategorie === "S" ? g.satz : ""}`)),
+    zeile(a.gesamt, s.brutto, "brutto", "gesamt"),
+    r.gezahlt ? zeile(a.gezahlt, -r.gezahlt, "gezahlt") : null,
+    r.rundung ? zeile(a.rundung, r.rundung, "rundung") : null,
+    s.zahlbetrag !== s.brutto ? zeile(a.zahlbetrag, s.zahlbetrag, "zahlbetrag", "gesamt") : el("div", { class: "summe" }, el("span"), el("span"), el("span", {}, marken("zahlbetrag"))));
 }
 
 function zahlung(r) {
   const a = TEXTE.ansicht;
-  const angabe = (bezeichnung, inhalt) => el("span", {}, el("span", { class: "leise" }, `${bezeichnung} `), inhalt);
-  const zahlungsart = r.zahlungsart || "ueberweisung";
-  const art = el("select", { class: "eingabe", "data-pfad": "zahlungsart", onchange: (ereignis) => setze("zahlungsart", ereignis.target.value) },
-    Object.entries(a.zahlungsarten).map(([wert, name]) => el("option", { value: wert, selected: zahlungsart === wert }, name)));
-  return el("div", { class: "zahlung" },
-    el("span", {}, art, hinweisMarken(zustand.hinweise, "zahlungsart")),
-    zahlungsart === "kreditkarte"
-      ? [angabe(a.belastungAm, feld({ pfad: "faellig", wert: r.faellig, art: "datum", optional: true })),
-        angabe(a.karte, feld({ pfad: "empfaenger.karte", wert: r.empfaenger.karte, platzhalter: "1234" }))]
-      : zahlungsart === "lastschrift"
-      ? [angabe(a.einzugAm, feld({ pfad: "faellig", wert: r.faellig, art: "datum", optional: true })),
+  const art = r.zahlungsart;
+  const datumBezeichnung = { ueberweisung: a.zahlbarBis, lastschrift: a.einzugAm, kreditkarte: a.belastungAm, debitkarte: a.belastungAm }[art] || a.faelligAm;
+  const konten = r.zahlung.konten.map((k, i) => {
+    const pfad = (name) => `zahlung.konten.${i + 1}.${name}`;
+    return angabe(r.zahlung.konten.length > 1 ? `${a.konto} ${i + 1}` : a.konto, el("span", { class: "feld" },
+      "IBAN ", feld({ pfad: pfad("iban"), wert: k.iban, art: "iban" }),
+      " BIC ", feld({ pfad: pfad("bic"), wert: k.bic, optional: true, hinweise: [] }),
+      k.inhaber ? [` ${a.kontoinhaber} `, feld({ pfad: pfad("inhaber"), wert: k.inhaber, optional: true, hinweise: [] })] : null,
+      r.zahlung.konten.length > 1 ? knopf("×", () => setze(`zahlung.konten.${i + 1}`, null), a.entfernen) : null));
+  });
+  const skonto = r.skonto.map((k, i) => angabe(a.skonto, el("span", { class: "feld" },
+    feld({ pfad: `skonto.${i + 1}.prozent`, wert: k.prozent, art: "zahl", hinweise: [] }), "% ",
+    a.skontoBis, " ", feld({ pfad: `skonto.${i + 1}.bis`, wert: k.bis, art: "datum", hinweise: [`skonto.${i + 1}`] }),
+    el("span", { class: "leise" }, `= ${alsBetrag(betragMitSkonto(r, k))}`),
+    knopf("×", () => setze(`skonto.${i + 1}`, null), a.skontoEntfernen))));
+  const ze = r.zahlungsempfaenger;
+  return el("div", { class: "weitere zahlung-angaben" },
+    el("h3", {}, a.zahlung),
+    el("dl", { class: "angaben" },
+      angabe(a.zahlungsart, auswahl("zahlungsart", art, a.zahlungsarten)),
+      angabe(datumBezeichnung, feld({ pfad: "faellig", wert: r.faellig, art: "datum", optional: art !== "ueberweisung" })),
+      art === "ueberweisung" ? [konten.length ? konten : angabe(a.konto, hinweisMarken(zustand.hinweise, "zahlung.konten.1.iban")),
+        angabe("", knopf(a.kontoHinzufuegen, () => setze(`zahlung.konten.${r.zahlung.konten.length + 1}`, { iban: null, bic: null, inhaber: null })))] : null,
+      art === "lastschrift" ? [
         angabe(a.glaeubigerId, feld({ pfad: "absender.glaeubigerId", wert: r.absender.glaeubigerId })),
         angabe(a.kundenIban, feld({ pfad: "empfaenger.iban", wert: r.empfaenger.iban, art: "iban" })),
-        angabe(a.mandatsreferenz, feld({ pfad: "empfaenger.mandatsreferenz", wert: r.empfaenger.mandatsreferenz, optional: true }))]
-      : [angabe(a.zahlbarBis, feld({ pfad: "faellig", wert: r.faellig, art: "datum" })),
-        angabe("IBAN", feld({ pfad: "iban", wert: r.bank.iban, art: "iban" })),
-        angabe("BIC", feld({ pfad: "bic", wert: r.bank.bic, optional: true }))],
-    (r.skonto || []).map((k, i) => angabe(a.skonto, el("span", { class: "feld" },
-      feld({ pfad: `skonto.${i + 1}.prozent`, wert: k.prozent, art: "zahl", hinweise: [] }), "% ",
-      a.skontoBis, " ", feld({ pfad: `skonto.${i + 1}.bis`, wert: k.bis, art: "datum", hinweise: [`skonto.${i + 1}`] }),
-      el("span", { class: "leise" }, `= ${alsBetrag(betragMitSkonto(r, k))}`),
-      el("button", { class: "knopf klein", title: a.skontoEntfernen, onclick: () => setze(`skonto.${i + 1}`, null) }, "×")))));
+        angabe(a.mandatsreferenz, feld({ pfad: "empfaenger.mandatsreferenz", wert: r.empfaenger.mandatsreferenz }))] : null,
+      art === "kreditkarte" || art === "debitkarte" ? [
+        angabe(a.karte, feld({ pfad: "empfaenger.karte", wert: r.empfaenger.karte, platzhalter: "1234" })),
+        angabe(a.karteninhaber, feld({ pfad: "empfaenger.karteninhaber", wert: r.empfaenger.karteninhaber, optional: true }))] : null,
+      skonto,
+      angabe("", knopf(a.skontoHinzufuegen, () => setze(`skonto.${r.skonto.length + 1}`, { prozent: 2, tage: 10, bis: null, betrag: null }))),
+      angabe(a.zahlungsbedingungen, feld({ pfad: "zahlungsbedingungen", wert: r.zahlungsbedingungen, optional: true })),
+      angabe(a.verwendungszweck, feld({ pfad: "zahlung.verwendungszweck", wert: r.zahlung.verwendungszweck, optional: true, platzhalter: r.nummer || "" })),
+      r.gezahlt || zustand.befund.rechnung.gezahlt ? angabe(a.gezahlt, feld({ pfad: "gezahlt", wert: r.gezahlt, art: "betrag", optional: true })) : null,
+      ze ? [angabe(a.zahlungsempfaenger, feld({ pfad: "zahlungsempfaenger.name", wert: ze.name })),
+        angabe(a.felder.kennung, feld({ pfad: "zahlungsempfaenger.kennung", wert: ze.kennung, optional: true })),
+        angabe(a.felder.register, feld({ pfad: "zahlungsempfaenger.register", wert: ze.register, optional: true }))] : null));
 }
 
 function weitereAngaben(r) {
   const a = TEXTE.ansicht;
-  const steuerfaelle = Object.entries(a.steuerfaelle).map(([art, name]) =>
-    el("label", { class: "wahl" },
-      el("input", { type: "radio", name: "steuerfall", value: art, checked: r.steuerfall.art === art,
-        onchange: () => setze("steuerfall", art) }),
-      name));
-  const ohneDatum = zustand.befund.positionen.some((p) => !p.von) && !zustand.befund.rechnung.leistungVon;
+  const zeile = (bezeichnung, ...inhalt) => el("div", { class: "angabe" }, el("div", { class: "leise" }, bezeichnung), ...inhalt);
+  const kategorien = steuerkategorienDerRechnung(r);
+  const alle = Object.entries(steuerOptionen()).map(([s, o]) => knopf(o.name, () => setzeSteuer(null, s)));
+  // Referenzen: was da ist, steht oben; der Rest zum Ergänzen aufgeklappt
+  const referenzen = ["referenz", "leitwegId", "bestellnummer", "auftragsnummer", "vertrag", "projekt", "lieferschein",
+    "wareneingang", "ausschreibung", "objekt", "buchungsreferenz"];
+  const mitHinweis = (name) => zustand.hinweise.some((h) => h.feld === name);
+  const referenzZeile = (name) => zeile(a.referenzen[name], feld({ pfad: name, wert: r[name], optional: true }));
+  const gefuellt = referenzen.filter((n) => r[n] || mitHinweis(n));
+  const leer = referenzen.filter((n) => !gefuellt.includes(n));
+  const liste = (name, eintraege, darstellen, neu, bezeichnung, hinzufuegen) => zeile(bezeichnung,
+    el("div", { class: "wahlen" },
+      eintraege.map((x, i) => el("span", { class: "feld" }, darstellen(x, i), knopf("×", () => setze(`${name}.${i + 1}`, null), a.entfernen))),
+      el("span", {}, knopf(hinzufuegen, () => setze(`${name}.${eintraege.length + 1}`, neu)))));
+  const l = r.lieferung;
+  const lieferung = (name, bezeichnung, optionen = {}) => zeile(bezeichnung, feld({ pfad: `lieferung.${name}`, wert: l?.[name], optional: true, ...optionen }));
   return el("div", { class: "weitere" },
     el("h3", {}, a.weitereAngaben),
-    el("div", { class: "angabe" }, el("div", { class: "leise" }, a.steuerfall), el("div", { class: "wahlen" }, steuerfaelle),
-      hinweisMarken(zustand.hinweise, "steuerfall", "pruefer")),
-    ohneDatum ? el("div", { class: "angabe" },
-      el("div", { class: "leise" }, a.leistungsdatum),
-      feld({ pfad: "leistungsdatum", wert: r.leistungsdatum, art: "datum", hinweise: [], optional: true }),
-      r.datum ? el("button", { class: "knopf klein", onclick: () => setze("leistungsdatum", r.datum) }, a.gleichRechnungsdatum) : null)
-      : null,
-    el("div", { class: "angabe" }, el("div", { class: "leise" }, a.referenz),
-      feld({ pfad: "kaeuferreferenz", wert: r.referenz, optional: true, hinweise: [] })),
-    el("div", { class: "angabe" }, el("div", { class: "leise" }, a.leitwegId),
-      feld({ pfad: "leitwegId", wert: r.leitwegId, optional: true })));
+    zeile(a.steuerAlle, el("div", { class: "knoepfe" }, alle), hinweisMarken(zustand.hinweise, "steuer", "pruefer")),
+    ["E", "AE", "O"].filter((k) => kategorien.includes(k)).map((k) => zeile(a.steuerText(a.steuerArten[k]),
+      feld({ pfad: `steuerTexte.${k}`, wert: r.steuerTexte[k], hinweise: [`steuerText.${k}`] }),
+      k === "E" && !r.steuerTexte.E ? knopf(a.paragraph19, () => setze("steuerTexte.E", TEXTE.steuerText.kleinunternehmer)) : null)),
+    zeile(a.leistungsdatum, feld({ pfad: "leistungsdatum", wert: r.leistungsdatum, art: "datum", optional: true }),
+      r.datum && !r.leistungsdatum && !r.leistungVon ? knopf(a.gleichRechnungsdatum, () => setze("leistungsdatum", r.datum)) : null),
+    zeile(a.leistungszeitraum, feld({ pfad: "leistungVon", wert: r.leistungVon, art: "datum", optional: true }), " – ",
+      feld({ pfad: "leistungBis", wert: r.leistungBis, art: "datum", optional: true })),
+    gefuellt.map(referenzZeile),
+    r.vorherigeRechnungen.length || ["381", "384", "876", "877"].includes(r.art) || mitHinweis("art")
+      ? liste("vorherigeRechnungen", r.vorherigeRechnungen, (v, i) => [
+        feld({ pfad: `vorherigeRechnungen.${i + 1}.nummer`, wert: v.nummer }), " ",
+        feld({ pfad: `vorherigeRechnungen.${i + 1}.datum`, wert: v.datum, art: "datum", optional: true })],
+      { nummer: null, datum: null }, a.vorherigeRechnungen, a.hinzufuegenPlus) : null,
+    liste("bemerkungen", r.bemerkungen, (b, i) => feld({ pfad: `bemerkungen.${i + 1}`, wert: b }), "", a.bemerkungen, a.hinzufuegenPlus),
+    r.anlagen.length ? liste("anlagen", r.anlagen, (d, i) => [feld({ pfad: `anlagen.${i + 1}.kennung`, wert: d.kennung }), " ",
+      feld({ pfad: `anlagen.${i + 1}.beschreibung`, wert: d.beschreibung, optional: true }), " ",
+      feld({ pfad: `anlagen.${i + 1}.link`, wert: d.link, optional: true })], { kennung: null, beschreibung: null, link: null },
+    a.anlagen, a.hinzufuegenPlus) : null,
+    l ? [lieferung("name", a.lieferung.name), lieferung("strasse", a.lieferung.strasse),
+      zeile(a.lieferung.ort, feld({ pfad: "lieferung.plz", wert: l.plz, optional: true }), " ",
+        feld({ pfad: "lieferung.ort", wert: l.ort, optional: true }))] : null,
+    el("details", { class: "mehr" }, el("summary", {}, a.weitereFelder),
+      leer.map(referenzZeile),
+      !r.anlagen.length ? liste("anlagen", r.anlagen, () => null, { kennung: null, beschreibung: null, link: null }, a.anlagen, a.hinzufuegenPlus) : null,
+      !l ? [lieferung("name", a.lieferung.name), lieferung("strasse", a.lieferung.strasse),
+        zeile(a.lieferung.ort, feld({ pfad: "lieferung.plz", wert: null, optional: true }), " ",
+          feld({ pfad: "lieferung.ort", wert: null, optional: true }))] : null));
 }
 
 /** Zeigt, was für die XRechnung noch fehlt, und gibt den Knopf frei, wenn nichts fehlt. */

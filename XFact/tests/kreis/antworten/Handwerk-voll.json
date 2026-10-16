@@ -1,0 +1,1066 @@
+{
+ "modell": "google/gemini-3.8-flash",
+ "befund": {
+  "text": "Tischlerei Holzmann GmbH & Co. KG\n(Holzmann Innenausbau)\nWerkstraße 12 · Halle B · Tor 2 · 50667 Köln\nNordrhein-Westfalen\nIhre Ansprechpartnerin/Ihr Ansprechpartner: Anna Holzmann\nTel. 0221 555 120 · E-Mail rechnung@holzmann.example · direkt: anna.holzmann@holzmann.example\nTischlerei Holzmann GmbH & Co. KG · Tor 2 · 50667 Köln               Rechnung Nr.              RE-2026-0815\nBerger Hotelbetriebe GmbH (Rheinblick Hotels)                        Datum                     14.09.2026\nz. Hd. Jörg Bartel                                                   Kundennummer              K-20931\nRheinallee 7\n                                                                     Ihr Zeichen               Hr. Bartel / Umbau Lobby\nBuchhaltung\n                                                                     Ihre Bestellung           BE-4500123\nGebäude C, 2. OG\n53111 Bonn                                                           Unser Auftrag             AB-26-0412\nNordrhein-Westfalen                                                  Vertrag                   RV-2025-07\nTel. 0228 300 40                                                     Projekt                   Umbau Lobby Hotel Rheinblick\nE-Mail j.bartel@berger-hotels.example                                Lieferschein              LS-26-3301\nRechnungsempfang: eingangsrechnungen@berger-hotels.example\n                                                                     Ihre                      WE-88812\nIhre USt-IdNr. DE987654325\n                                                                     Wareneingangsmeldung\nIhr Register: HRB 9921, Amtsgericht Bonn\n                                                                     Ausschreibung             Los 3 Innenausbau\n                                                                     Objekt                    Hotel Rheinblick, Gebäude A\n                                                                     Ihre Kostenstelle         Kostenstelle 4410\n                                                                     Leistungszeitraum         01.09.2026 – 12.09.2026\nRechnung RE-2026-0815\nLieferanschrift: Hotel Rheinblick, (LO-0007), Uferweg 3, Anlieferung Hof, Tor 4, 53639 Königswinter, Nordrhein-Westfalen\nPos.       Bezeichnung                       Menge         Einheit         Preis               USt          Betrag\n10         Einbauschrank Eiche                       2     Stück                 1.080,00 €        19 %          2.112,00 €\n           Titel 1: Möbel\n           nach Aufmaß, 3-türig\n           Art.-Nr. ES-300\n           Ihre Art.-Nr. BH-77-1\n           EAN 4012345678901\n           Ursprungsland DE\n           Holzart: Eiche massiv\n           Oberfläche: geölt\n           Ihre Bestellposition 1\n           Ihre Kostenstelle 4410-01\n           Leistung 01.09.2026 – 05.09.2026\n           Listenpreis 1.200,00 € abzgl.\n           120,00 € je Einheit\n           abzgl. 5 % Projektrabatt: −108,00 €\n           zzgl. Sonderfarbe: 60,00 €\n20         Montage                                  12     Stunde                   65,00 €        19 %            975,00 €\n           Objekt: Zimmer 101-104\n           Leistung 08.09.2026 – 12.09.2026\n           zzgl. 25 % Wochenendzuschlag:\n           195,00 €\n30         Schrauben Edelstahl                     400     Stück             12,50 € je 100        19 %             50,00 €\n           4 x 40 mm\n           Leistung am 08.09.2026\n40         Fachbuch Holzpflege                       1     Stück                     8,00 €         7 %              8,00 €\n           Leistung am 12.09.2026\n                                                                                Summe Positionen                 3.145,00 €\n                                                                   abzgl. 3 % Treuerabatt (19 % USt)               −94,35 €\n                                                                             zzgl. Fracht (19 % USt)                45,00 €\n                                                                                       Nettobetrag               3.095,65 €\n                                                                       zzgl. 19 % USt auf 3.087,65 €               586,65 €\n                                                                            zzgl. 7 % USt auf 8,00 €                 0,56 €\nTischlerei Holzmann GmbH & Co. KG · HRA 4711, Amtsgericht Köln · Sitz Köln; Komplementärin: Holzmann Verwaltungs GmbH, HRB 815; Geschäftsführer: Peter\nHolzmann\nUSt-IdNr. DE123456788 · Steuernummer 214/5800/1234\nSeite 1 von 2\n\f\n                                                                                 Gesamtbetrag               3.682,86 €\nVielen Dank für Ihren Auftrag.\nDie Gewährleistung beträgt 5 Jahre ab Abnahme.\nZahlungsart: Überweisung\nBei Zahlung bis 24.09.2026 gewähren wir 2 % Skonto (3.609,20 €).\nZahlbar bis 14.10.2026\nVerwendungszweck: RE-2026-0815 K-20931\nBitte zahlen Sie mit befreiender Wirkung nur an: Rhein Factoring AG, Kennung RF-3301, HRB 1234, Amtsgericht Düsseldorf\nBankverbindung: IBAN DE89370400440532013000, BIC COBADEFFXXX, Kontoinhaber Rhein Factoring AG\nBankverbindung: IBAN DE02120300000000202051, BIC BYLADEM1001\nAnlagen: Aufmaß Nr. 12 (Aufmaß vom 12.09.2026); Fotodokumentation – Fotos der Montage https://holzmann.example/\ndocs/0815\nTischlerei Holzmann GmbH & Co. KG · HRA 4711, Amtsgericht Köln · Sitz Köln; Komplementärin: Holzmann Verwaltungs GmbH, HRB 815; Geschäftsführer: Peter\nHolzmann\nUSt-IdNr. DE123456788 · Steuernummer 214/5800/1234\nSeite 2 von 2",
+  "rechnung": {
+   "nummer": "RE-2026-0815",
+   "datum": "2026-09-14",
+   "art": "380",
+   "waehrung": "EUR",
+   "faellig": "2026-10-14",
+   "leistungsdatum": null,
+   "leistungVon": "2026-09-01",
+   "leistungBis": "2026-09-12",
+   "kaeuferreferenz": "Hr. Bartel / Umbau Lobby",
+   "leitwegId": null,
+   "bestellnummer": "BE-4500123",
+   "auftragsnummer": "AB-26-0412",
+   "vertrag": "RV-2025-07",
+   "projekt": "Umbau Lobby Hotel Rheinblick",
+   "wareneingang": "WE-88812",
+   "lieferschein": "LS-26-3301",
+   "ausschreibung": "Los 3 Innenausbau",
+   "objekt": "Hotel Rheinblick, Gebäude A",
+   "buchungsreferenz": "Kostenstelle 4410",
+   "vorherigeRechnungen": [],
+   "bemerkungen": [
+    "Vielen Dank für Ihren Auftrag.",
+    "Die Gewährleistung beträgt 5 Jahre ab Abnahme."
+   ],
+   "zahlungsbedingungen": "Bei Zahlung bis 24.09.2026 gewähren wir 2 % Skonto (3.609,20 €). Zahlbar bis 14.10.2026",
+   "skonto": [
+    {
+     "prozent": 2,
+     "tage": 10,
+     "bis": "2026-09-24",
+     "betrag": 3609.2
+    }
+   ],
+   "gezahlt": 0,
+   "rundung": 0,
+   "anlagen": [
+    {
+     "kennung": "Aufmaß Nr. 12",
+     "beschreibung": "Aufmaß vom 12.09.2026",
+     "link": null
+    },
+    {
+     "kennung": "Fotodokumentation",
+     "beschreibung": "Fotos der Montage",
+     "link": "https://holzmann.example/docs/0815"
+    }
+   ]
+  },
+  "verkaeufer": {
+   "name": "Tischlerei Holzmann GmbH & Co. KG",
+   "handelsname": "Holzmann Innenausbau",
+   "kennung": null,
+   "register": "HRA 4711, Amtsgericht Köln",
+   "ustId": "DE123456788",
+   "steuernummer": "214/5800/1234",
+   "rechtlicheAngaben": "Sitz Köln; Komplementärin: Holzmann Verwaltungs GmbH, HRB 815; Geschäftsführer: Peter Holzmann",
+   "email": "rechnung@holzmann.example",
+   "strasse": "Werkstraße 12",
+   "zusatz": "Halle B · Tor 2",
+   "zeile3": null,
+   "ort": "Köln",
+   "plz": "50667",
+   "region": "Nordrhein-Westfalen",
+   "land": "DE",
+   "kontakt": "Anna Holzmann",
+   "telefon": "0221 555 120",
+   "kontaktEmail": "anna.holzmann@holzmann.example"
+  },
+  "kaeufer": {
+   "name": "Berger Hotelbetriebe GmbH",
+   "handelsname": "Rheinblick Hotels",
+   "kennung": "K-20931",
+   "register": "HRB 9921, Amtsgericht Bonn",
+   "ustId": "DE987654325",
+   "email": "eingangsrechnungen@berger-hotels.example",
+   "strasse": "Rheinallee 7",
+   "zusatz": "Buchhaltung",
+   "zeile3": "Gebäude C, 2. OG",
+   "ort": "Bonn",
+   "plz": "53111",
+   "region": "Nordrhein-Westfalen",
+   "land": "DE",
+   "kontakt": "Jörg Bartel",
+   "telefon": "0228 300 40",
+   "kontaktEmail": "j.bartel@berger-hotels.example",
+   "oeffentlich": false
+  },
+  "zahlungsempfaenger": {
+   "name": "Rhein Factoring AG",
+   "kennung": "RF-3301",
+   "register": "HRB 1234, Amtsgericht Düsseldorf"
+  },
+  "steuervertreter": null,
+  "lieferung": {
+   "name": "Hotel Rheinblick",
+   "ortKennung": "LO-0007",
+   "strasse": "Uferweg 3",
+   "zusatz": "Anlieferung Hof, Tor 4",
+   "zeile3": null,
+   "ort": "Königswinter",
+   "plz": "53639",
+   "region": "Nordrhein-Westfalen",
+   "land": "DE"
+  },
+  "zahlung": {
+   "art": "ueberweisung",
+   "text": "Überweisung",
+   "verwendungszweck": "RE-2026-0815 K-20931",
+   "konten": [
+    {
+     "iban": "DE89370400440532013000",
+     "bic": "COBADEFFXXX",
+     "inhaber": "Rhein Factoring AG"
+    },
+    {
+     "iban": "DE02120300000000202051",
+     "bic": "BYLADEM1001",
+     "inhaber": null
+    }
+   ],
+   "karte": null,
+   "karteninhaber": null,
+   "glaeubigerId": null,
+   "mandatsreferenz": null,
+   "kundenIban": null
+  },
+  "nachlaesse": [
+   {
+    "betrag": 94.35,
+    "basis": 3145,
+    "prozent": 3,
+    "grund": "Treuerabatt",
+    "kategorie": "S",
+    "satz": 19
+   }
+  ],
+  "zuschlaege": [
+   {
+    "betrag": 45,
+    "basis": 0,
+    "prozent": 0,
+    "grund": "Fracht",
+    "kategorie": "S",
+    "satz": 19
+   }
+  ],
+  "positionen": [
+   {
+    "nr": 1,
+    "posNr": "10",
+    "name": "Einbauschrank Eiche",
+    "beschreibung": "nach Aufmaß, 3-türig",
+    "notiz": "Titel 1: Möbel",
+    "artikelnummer": "ES-300",
+    "kundenArtikelnummer": "BH-77-1",
+    "gtin": "4012345678901",
+    "ursprungsland": "DE",
+    "merkmale": [
+     {
+      "name": "Holzart",
+      "wert": "Eiche massiv"
+     },
+     {
+      "name": "Oberfläche",
+      "wert": "geölt"
+     }
+    ],
+    "objekt": null,
+    "bestellposition": "1",
+    "buchungsreferenz": "4410-01",
+    "menge": 2,
+    "einheitText": "Stück",
+    "einheitCode": "C62",
+    "nettopreis": 1080,
+    "bruttopreis": 1200,
+    "preisnachlass": 120,
+    "basismenge": 0,
+    "nachlaesse": [
+     {
+      "betrag": 108,
+      "basis": 2160,
+      "prozent": 5,
+      "grund": "Projektrabatt"
+     }
+    ],
+    "zuschlaege": [
+     {
+      "betrag": 60,
+      "basis": 0,
+      "prozent": 0,
+      "grund": "Sonderfarbe"
+     }
+    ],
+    "gesamt": 2112,
+    "steuerkategorie": "S",
+    "steuersatz": 19,
+    "von": "2026-09-01",
+    "bis": "2026-09-05"
+   },
+   {
+    "nr": 2,
+    "posNr": "20",
+    "name": "Montage",
+    "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": "Zimmer 101-104",
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 12,
+    "einheitText": "Stunde",
+    "einheitCode": "HUR",
+    "nettopreis": 65,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [
+     {
+      "betrag": 195,
+      "basis": 780,
+      "prozent": 25,
+      "grund": "Wochenendzuschlag"
+     }
+    ],
+    "gesamt": 975,
+    "steuerkategorie": "S",
+    "steuersatz": 19,
+    "von": "2026-09-08",
+    "bis": "2026-09-12"
+   },
+   {
+    "nr": 3,
+    "posNr": "30",
+    "name": "Schrauben Edelstahl",
+    "beschreibung": "4 x 40 mm",
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 400,
+    "einheitText": "Stück",
+    "einheitCode": "C62",
+    "nettopreis": 12.5,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 100,
+    "nachlaesse": [],
+    "zuschlaege": [],
+    "gesamt": 50,
+    "steuerkategorie": "S",
+    "steuersatz": 19,
+    "von": "2026-09-08",
+    "bis": "2026-09-08"
+   },
+   {
+    "nr": 4,
+    "posNr": "40",
+    "name": "Fachbuch Holzpflege",
+    "beschreibung": null,
+    "notiz": null,
+    "artikelnummer": null,
+    "kundenArtikelnummer": null,
+    "gtin": null,
+    "ursprungsland": null,
+    "merkmale": [],
+    "objekt": null,
+    "bestellposition": null,
+    "buchungsreferenz": null,
+    "menge": 1,
+    "einheitText": "Stück",
+    "einheitCode": "C62",
+    "nettopreis": 8,
+    "bruttopreis": 0,
+    "preisnachlass": 0,
+    "basismenge": 0,
+    "nachlaesse": [],
+    "zuschlaege": [],
+    "gesamt": 8,
+    "steuerkategorie": "S",
+    "steuersatz": 7,
+    "von": "2026-09-12",
+    "bis": "2026-09-12"
+   }
+  ],
+  "steuer": [
+   {
+    "kategorie": "S",
+    "satz": 19,
+    "basis": 3087.65,
+    "betrag": 586.65,
+    "befreiungsgrund": null
+   },
+   {
+    "kategorie": "S",
+    "satz": 7,
+    "basis": 8,
+    "betrag": 0.56,
+    "befreiungsgrund": null
+   }
+  ],
+  "summen": {
+   "positionen": 3145,
+   "nachlaesse": 94.35,
+   "zuschlaege": 45,
+   "netto": 3095.65,
+   "steuer": 587.21,
+   "brutto": 3682.86,
+   "zahlbetrag": 3682.86
+  },
+  "fehlt": [],
+  "nichtZugeordnet": []
+ },
+ "pruefung": {
+  "felder": {
+   "nummer": {
+    "pfad": "nummer",
+    "art": "noul"
+   },
+   "datum": {
+    "pfad": "datum",
+    "art": "noul"
+   },
+   "faellig": {
+    "pfad": "faellig",
+    "art": "noul"
+   },
+   "leistungVon": {
+    "pfad": "leistungVon",
+    "art": "noul"
+   },
+   "leistungBis": {
+    "pfad": "leistungBis",
+    "art": "noul"
+   },
+   "absender_name": {
+    "pfad": "absender.name",
+    "art": "noul"
+   },
+   "absender_ort": {
+    "pfad": "absender.plz",
+    "art": "noul"
+   },
+   "absender_ust": {
+    "pfad": "absender.ustId",
+    "art": "noul"
+   },
+   "absender_register": {
+    "pfad": "absender.register",
+    "art": "noul"
+   },
+   "empfaenger_name": {
+    "pfad": "empfaenger.name",
+    "art": "noul"
+   },
+   "empfaenger_ort": {
+    "pfad": "empfaenger.plz",
+    "art": "noul"
+   },
+   "empfaenger_ust": {
+    "pfad": "empfaenger.ustId",
+    "art": "noul"
+   },
+   "empfaenger_register": {
+    "pfad": "empfaenger.register",
+    "art": "noul"
+   },
+   "empfaenger_kennung": {
+    "pfad": "empfaenger.kennung",
+    "art": "noul"
+   },
+   "kontakt": {
+    "pfad": "absender.kontakt",
+    "art": "noul"
+   },
+   "empfaenger_kontakt": {
+    "pfad": "empfaenger.kontakt",
+    "art": "noul"
+   },
+   "referenz": {
+    "pfad": "referenz",
+    "art": "noul"
+   },
+   "bestellnummer": {
+    "pfad": "bestellnummer",
+    "art": "noul"
+   },
+   "auftragsnummer": {
+    "pfad": "auftragsnummer",
+    "art": "noul"
+   },
+   "vertrag": {
+    "pfad": "vertrag",
+    "art": "noul"
+   },
+   "projekt": {
+    "pfad": "projekt",
+    "art": "noul"
+   },
+   "lieferschein": {
+    "pfad": "lieferschein",
+    "art": "noul"
+   },
+   "wareneingang": {
+    "pfad": "wareneingang",
+    "art": "noul"
+   },
+   "ausschreibung": {
+    "pfad": "ausschreibung",
+    "art": "noul"
+   },
+   "objekt": {
+    "pfad": "objekt",
+    "art": "noul"
+   },
+   "buchungsreferenz": {
+    "pfad": "buchungsreferenz",
+    "art": "noul"
+   },
+   "iban": {
+    "pfad": "zahlung.konten.1.iban",
+    "art": "noul"
+   },
+   "iban2": {
+    "pfad": "zahlung.konten.2.iban",
+    "art": "noul"
+   },
+   "nachlaesse1": {
+    "pfad": "nachlaesse.1.betrag",
+    "art": "noul"
+   },
+   "zuschlaege1": {
+    "pfad": "zuschlaege.1.betrag",
+    "art": "noul"
+   },
+   "p1_menge": {
+    "pfad": "position.1.menge",
+    "art": "noul"
+   },
+   "p1_preis": {
+    "pfad": "position.1.einzelpreis",
+    "art": "noul"
+   },
+   "p1_gesamt": {
+    "pfad": "position.1.gesamt",
+    "art": "noul"
+   },
+   "p1_nachlass1": {
+    "pfad": "position.1.nachlaesse.1.betrag",
+    "art": "noul"
+   },
+   "p1_artikel": {
+    "pfad": "position.1.artikelnummer",
+    "art": "noul"
+   },
+   "p1_einheit": {
+    "pfad": "position.1.einheit",
+    "art": "choice",
+    "erwartet": "C62",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p1_steuer": {
+    "pfad": "position.1.steuer",
+    "art": "choice",
+    "erwartet": "S19",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "p2_menge": {
+    "pfad": "position.2.menge",
+    "art": "noul"
+   },
+   "p2_preis": {
+    "pfad": "position.2.einzelpreis",
+    "art": "noul"
+   },
+   "p2_gesamt": {
+    "pfad": "position.2.gesamt",
+    "art": "noul"
+   },
+   "p2_einheit": {
+    "pfad": "position.2.einheit",
+    "art": "choice",
+    "erwartet": "HUR",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p2_steuer": {
+    "pfad": "position.2.steuer",
+    "art": "choice",
+    "erwartet": "S19",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "p3_menge": {
+    "pfad": "position.3.menge",
+    "art": "noul"
+   },
+   "p3_preis": {
+    "pfad": "position.3.einzelpreis",
+    "art": "noul"
+   },
+   "p3_gesamt": {
+    "pfad": "position.3.gesamt",
+    "art": "noul"
+   },
+   "p3_einheit": {
+    "pfad": "position.3.einheit",
+    "art": "choice",
+    "erwartet": "C62",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p3_steuer": {
+    "pfad": "position.3.steuer",
+    "art": "choice",
+    "erwartet": "S19",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "p4_menge": {
+    "pfad": "position.4.menge",
+    "art": "noul"
+   },
+   "p4_preis": {
+    "pfad": "position.4.einzelpreis",
+    "art": "noul"
+   },
+   "p4_gesamt": {
+    "pfad": "position.4.gesamt",
+    "art": "noul"
+   },
+   "p4_einheit": {
+    "pfad": "position.4.einheit",
+    "art": "choice",
+    "erwartet": "C62",
+    "namen": {
+     "HUR": "Stunde",
+     "DAY": "Tag",
+     "WEE": "Woche",
+     "MON": "Monat",
+     "ANN": "Jahr",
+     "MIN": "Minute",
+     "LS": "Pauschale",
+     "C62": "Stück",
+     "SET": "Satz",
+     "PR": "Paar",
+     "KMT": "Kilometer",
+     "MTR": "Meter",
+     "CMT": "Zentimeter",
+     "MMT": "Millimeter",
+     "MTK": "Quadratmeter",
+     "MTQ": "Kubikmeter",
+     "KGM": "Kilogramm",
+     "GRM": "Gramm",
+     "TNE": "Tonne",
+     "LTR": "Liter",
+     "KWH": "Kilowattstunde",
+     "XBX": "Karton",
+     "XPK": "Packung"
+    }
+   },
+   "p4_steuer": {
+    "pfad": "position.4.steuer",
+    "art": "choice",
+    "erwartet": "S7",
+    "namen": {
+     "S19": "19 %",
+     "S7": "7 %",
+     "Z": "Nullsatz (0 %)",
+     "E": "steuerfrei",
+     "AE": "§ 13b (Reverse Charge)",
+     "O": "nicht steuerbar"
+    }
+   },
+   "skonto1": {
+    "pfad": "skonto.1",
+    "art": "noul"
+   },
+   "zahlungsart": {
+    "pfad": "zahlungsart",
+    "art": "choice",
+    "erwartet": "ueberweisung",
+    "namen": {
+     "ueberweisung": "Überweisung",
+     "lastschrift": "Lastschrift",
+     "kreditkarte": "Kreditkarte",
+     "debitkarte": "Debit-/EC-Karte",
+     "bar": "bar",
+     "verrechnung": "Verrechnung",
+     "online": "Online-Zahlung (z.B. PayPal)"
+    }
+   }
+  },
+  "antworten": {
+   "nummer": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "datum": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "faellig": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "leistungVon": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "leistungBis": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_name": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ort": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_ust": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "absender_register": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "empfaenger_name": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "empfaenger_ort": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_ust": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "empfaenger_register": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "empfaenger_kennung": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "kontakt": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "empfaenger_kontakt": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "referenz": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "bestellnummer": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "auftragsnummer": {
+    "type": "noul",
+    "noul": 0.86
+   },
+   "vertrag": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "projekt": {
+    "type": "noul",
+    "noul": 0.97
+   },
+   "lieferschein": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "wareneingang": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "ausschreibung": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "objekt": {
+    "type": "noul",
+    "noul": 0.43
+   },
+   "buchungsreferenz": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "iban": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "iban2": {
+    "type": "noul",
+    "noul": 0.85
+   },
+   "nachlaesse1": {
+    "type": "noul",
+    "noul": 0.91
+   },
+   "zuschlaege1": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "p1_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_preis": {
+    "type": "noul",
+    "noul": 0.87
+   },
+   "p1_gesamt": {
+    "type": "noul",
+    "noul": 0.88
+   },
+   "p1_nachlass1": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p1_artikel": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p1_einheit": {
+    "type": "choice",
+    "choice": "C62",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
+     "LS": 0,
+     "C62": 1,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p1_steuer": {
+    "type": "choice",
+    "choice": "S19",
+    "probabilities": {
+     "S19": 1,
+     "S7": 0,
+     "Z": 0,
+     "E": 0,
+     "AE": 0,
+     "O": 0
+    },
+    "confidence": 1
+   },
+   "p2_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p2_preis": {
+    "type": "noul",
+    "noul": 0.88
+   },
+   "p2_gesamt": {
+    "type": "noul",
+    "noul": 0.76
+   },
+   "p2_einheit": {
+    "type": "choice",
+    "choice": "HUR",
+    "probabilities": {
+     "HUR": 1,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
+     "LS": 0,
+     "C62": 0,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p2_steuer": {
+    "type": "choice",
+    "choice": "S19",
+    "probabilities": {
+     "S19": 1,
+     "S7": 0,
+     "Z": 0,
+     "E": 0,
+     "AE": 0,
+     "O": 0
+    },
+    "confidence": 1
+   },
+   "p3_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p3_preis": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p3_gesamt": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p3_einheit": {
+    "type": "choice",
+    "choice": "C62",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
+     "LS": 0,
+     "C62": 1,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p3_steuer": {
+    "type": "choice",
+    "choice": "S19",
+    "probabilities": {
+     "S19": 1,
+     "S7": 0,
+     "Z": 0,
+     "E": 0,
+     "AE": 0,
+     "O": 0
+    },
+    "confidence": 1
+   },
+   "p4_menge": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "p4_preis": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "p4_gesamt": {
+    "type": "noul",
+    "noul": 0.98
+   },
+   "p4_einheit": {
+    "type": "choice",
+    "choice": "C62",
+    "probabilities": {
+     "HUR": 0,
+     "DAY": 0,
+     "WEE": 0,
+     "MON": 0,
+     "ANN": 0,
+     "MIN": 0,
+     "LS": 0,
+     "C62": 1,
+     "SET": 0,
+     "PR": 0,
+     "KMT": 0,
+     "MTR": 0,
+     "CMT": 0,
+     "MMT": 0,
+     "MTK": 0,
+     "MTQ": 0,
+     "KGM": 0,
+     "GRM": 0,
+     "TNE": 0,
+     "LTR": 0,
+     "KWH": 0,
+     "XBX": 0,
+     "XPK": 0
+    },
+    "confidence": 1
+   },
+   "p4_steuer": {
+    "type": "choice",
+    "choice": "S7",
+    "probabilities": {
+     "S19": 0,
+     "S7": 1,
+     "Z": 0,
+     "E": 0,
+     "AE": 0,
+     "O": 0
+    },
+    "confidence": 1
+   },
+   "skonto1": {
+    "type": "noul",
+    "noul": 0.99
+   },
+   "zahlungsart": {
+    "type": "choice",
+    "choice": "ueberweisung",
+    "probabilities": {
+     "ueberweisung": 1,
+     "lastschrift": 0,
+     "kreditkarte": 0,
+     "debitkarte": 0,
+     "bar": 0,
+     "verrechnung": 0,
+     "online": 0
+    },
+    "confidence": 1
+   }
+  }
+ }
+}

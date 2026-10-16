@@ -21,7 +21,9 @@ XFactViewer läuft vollständig in Ihrem Browser, auch ohne Internet. **Die Rech
 **XFactViewer kann:**
 - XRechnungen in der Syntax **CII** anzeigen. Diese Syntax verwenden auch ZUGFeRD und Factur-X.
 - Alle wichtigen Angaben zeigen:
-  - Kopfdaten, Rechnungssteller und -empfänger mit Kontakt, Lieferanschrift
+  - Kopfdaten mit allen Referenzen (Bestellung, Auftrag, Vertrag, Projekt, Lieferschein, Wareneingang, Ausschreibung, Objekt, Kostenstelle, frühere Rechnungen)
+  - Rechnungssteller und -empfänger mit Kontakt, Registernummer und rechtlichen Angaben, Lieferanschrift, Zahlungsempfänger (z.B. Factoring)
+  - je Position Artikelnummern, EAN, Ursprungsland, Merkmale, Listenpreis mit Nachlass
   - Positionen mit Leistungsdatum, Nachlässe und Zuschläge
   - Umsatzsteuer, Summen, Anzahlungen
   - Zahlung per Überweisung oder Lastschrift, Zahlungsbedingungen mit Skonto, Bemerkungen

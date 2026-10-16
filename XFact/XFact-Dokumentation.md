@@ -18,8 +18,16 @@ Diese XML-Datei verschicken Sie zusammen mit Ihrem gewohnten PDF an Ihren Kunden
 
 **XFact kann:**
 - PDF-Rechnungen mit Textebene einlesen. So sind fast alle PDFs, die aus Word, Excel oder einem Programm erzeugt werden. Ein bestimmtes Layout ist nicht nötig.
-- Rechnungsdaten erkennen, mit KI: Nummer, Datum, Absender, Empfänger, Positionen, Summen, Steuer, Bankverbindung, dazu Einheiten und Steuerfall in der Sprache der XRechnung.
-- Kontrollieren: Ein Prüfer bestätigt die erkannten Werte, feste Regeln prüfen IBAN, USt-IdNr., Leitweg-ID und Gläubiger-ID, und XFact rechnet Positionen, Netto, Umsatzsteuer und Gesamtbetrag nach.
+- **Alles erkennen, was eine XRechnung enthalten kann**, mit KI: Grundlage ist die Norm selbst, nicht eine Auswahl. Dazu gehören:
+  - Kopfdaten und alle Referenzen (Bestellung, Auftrag, Vertrag, Projekt, Lieferschein, Kostenstelle …)
+  - Rechnungssteller und Empfänger mit Ansprechpartnern, Registernummern und Kundennummer, Lieferanschrift, Zahlungsempfänger (z.B. Factoring)
+  - Positionen mit Artikelnummern, Merkmalen, Listenpreis, Rabatten und Zuschlägen
+  - Nachlässe und Zuschläge auf die ganze Rechnung, Anzahlungen
+  - jede Zahlungsart, Skonto, Bemerkungen und Anlagen
+  - Abschlags-, Schluss- und Korrekturrechnungen sowie Gutschriften
+  - Welche Felder es gibt und wie XFact sie behandelt, steht im Anhang.
+- **Nichts stillschweigend weglassen:** Was die KI auf der Rechnung findet, aber keinem Feld zuordnen kann, zeigt XFact unter „Nicht übernommen“.
+- Kontrollieren: Ein Prüfer bestätigt die erkannten Werte, feste Regeln prüfen IBAN, USt-IdNr., Leitweg-ID, Gläubiger-ID, Telefon und E-Mail, und XFact rechnet jede Position, Nachlässe, Steuer und Summen nach.
 - Fehlende Pflichtangaben gezielt nachfragen und sich die Antworten merken, auch pro Kunde.
 - Eine **XRechnung 3.0** erzeugen, die den offiziellen Prüfregeln entspricht.
 - Mit einer KI Ihrer Wahl arbeiten: voreingestellt OpenRouter, oder eine KI auf Ihrem eigenen Rechner.
@@ -28,8 +36,8 @@ Diese XML-Datei verschicken Sie zusammen mit Ihrem gewohnten PDF an Ihren Kunden
 **XFact kann nicht:**
 - Ohne KI arbeiten. Sie brauchen einen Zugang zu einem KI-Anbieter oder eine lokale KI.
 - Gescannte Rechnungen (Bilder ohne Text) lesen.
-- Rechnungen an Empfänger im Ausland oder von Absendern im Ausland.
-- Gutschriften, Storno- und Abschlagsrechnungen, Rabatte auf die Gesamtsumme.
+- Rechnungen in anderer Währung als Euro, Rechnungen mit Steuervertreter, innergemeinschaftliche Lieferungen und Ausfuhren. XFact ist für Rechnungen innerhalb Deutschlands gemacht; solche Rechnungen erkennt es und sagt es Ihnen.
+- Dateien in die XRechnung einbetten. Verweise auf Anlagen übernimmt es.
 - ZUGFeRD erzeugen. Das wäre ein PDF mit eingebetteter XML. XFact erzeugt eine separate XML-Datei.
 - Rechnungen verschicken oder archivieren.
 
@@ -90,15 +98,29 @@ Bei den Summen zeigt ein **✓**, dass alles aufgeht. Sonst nennt XFact die Diff
 
 **Skonto:** Nennt die Rechnung Skonto, z.B. „zahlbar bis 30.05.2026 mit 2 % Skonto“, zeigt XFact unter der Zahlung „Skonto 2 % bis 30.05.2026 = 4.716,11 €“. Satz und Datum lassen sich ändern, mit × entfernen Sie die Angabe. Die Frist zählt ab dem Rechnungsdatum. Weicht der Betrag auf der Rechnung vom berechneten ab, wird er gelb. In der XRechnung steht das Skonto in der vorgeschriebenen Form, sodass das Programm Ihres Kunden es erkennt.
 
-**Zahlung:** Unter den Summen wählen Sie **Überweisung**, **Lastschrift** oder **Kreditkarte**. Vorgewählt ist, was die KI auf der Rechnung erkannt hat, z.B. „Der Betrag wird von Ihrem Konto eingezogen“.
-- **Überweisung:** Fälligkeit („Zahlbar bis“), Ihre IBAN und BIC.
-- **Lastschrift:** Ihre **Gläubiger-ID**, die **IBAN des Kunden**, von der abgebucht wird, die **Mandatsreferenz** (optional) und das Datum des Einzugs (optional). Ihre eigene IBAN und eine Fälligkeit braucht die XRechnung dann nicht. Steht die IBAN des Kunden gekürzt auf der Rechnung (z.B. „DE12 **** 3456“), tragen Sie sie einmal vollständig ein; XFact merkt sie sich für diesen Kunden.
-- **Kreditkarte:** die **letzten 4 Ziffern** der Kreditkarte des Kunden und das Datum der Belastung (optional). Die XRechnung verlangt die Ziffern; mehr als die letzten 4 übernimmt XFact nie. Stehen sie nicht auf der Rechnung, finden Sie sie in Ihrem Zahlungsdienst. XFact merkt sie sich für diesen Kunden.
+**Steuer je Position:** In der Spalte „USt“ wählen Sie für jede Position 19 %, 7 %, Nullsatz (0 %, z.B. Photovoltaik), steuerfrei (z.B. § 19 oder § 4 UStG), § 13b (Reverse Charge) oder nicht steuerbar. Verschiedene Sätze in einer Rechnung sind möglich. Unter „Weitere Angaben“ stellen Sie mit einem Klick die ganze Rechnung gleich ein.
+
+**Artikelnummern, Merkmale, Listenpreis:** Was die Rechnung zu einer Position nennt, steht unter ihrer Beschreibung: Artikelnummer, Artikelnummer des Kunden, EAN, Merkmale wie „Farbe: weiß“, Listenpreis mit Nachlass, Preis je 100 Stück.
+
+**Nachlässe und Zuschläge auf die ganze Rechnung** (z.B. „3 % Treuerabatt“, „Fracht“) stehen unter den Positionen, jeweils mit Steuer. Mit „+ Nachlass“ bzw. „+ Zuschlag“ ergänzen Sie weitere.
+
+**Nicht übernommen:** Ganz oben steht gelb, was die KI auf der Rechnung gefunden, aber keinem Feld zuordnen konnte. Prüfen Sie, ob es nötig ist; wenn ja, tragen Sie es in ein passendes Feld oder als Bemerkung ein. Mit „Stimmt“ nehmen Sie es zur Kenntnis.
+
+**Zahlung:** Unter den Summen stehen Zahlungsart, Fälligkeit, Konten, Skonto, Zahlungsbedingungen und Verwendungszweck. Vorgewählt ist, was die KI erkannt hat.
+- **Überweisung:** Fälligkeit („Zahlbar bis“) und Ihre Konten mit IBAN und BIC. Mit „+ Konto“ ergänzen Sie weitere Konten.
+- **Lastschrift:** Ihre **Gläubiger-ID**, die **IBAN des Kunden**, von der abgebucht wird, und die **Mandatsreferenz**, dazu optional das Datum des Einzugs. Ihre eigene IBAN braucht die XRechnung dann nicht. Steht die IBAN des Kunden gekürzt auf der Rechnung (z.B. „DE12 **** 3456“), tragen Sie sie einmal vollständig ein; XFact merkt sie sich für diesen Kunden.
+- **Kreditkarte oder Debitkarte:** die **letzten 4 Ziffern** der Karte des Kunden, optional Karteninhaber und Datum der Belastung. Mehr als die letzten 4 Ziffern übernimmt XFact nie.
+- **Bar, Verrechnung, Online-Zahlung (z.B. PayPal), sonstige:** nur die Angaben, die die Rechnung macht.
+- **Zahlungsempfänger:** Ist an eine andere Stelle zu zahlen, z.B. eine Factoring-Gesellschaft, steht sie hier.
+- **Bereits gezahlt:** Anzahlungen und abgezogene Abschläge; die Summen zeigen dann den Zahlbetrag.
 
 Unter der Rechnung stehen **Weitere Angaben**, die im Rechnungsbild keinen Platz haben:
-- **Steuer:** normal mit 19 % / 7 %, Steuerschuldnerschaft des Leistungsempfängers (§ 13b) oder Kleinunternehmer (§ 19). Vorgewählt ist, was die KI auf der Rechnung erkannt hat.
-- **Leistungsdatum für Positionen ohne Datum:** Mit **„= Rechnungsdatum“** übernehmen Sie das Rechnungsdatum.
-- **Referenz / Bestellnummer** des Kunden und **Leitweg-ID** (nur bei Behörden), beides optional. Hält die KI den Empfänger für eine Behörde und fehlt die Leitweg-ID, steht dort gelb „Empfänger ist vermutlich eine Behörde – dann meist Pflicht“. Die Leitweg-ID steht in der Bestellung oder dem Auftrag der Behörde. Braucht sie keine, klicken Sie auf „Stimmt“. Eine eingetragene Leitweg-ID prüft XFact auf Aufbau und Prüfziffer.
+- **Umsatzsteuer für alle Positionen** mit einem Klick, dazu der **Hinweis zur Steuer**, wenn Positionen steuerfrei, nach § 13b oder nicht steuerbar sind. Für Kleinunternehmer setzt „§ 19 UStG“ den üblichen Satz ein.
+- **Leistungsdatum oder Leistungszeitraum der ganzen Rechnung.** Mit **„= Rechnungsdatum“** übernehmen Sie das Rechnungsdatum. Ein Datum für die ganze Rechnung genügt, wenn die Positionen keines haben.
+- **Referenzen**, die die Rechnung nennt: Referenz des Kunden („Ihr Zeichen“), Leitweg-ID, Bestellnummer, eigene Auftragsnummer, Vertrag, Projekt, Lieferschein und weitere. Unter „Weitere Angaben ergänzen“ finden Sie die übrigen. Hält die KI den Empfänger für eine Behörde und fehlt die Leitweg-ID, steht dort gelb „Empfänger ist vermutlich eine Behörde – dann meist Pflicht“. Die Leitweg-ID steht in der Bestellung oder dem Auftrag der Behörde. Braucht sie keine, klicken Sie auf „Stimmt“. Eine eingetragene Leitweg-ID prüft XFact auf Aufbau und Prüfziffer.
+- **Bezieht sich auf Rechnung:** bei Korrekturen, Gutschriften und Schlussrechnungen die frühere Rechnung.
+- **Bemerkungen, Anlagen, Lieferanschrift.**
+- Die **Rechnungsart** (Rechnung, Gutschrift, Korrektur, Abschlags- oder Schlussrechnung) wählen Sie oben neben der Rechnungsnummer.
 
 Darunter sehen Sie, was für die XRechnung noch fehlt, und das Häkchen **„Ergänzte Angaben merken“**. Es ist vorausgewählt. Darunter steht genau, was XFact sich merken wird, z.B. „Berg GmbH & Co. KG: E-Mail für Rechnungen rechnung@berg.de“.
 
@@ -124,19 +146,23 @@ Eine XRechnung verlangt einige Angaben, die auf vielen PDF-Rechnungen fehlen. XF
 | **Kreditkarte:** letzte 4 Ziffern | Pflicht, wenn der Betrag einer Kreditkarte belastet wird | diesen Kunden |
 | **Einheit**, z.B. „Std“, „Pausch.“ | Die XRechnung verwendet genormte Einheiten. Die KI ordnet sie zu; korrigieren Sie eine Zuordnung, gilt das künftig. | Ihre Firma |
 | **Leistungsdatum** | Steuerlich vorgeschrieben. Fehlt es, genügt ein Klick auf „= Rechnungsdatum“, wenn beides gleich ist. | diese Rechnung |
-| **Steuerfall** | Nur wenn ihn die KI nicht eindeutig erkennt, siehe Abschnitt 7 | diese Rechnung |
+| **Umsatzsteuer** | Nur wenn die KI sie nicht eindeutig erkennt, siehe Abschnitt 7 | diese Rechnung |
 
 Ihre eigenen Firmendaten liest XFact aus Ihrer ersten Rechnung. Eine Einrichtung der Firmendaten vorab ist nicht nötig.
 
-## 7. Steuerfälle
+## 7. Umsatzsteuer
+
+XFact ordnet jede Position einzeln zu; verschiedene Fälle in einer Rechnung sind möglich, außer „nicht steuerbar“, das die XRechnung nur allein erlaubt.
 
 | Fall | Woran XFact ihn erkennt | Was XFact zusätzlich braucht |
 |---|---|---|
-| **19 % und/oder 7 %**, auch gemischt | ausgewiesene Umsatzsteuer | — |
-| **§13b UStG, Steuerschuldnerschaft des Leistungsempfängers** (z.B. Bauleistungen an Baufirmen, Gebäudereinigung) | Hinweistext auf der Rechnung, z.B. „Reverse Charge“, 0 % Umsatzsteuer | die **USt-IdNr. des Empfängers** oder dessen Registernummer (z.B. HRB). Eine Steuernummer des Empfängers reicht hier nicht. |
-| **§19 UStG, Kleinunternehmer** | Hinweistext „§ 19 UStG“, keine Umsatzsteuer ausgewiesen | — |
+| **19 % und/oder 7 %** | ausgewiesene Umsatzsteuer | — |
+| **Nullsatz** (z.B. Photovoltaik nach § 12 Abs. 3 UStG) | 0 % mit Hinweis auf den Nullsatz | — |
+| **steuerfrei** (Kleinunternehmer nach § 19 UStG, Befreiungen nach § 4 UStG) | Hinweistext, keine Umsatzsteuer | den **Hinweis zur Steuerbefreiung**; für § 19 setzt ein Klick den üblichen Satz ein |
+| **§ 13b UStG, Steuerschuldnerschaft des Leistungsempfängers** (z.B. Bauleistungen an Baufirmen, Gebäudereinigung) | Hinweistext, z.B. „Reverse Charge“, 0 % Umsatzsteuer | die **USt-IdNr. des Empfängers** oder dessen Registernummer (z.B. HRB) |
+| **nicht steuerbar** (z.B. echter Schadenersatz) | Hinweistext | den Grund; ohne Angabe „Nicht steuerbar“. Die XRechnung enthält dann keine USt-IdNr. |
 
-Den Fall erkennt die KI aus der Rechnung, der Prüfer kontrolliert ihn. Für Ihr eigenes Unternehmen genügt **USt-IdNr. oder Steuernummer**. Andere Fälle (z.B. innergemeinschaftliche Lieferung von Waren) unterstützt XFact nicht; dann ist der Steuerfall rot.
+Den Fall erkennt die KI aus der Rechnung, der Prüfer kontrolliert ihn für jede Position. Für Ihr eigenes Unternehmen genügt **USt-IdNr. oder Steuernummer**. Innergemeinschaftliche Lieferungen und Ausfuhren unterstützt XFact nicht; dann ist die Steuer der Position rot.
 
 ## 8. Was XFact sich merkt
 
@@ -170,9 +196,10 @@ Ohne KI geht es nicht: Die KI liest Ihre Rechnung und ordnet sie der XRechnung z
 **Was dabei passiert:**
 - XFact schickt **nur den Text** Ihrer Rechnung an den gewählten Anbieter, kein Bild und keine weiteren Daten.
 - Die KI liefert die Felder der XRechnung zurück, dazu eine Liste, was auf der Rechnung fehlt.
-- Danach kontrolliert der **Prüfer Jev** jeden erkannten Wert gegen den Rechnungstext („Steht das wirklich da?“), außerdem Einheit und Steuerfall. Was er nicht bestätigt, ist gelb. Jev ist ein Entscheidungsmodell, kein zweites Sprachmodell; die Prüfung kostet etwa 0,02 Cent je Rechnung und läuft nur über OpenRouter.
+- Die KI bekommt alle Felder, die eine XRechnung haben kann, und ordnet die Rechnung Bereich für Bereich zu: Briefkopf und Fußzeile, Anschrift, Kopfdaten, jede Position, Nachlässe und Zuschläge, Summen, Steuer, Zahlung. Was sie nirgends unterbringen kann, meldet sie; XFact zeigt es unter „Nicht übernommen“.
+- Danach kontrolliert der **Prüfer Jev** jeden erkannten Wert gegen den Rechnungstext („Steht das wirklich da?“), außerdem Einheit und Steuer jeder Position und die Zahlungsart. Was er nicht bestätigt, ist gelb. Jev ist ein Entscheidungsmodell, kein zweites Sprachmodell; die Prüfung kostet etwa 0,02 Cent je Rechnung und läuft nur über OpenRouter.
 - Die KI schätzt außerdem ein, ob der Empfänger eine Behörde ist. Dann fragt XFact nach der Leitweg-ID.
-- Zusätzlich prüfen feste Regeln: IBAN-Prüfziffer, Aufbau der USt-IdNr., Aufbau und Prüfziffer von Leitweg-ID und Gläubiger-ID, gültige Daten, Rechenwerte, und ob Rechnungsnummer, IBAN und USt-IdNr. wörtlich in der Rechnung stehen.
+- Zusätzlich prüfen feste Regeln: IBAN-Prüfziffer, Aufbau der USt-IdNr., Aufbau und Prüfziffer von Leitweg-ID und Gläubiger-ID, Telefon und E-Mail, gültige Daten, Rechenwerte, und ob Rechnungsnummer, IBAN, USt-IdNr. und Referenzen wörtlich in der Rechnung stehen.
 
 ### Mit OpenRouter (voreingestellt)
 
@@ -256,6 +283,7 @@ Am Anfang der Datei steht eine Übersicht. Darunter folgen deutlich markierte Ab
 | **LAYOUT** | Aussehen der Bausteine: Karten, Knöpfe, Ablagefläche |
 | **SEITE** | Aufbau der Oberfläche: Kopfzeile, die drei Schritte, Fußzeile |
 | **TEXTE** | Hinweise beim Start, Meldungen, Beschriftungen |
+| **STANDARD** | alle Felder der Norm und wie XFact sie behandelt; Grundlage für Antwortschema, XML und Tests |
 | **REGELN** | formale Regeln: Aufbau von USt-IdNr., IBAN, Leitweg-ID und Gläubiger-ID, erlaubte Einheiten, unterstützte Steuerfälle |
 | **PRÜFUNGEN** | was rot oder gelb markiert wird |
 | **KI** | Voreinstellungen für Anbieter und Modell, **die Anweisung an die KI**, das Antwortschema, die Fragen an den Prüfer |
@@ -344,3 +372,174 @@ Passe die Dokumentation an die Änderung an, damit sie wieder stimmt.
 ### Weitergeben
 
 Ihre angepasste Version dürfen Sie weitergeben (MIT-Lizenz). Geben Sie `xfact.html` und `XFact-Dokumentation.md` immer gemeinsam weiter, und lassen Sie die Dokumentation vorher an Ihre Änderungen anpassen.
+
+## Anhang: Welche Felder der XRechnung XFact abdeckt
+
+Die Norm EN 16931 (mit XRechnung 3.0) kennt 164 Felder (BT). Davon liest XFact 130 aus der Rechnung, 14 setzt es selbst, 20 unterstützt es bewusst nicht. Diese Liste steht als Abschnitt STANDARD in xfact.html und wird von dort hierher übernommen.
+
+| Feld | Bedeutung | XFact | Hinweis |
+|---|---|---|---|
+| BT-1 | Rechnungsnummer | liest XFact aus der Rechnung |  |
+| BT-2 | Rechnungsdatum | liest XFact aus der Rechnung |  |
+| BT-3 | Rechnungsart | liest XFact aus der Rechnung |  |
+| BT-5 | Währung | setzt XFact selbst | immer EUR; Rechnungen in anderer Währung lehnt XFact ab |
+| BT-6 | Umsatzsteuer-Buchungswährung | nicht unterstützt | nur bei Rechnungen in fremder Währung |
+| BT-7 | Steuerfälligkeitsdatum | nicht unterstützt | in Deutschland nicht üblich; maßgeblich ist das Leistungsdatum |
+| BT-8 | Code für das Steuerfälligkeitsdatum | nicht unterstützt | in Deutschland nicht üblich |
+| BT-9 | Fälligkeitsdatum | liest XFact aus der Rechnung |  |
+| BT-10 | Käuferreferenz bzw. Leitweg-ID | liest XFact aus der Rechnung | ohne Angabe „keine Angabe“ |
+| BT-11 | Projekt | liest XFact aus der Rechnung |  |
+| BT-12 | Vertrag | liest XFact aus der Rechnung |  |
+| BT-13 | Bestellnummer | liest XFact aus der Rechnung |  |
+| BT-14 | Auftragsnummer des Verkäufers | liest XFact aus der Rechnung |  |
+| BT-15 | Wareneingangsmeldung | liest XFact aus der Rechnung |  |
+| BT-16 | Lieferschein | liest XFact aus der Rechnung |  |
+| BT-17 | Ausschreibung bzw. Los | liest XFact aus der Rechnung |  |
+| BT-18 | Objektkennung (z.B. Zähler, Abonnement) | liest XFact aus der Rechnung |  |
+| BT-19 | Buchungsreferenz des Käufers (z.B. Kostenstelle) | liest XFact aus der Rechnung |  |
+| BT-20 | Zahlungsbedingungen, Skonto | liest XFact aus der Rechnung |  |
+| BT-21 | Betreff-Code einer Bemerkung | nicht unterstützt | der Text der Bemerkung genügt |
+| BT-22 | Bemerkung | liest XFact aus der Rechnung |  |
+| BT-23 | Geschäftsprozess | setzt XFact selbst |  |
+| BT-24 | Kennung der Spezifikation (XRechnung 3.0) | setzt XFact selbst |  |
+| BT-25 | Vorausgegangene Rechnung | liest XFact aus der Rechnung | die Syntax CII kennt nur eine; weitere schreibt XFact als Bemerkung |
+| BT-26 | Datum der vorausgegangenen Rechnung | liest XFact aus der Rechnung |  |
+| BT-27 | Name des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-28 | Handelsname des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-29 | Kennung des Rechnungsstellers | liest XFact aus der Rechnung | ohne Schema; nur mit Steuernummer setzt XFact sie als Kennung (BR-CO-26) |
+| BT-30 | Registernummer des Rechnungsstellers | liest XFact aus der Rechnung | ohne Schema |
+| BT-31 | USt-IdNr. des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-32 | Steuernummer des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-33 | Weitere rechtliche Angaben (Sitz, Registergericht, Geschäftsführung) | liest XFact aus der Rechnung |  |
+| BT-34 | Elektronische Adresse des Rechnungsstellers | liest XFact aus der Rechnung | die E-Mail-Adresse |
+| BT-35 | Straße des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-36 | Anschriftzusatz des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-162 | Weitere Anschriftzeile des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-37 | Ort des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-38 | PLZ des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-39 | Region des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-40 | Land des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-41 | Ansprechpartner des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-42 | Telefon des Rechnungsstellers | liest XFact aus der Rechnung |  |
+| BT-43 | E-Mail des Ansprechpartners | liest XFact aus der Rechnung | ohne eigene Angabe die E-Mail des Rechnungsstellers |
+| BT-44 | Name des Empfängers | liest XFact aus der Rechnung |  |
+| BT-45 | Handelsname des Empfängers | liest XFact aus der Rechnung |  |
+| BT-46 | Kennung des Empfängers (z.B. Kundennummer) | liest XFact aus der Rechnung | ohne Schema |
+| BT-47 | Registernummer des Empfängers | liest XFact aus der Rechnung | ohne Schema |
+| BT-48 | USt-IdNr. des Empfängers | liest XFact aus der Rechnung |  |
+| BT-49 | Elektronische Adresse des Empfängers | liest XFact aus der Rechnung | meist nicht auf der Rechnung; XFact fragt und merkt sie sich je Kunde |
+| BT-50 | Straße des Empfängers | liest XFact aus der Rechnung |  |
+| BT-51 | Anschriftzusatz des Empfängers | liest XFact aus der Rechnung |  |
+| BT-163 | Weitere Anschriftzeile des Empfängers | liest XFact aus der Rechnung |  |
+| BT-52 | Ort des Empfängers | liest XFact aus der Rechnung |  |
+| BT-53 | PLZ des Empfängers | liest XFact aus der Rechnung |  |
+| BT-54 | Region des Empfängers | liest XFact aus der Rechnung |  |
+| BT-55 | Land des Empfängers | liest XFact aus der Rechnung |  |
+| BT-56 | Ansprechpartner beim Empfänger | liest XFact aus der Rechnung |  |
+| BT-57 | Telefon des Ansprechpartners beim Empfänger | liest XFact aus der Rechnung |  |
+| BT-58 | E-Mail des Ansprechpartners beim Empfänger | liest XFact aus der Rechnung |  |
+| BT-59 | Name des Zahlungsempfängers (z.B. Factoring) | liest XFact aus der Rechnung |  |
+| BT-60 | Kennung des Zahlungsempfängers | liest XFact aus der Rechnung | ohne Schema |
+| BT-61 | Registernummer des Zahlungsempfängers | liest XFact aus der Rechnung | ohne Schema |
+| BT-62 | Name des Steuervertreters | nicht unterstützt | nur für Rechnungssteller im Ausland; XFact ist für deutsche Rechnungssteller |
+| BT-63 | USt-IdNr. des Steuervertreters | nicht unterstützt | wie BT-62 |
+| BT-64 | Straße des Steuervertreters | nicht unterstützt | wie BT-62 |
+| BT-65 | Anschriftzusatz des Steuervertreters | nicht unterstützt | wie BT-62 |
+| BT-164 | Weitere Anschriftzeile des Steuervertreters | nicht unterstützt | wie BT-62 |
+| BT-66 | Ort des Steuervertreters | nicht unterstützt | wie BT-62 |
+| BT-67 | PLZ des Steuervertreters | nicht unterstützt | wie BT-62 |
+| BT-68 | Region des Steuervertreters | nicht unterstützt | wie BT-62 |
+| BT-69 | Land des Steuervertreters | nicht unterstützt | wie BT-62 |
+| BT-70 | Name des Warenempfängers | liest XFact aus der Rechnung |  |
+| BT-71 | Kennung des Lieferorts | liest XFact aus der Rechnung | ohne Schema |
+| BT-72 | Liefer- bzw. Leistungsdatum | liest XFact aus der Rechnung |  |
+| BT-73 | Beginn des Abrechnungszeitraums | liest XFact aus der Rechnung |  |
+| BT-74 | Ende des Abrechnungszeitraums | liest XFact aus der Rechnung |  |
+| BT-75 | Straße der Lieferanschrift | liest XFact aus der Rechnung |  |
+| BT-76 | Anschriftzusatz der Lieferanschrift | liest XFact aus der Rechnung |  |
+| BT-165 | Weitere Anschriftzeile der Lieferanschrift | liest XFact aus der Rechnung |  |
+| BT-77 | Ort der Lieferanschrift | liest XFact aus der Rechnung |  |
+| BT-78 | PLZ der Lieferanschrift | liest XFact aus der Rechnung |  |
+| BT-79 | Region der Lieferanschrift | liest XFact aus der Rechnung |  |
+| BT-80 | Land der Lieferanschrift | liest XFact aus der Rechnung |  |
+| BT-81 | Zahlungsart | liest XFact aus der Rechnung | Überweisung, Lastschrift, Kredit-/Debitkarte, bar, Verrechnung, Online-Zahlung, sonstige |
+| BT-82 | Zahlungsart als Text | liest XFact aus der Rechnung |  |
+| BT-83 | Verwendungszweck | liest XFact aus der Rechnung | ohne Angabe die Rechnungsnummer |
+| BT-84 | IBAN des Rechnungsstellers | liest XFact aus der Rechnung | auch mehrere Konten |
+| BT-85 | Kontoinhaber | liest XFact aus der Rechnung | ohne Angabe der Name des Rechnungsstellers |
+| BT-86 | BIC | liest XFact aus der Rechnung |  |
+| BT-87 | Kartennummer (nur die letzten 4 Ziffern) | liest XFact aus der Rechnung |  |
+| BT-88 | Karteninhaber | liest XFact aus der Rechnung |  |
+| BT-89 | Mandatsreferenz | liest XFact aus der Rechnung |  |
+| BT-90 | Gläubiger-ID | liest XFact aus der Rechnung |  |
+| BT-91 | IBAN des Kunden (Lastschrift) | liest XFact aus der Rechnung |  |
+| BT-92 | Betrag eines Nachlasses auf die Rechnung | liest XFact aus der Rechnung |  |
+| BT-93 | Grundbetrag des Nachlasses | liest XFact aus der Rechnung |  |
+| BT-94 | Prozentsatz des Nachlasses | liest XFact aus der Rechnung |  |
+| BT-95 | Steuerkategorie des Nachlasses | liest XFact aus der Rechnung |  |
+| BT-96 | Steuersatz des Nachlasses | liest XFact aus der Rechnung |  |
+| BT-97 | Grund des Nachlasses | liest XFact aus der Rechnung |  |
+| BT-98 | Code für den Grund des Nachlasses | nicht unterstützt | der Grund als Text genügt |
+| BT-99 | Betrag eines Zuschlags auf die Rechnung (z.B. Fracht) | liest XFact aus der Rechnung |  |
+| BT-100 | Grundbetrag des Zuschlags | liest XFact aus der Rechnung |  |
+| BT-101 | Prozentsatz des Zuschlags | liest XFact aus der Rechnung |  |
+| BT-102 | Steuerkategorie des Zuschlags | liest XFact aus der Rechnung |  |
+| BT-103 | Steuersatz des Zuschlags | liest XFact aus der Rechnung |  |
+| BT-104 | Grund des Zuschlags | liest XFact aus der Rechnung |  |
+| BT-105 | Code für den Grund des Zuschlags | nicht unterstützt | der Grund als Text genügt |
+| BT-106 | Summe der Positionen | setzt XFact selbst | berechnet und mit der Rechnung verglichen |
+| BT-107 | Summe der Nachlässe | setzt XFact selbst | berechnet |
+| BT-108 | Summe der Zuschläge | setzt XFact selbst | berechnet |
+| BT-109 | Nettobetrag | setzt XFact selbst | berechnet und mit der Rechnung verglichen |
+| BT-110 | Umsatzsteuer | setzt XFact selbst | berechnet und mit der Rechnung verglichen |
+| BT-111 | Umsatzsteuer in Buchungswährung | nicht unterstützt | nur bei fremder Währung |
+| BT-112 | Gesamtbetrag | setzt XFact selbst | berechnet und mit der Rechnung verglichen |
+| BT-113 | Bereits gezahlt (Anzahlungen, Abschläge) | liest XFact aus der Rechnung |  |
+| BT-114 | Rundung | liest XFact aus der Rechnung |  |
+| BT-115 | Zahlbetrag | setzt XFact selbst | berechnet und mit der Rechnung verglichen |
+| BT-116 | Steuerbasis je Satz | setzt XFact selbst | berechnet |
+| BT-117 | Steuerbetrag je Satz | setzt XFact selbst | berechnet und mit der Rechnung verglichen |
+| BT-118 | Steuerkategorie | liest XFact aus der Rechnung | S, Z, E, AE, O; K, G, L, M betreffen Empfänger im Ausland bzw. Sondergebiete und werden abgelehnt |
+| BT-119 | Steuersatz | liest XFact aus der Rechnung |  |
+| BT-120 | Grund der Steuerbefreiung | liest XFact aus der Rechnung | ohne Angabe ein Standardtext, bei § 19 UStG der übliche Hinweis |
+| BT-121 | Code für den Grund der Steuerbefreiung | setzt XFact selbst | VATEX-EU-AE bzw. VATEX-EU-O |
+| BT-122 | Kennung einer Anlage | liest XFact aus der Rechnung |  |
+| BT-123 | Beschreibung einer Anlage | liest XFact aus der Rechnung | in CII nur bei einer Anlage; bei weiteren steht sie mit der Kennung |
+| BT-124 | Link zu einer Anlage | liest XFact aus der Rechnung |  |
+| BT-125 | Eingebettete Datei | nicht unterstützt | Dateien kann eine PDF-Rechnung nicht mitliefern |
+| BT-126 | Positionsnummer | liest XFact aus der Rechnung |  |
+| BT-127 | Bemerkung zur Position | liest XFact aus der Rechnung |  |
+| BT-128 | Objektkennung der Position | liest XFact aus der Rechnung |  |
+| BT-129 | Menge | liest XFact aus der Rechnung |  |
+| BT-130 | Einheit | liest XFact aus der Rechnung |  |
+| BT-131 | Nettobetrag der Position | liest XFact aus der Rechnung |  |
+| BT-132 | Position der Bestellung | liest XFact aus der Rechnung |  |
+| BT-133 | Buchungsreferenz der Position | liest XFact aus der Rechnung |  |
+| BT-134 | Leistungsbeginn der Position | liest XFact aus der Rechnung |  |
+| BT-135 | Leistungsende der Position | liest XFact aus der Rechnung |  |
+| BT-136 | Betrag eines Nachlasses auf die Position | liest XFact aus der Rechnung |  |
+| BT-137 | Grundbetrag des Nachlasses | liest XFact aus der Rechnung |  |
+| BT-138 | Prozentsatz des Nachlasses | liest XFact aus der Rechnung |  |
+| BT-139 | Grund des Nachlasses | liest XFact aus der Rechnung |  |
+| BT-140 | Code für den Grund des Nachlasses | nicht unterstützt | der Grund als Text genügt |
+| BT-141 | Betrag eines Zuschlags auf die Position | liest XFact aus der Rechnung |  |
+| BT-142 | Grundbetrag des Zuschlags | liest XFact aus der Rechnung |  |
+| BT-143 | Prozentsatz des Zuschlags | liest XFact aus der Rechnung |  |
+| BT-144 | Grund des Zuschlags | liest XFact aus der Rechnung |  |
+| BT-145 | Code für den Grund des Zuschlags | nicht unterstützt | der Grund als Text genügt |
+| BT-146 | Nettopreis | liest XFact aus der Rechnung |  |
+| BT-147 | Preisnachlass | liest XFact aus der Rechnung |  |
+| BT-148 | Bruttopreis | liest XFact aus der Rechnung |  |
+| BT-149 | Preisbasismenge (z.B. je 100 Stück) | liest XFact aus der Rechnung |  |
+| BT-150 | Einheit der Preisbasismenge | setzt XFact selbst | dieselbe wie BT-130 |
+| BT-151 | Steuerkategorie der Position | liest XFact aus der Rechnung |  |
+| BT-152 | Steuersatz der Position | liest XFact aus der Rechnung |  |
+| BT-153 | Bezeichnung | liest XFact aus der Rechnung |  |
+| BT-154 | Beschreibung | liest XFact aus der Rechnung |  |
+| BT-155 | Artikelnummer des Verkäufers | liest XFact aus der Rechnung |  |
+| BT-156 | Artikelnummer des Käufers | liest XFact aus der Rechnung |  |
+| BT-157 | GTIN bzw. EAN | liest XFact aus der Rechnung |  |
+| BT-158 | Warenklassifizierung (z.B. Zolltarifnummer) | nicht unterstützt | braucht ein Schema, das auf PDF-Rechnungen fehlt |
+| BT-159 | Ursprungsland | liest XFact aus der Rechnung |  |
+| BT-160 | Name eines Artikelmerkmals (z.B. Farbe) | liest XFact aus der Rechnung |  |
+| BT-161 | Wert eines Artikelmerkmals | liest XFact aus der Rechnung |  |
