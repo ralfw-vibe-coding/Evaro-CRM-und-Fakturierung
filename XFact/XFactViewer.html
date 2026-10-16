@@ -1,0 +1,984 @@
+<!doctype html>
+<!--
+  ============================================================================
+  XFactViewer – eine XRechnung lesbar anzeigen
+  ============================================================================
+
+  Diese eine Datei ist die ganze App. Sie läuft vollständig im Browser, auch
+  offline; die Rechnung verlässt Ihren Rechner nicht. Was die App kann, steht
+  in XFactViewer-Dokumentation.md.
+
+  Anpassen ist ausdrücklich erwünscht. Die Datei ist in Abschnitte gegliedert,
+  jeder beginnt mit einer Zeile wie  === ABSCHNITTSNAME ===
+
+    FARBEN UND SCHRIFTEN   Farben, Schriften, Abstände (CSS-Variablen)
+    LAYOUT                 Aussehen der Bausteine (CSS), auch beim Drucken
+    SEITE                  Aufbau der Oberfläche (HTML)
+    TEXTE                  alle Texte, die der Nutzer sieht
+    CODES                  was Codes wie HUR, AE oder 58 bedeuten
+    LESEN                  aus der XML wird die Rechnung (Syntax CII)
+    NACHRECHNEN            Positionen, Steuer und Summen nachgerechnet
+    ANZEIGE                die Rechnung auf dem Bildschirm
+    ABLAUF                 Datei wählen, anzeigen, drucken
+
+  Lizenz: MIT, Copyright (c) 2026 Ralf Westphal. Nutzen, verändern und
+  weitergeben ist erlaubt, ohne Gewähr.
+  ============================================================================
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XFactViewer</title>
+<style>
+/* === FARBEN UND SCHRIFTEN ================================================
+   Hier lassen sich Farben und Schriften der ganzen App ändern.
+   ========================================================================= */
+:root {
+  --farbe-hintergrund: #f6f7f9;
+  --farbe-flaeche: #ffffff;
+  --farbe-text: #1d2330;
+  --farbe-text-leise: #667085;
+  --farbe-linie: #e3e6eb;
+  --farbe-akzent: #2563eb;          /* Knöpfe, Links, Markierung beim Ziehen */
+  --farbe-akzent-text: #ffffff;
+  --farbe-fehler: #c62828;
+  --farbe-fehler-flaeche: #fdecec;
+  --farbe-abweichung: #a15c00;      /* gelb: Nachrechnen ergibt etwas anderes */
+  --farbe-abweichung-flaeche: #fff4dc;
+  --farbe-ok: #1e7b45;
+  --farbe-bt: #7c3aed;              /* BT-Nummern */
+
+  --schrift: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --schrift-zahlen: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --schriftgroesse: 15px;
+
+  --abstand: 16px;
+  --radius: 10px;
+  --breite-max: 920px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --farbe-hintergrund: #14171c;
+    --farbe-flaeche: #1c2027;
+    --farbe-text: #e6e8eb;
+    --farbe-text-leise: #9aa3af;
+    --farbe-linie: #2c323b;
+    --farbe-akzent: #5b8def;
+    --farbe-fehler: #f28b82;
+    --farbe-fehler-flaeche: #3a1f1f;
+    --farbe-abweichung: #f2c46d;
+    --farbe-abweichung-flaeche: #3a3020;
+    --farbe-ok: #6fcf97;
+    --farbe-bt: #b794f4;
+  }
+}
+
+/* === LAYOUT ==============================================================
+   Aussehen der einzelnen Bausteine.
+   ========================================================================= */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font: var(--schriftgroesse)/1.5 var(--schrift);
+}
+
+.kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: var(--breite-max);
+  margin: 0 auto;
+  padding: var(--abstand);
+}
+.kopf .name { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; }
+.kopf .name span { color: var(--farbe-akzent); }
+.kopf .name small { font-weight: 500; font-size: 0.9rem; color: var(--farbe-text-leise); margin-left: 6px; }
+
+main {
+  max-width: var(--breite-max);
+  margin: 0 auto;
+  padding: 0 var(--abstand) calc(var(--abstand) * 3);
+}
+
+.fuss {
+  max-width: var(--breite-max);
+  margin: 0 auto;
+  padding: var(--abstand);
+  color: var(--farbe-text-leise);
+  font-size: 0.85rem;
+}
+.fuss a { color: inherit; }
+
+.karte {
+  background: var(--farbe-flaeche);
+  border: 1px solid var(--farbe-linie);
+  border-radius: var(--radius);
+  padding: calc(var(--abstand) * 1.5);
+}
+
+.schritt[hidden], .karte[hidden], .ablage[hidden] { display: none; }
+
+.ablage {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  min-height: 260px;
+  border: 2px dashed var(--farbe-linie);
+  border-radius: var(--radius);
+  background: var(--farbe-flaeche);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ablage:hover, .ablage.beim-ziehen { border-color: var(--farbe-akzent); }
+.ablage .symbol { color: var(--farbe-akzent); }
+.ablage .titel { font-size: 1.1rem; font-weight: 600; }
+
+.meldung {
+  margin-top: var(--abstand);
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--farbe-fehler-flaeche);
+  color: var(--farbe-fehler);
+}
+.meldung[hidden] { display: none; }
+
+.leise { color: var(--farbe-text-leise); }
+
+.zeile-oben {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abstand);
+  margin-bottom: calc(var(--abstand) * 1.5);
+}
+.zeile-oben h2 { margin: 0; font-size: 1.1rem; overflow-wrap: anywhere; }
+.werkzeuge { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--farbe-linie);
+  border-radius: 8px;
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  font: inherit;
+  cursor: pointer;
+}
+.knopf:hover { border-color: var(--farbe-akzent); }
+.knopf.klein { padding: 3px 10px; font-size: 0.85rem; }
+.wahl { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+
+.rechnung-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--abstand);
+  margin-bottom: calc(var(--abstand) * 1.5);
+}
+.rechnung-kopf .titel { font-size: 1.3rem; font-weight: 650; }
+
+h3 {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--farbe-text-leise);
+}
+.abschnitt { padding: var(--abstand) 0; border-top: 1px solid var(--farbe-linie); }
+
+.parteien {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--abstand) calc(var(--abstand) * 2);
+  margin-bottom: calc(var(--abstand) * 1.5);
+}
+@media (max-width: 640px) { .parteien { grid-template-columns: 1fr; } }
+.partei .name { font-weight: 600; }
+
+/* Bezeichnung | Wert, z.B. bei Kopfdaten, Parteien, Zahlung */
+.angaben {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 14px;
+  margin: 8px 0 0;
+}
+.angaben dt { color: var(--farbe-text-leise); }
+.angaben dd { margin: 0; overflow-wrap: anywhere; }
+.kopfdaten { margin-bottom: calc(var(--abstand) * 1.5); }
+
+.tabelle { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.tabelle th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--farbe-text-leise);
+  border-bottom: 1px solid var(--farbe-linie);
+  padding: 4px 8px 4px 0;
+}
+.tabelle td { padding: 6px 8px 6px 0; vertical-align: top; border-bottom: 1px solid var(--farbe-linie); }
+.tabelle .zahl { text-align: right; font-family: var(--schrift-zahlen); white-space: nowrap; }
+.tabelle .datum { white-space: nowrap; }
+.tabelle .bezeichnung { font-weight: 500; }
+.tabelle .beschreibung { color: var(--farbe-text-leise); font-size: 0.86rem; white-space: pre-line; }
+.positionen { overflow-x: auto; margin-bottom: calc(var(--abstand) * 1.5); }
+
+/* Summen als Raster: Bezeichnung | Betrag */
+.summen {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  justify-content: end;
+  gap: 4px 24px;
+  margin: 0 0 var(--abstand);
+}
+.summe { display: contents; }
+.summe .zahl { font-family: var(--schrift-zahlen); text-align: right; white-space: nowrap; }
+.summe.gesamt > * { font-weight: 700; border-top: 1px solid var(--farbe-linie); padding-top: 4px; }
+
+.kontrolle { margin: 0 0 var(--abstand); text-align: right; font-size: 0.9rem; }
+.kontrolle .ok { color: var(--farbe-ok); }
+.kontrolle .ok::before { content: "✓ "; }
+.kontrolle ul {
+  display: inline-block;
+  margin: 0;
+  padding: 8px 12px 8px 28px;
+  border-radius: 8px;
+  text-align: left;
+  background: var(--farbe-abweichung-flaeche);
+  color: var(--farbe-abweichung);
+}
+
+.bemerkung { white-space: pre-line; margin: 0 0 8px; }
+.anhang { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 6px; }
+
+/* BT-Nummern: erscheinen hinter jeder Bezeichnung, wenn eingeschaltet */
+.mit-bt [data-bt]::after {
+  content: " " attr(data-bt);
+  font: 500 0.72rem var(--schrift-zahlen);
+  color: var(--farbe-bt);
+  white-space: nowrap;
+}
+
+/* Beim Drucken nur die Rechnung */
+@media print {
+  :root { --farbe-hintergrund: #fff; --farbe-flaeche: #fff; --farbe-text: #000; --farbe-text-leise: #555; --farbe-linie: #ccc; }
+  .kopf, .fuss, .zeile-oben, #schritt-oeffnen { display: none !important; }
+  main { padding: 0; max-width: none; }
+  .karte { border: 0; padding: 0; }
+  .tabelle tr { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<!-- === SEITE ================================================================
+     Aufbau der Oberfläche: erst die Datei wählen, dann die Rechnung ansehen.
+     ========================================================================= -->
+<header class="kopf">
+  <div class="name">X<span>Fact</span><small>Viewer</small></div>
+</header>
+<main>
+  <section class="schritt" id="schritt-oeffnen">
+    <label class="ablage" id="ablage">
+      <svg class="symbol" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+      <div class="titel" data-text="ablageTitel"></div>
+      <div class="leise" data-text="ablageHinweis"></div>
+      <input type="file" id="datei-eingabe" accept=".xml,text/xml,application/xml" hidden>
+    </label>
+    <div class="meldung" id="meldung" hidden></div>
+  </section>
+  <section class="schritt" id="schritt-ansehen" hidden>
+    <div class="karte">
+      <div class="zeile-oben">
+        <div>
+          <h2 id="dateiname"></h2>
+          <div class="leise" id="datei-info"></div>
+        </div>
+        <div class="werkzeuge">
+          <label class="wahl"><input type="checkbox" id="bt-zeigen"><span data-text="btZeigen"></span></label>
+          <button class="knopf" id="knopf-drucken" data-text="drucken"></button>
+          <button class="knopf" id="knopf-andere" data-text="andereDatei"></button>
+        </div>
+      </div>
+      <div id="rechnung"></div>
+    </div>
+  </section>
+</main>
+<footer class="fuss" id="fuss"></footer>
+
+<script type="module" id="viewer-fachlogik">
+// Fachlogik ohne Oberfläche: TEXTE, CODES, LESEN, NACHRECHNEN. Sie braucht
+// nur einen XML-Parser (im Browser eingebaut) und ist so auch ohne Browser
+// testbar. Was die Oberfläche braucht, steht am Ende unter window.XFactViewer.
+
+// === TEXTE ====================================================================
+// Alle Texte, die der Nutzer sieht.
+// =============================================================================
+const TEXTE = {
+  ablageTitel: "XRechnung hier ablegen oder klicken",
+  ablageHinweis: "XML-Datei einer XRechnung (Syntax CII). Die Datei bleibt auf Ihrem Rechner.",
+  andereDatei: "Andere Datei",
+  drucken: "Drucken",
+  btZeigen: "BT-Nummern zeigen",
+  fusszeile: "XFactViewer · Open Source (MIT) · ohne Gewähr · zeigt die Rechnung an, prüft aber nicht, ob sie gültig ist: ",
+  pruefdienstText: "Online prüfen",
+  pruefdienst: "https://www.rechnungsapi.de/xrechnung-validator-online-kostenlos",
+
+  // Fehler beim Öffnen
+  keinXml: "Diese Datei ist keine lesbare XML-Datei.",
+  keineXRechnung: "Diese XML-Datei ist keine XRechnung.",
+  ublNochNicht: "Diese XRechnung ist in der Syntax UBL geschrieben. XFactViewer kann bisher nur die Syntax CII anzeigen.",
+  ohneZeilen: "Die Rechnung enthält keine Positionen.",
+
+  // Anzeige
+  syntax: { CII: "Syntax CII (UN/CEFACT)" },
+  absender: "Rechnungssteller",
+  empfaenger: "Rechnungsempfänger",
+  lieferanschrift: "Lieferanschrift",
+  felder: {
+    nummer: "Rechnungsnummer", datum: "Rechnungsdatum", faellig: "Fällig am", leistungsdatum: "Leistungsdatum",
+    leistungszeitraum: "Leistungszeitraum", kaeuferreferenz: "Käuferreferenz / Leitweg-ID", bestellnummer: "Bestellnummer",
+    auftragsnummer: "Auftragsnummer", vertrag: "Vertrag", projekt: "Projekt", vorherigeRechnung: "Bezieht sich auf Rechnung",
+    waehrung: "Währung",
+    ustId: "USt-IdNr.", steuernummer: "Steuernummer", register: "Registernummer", kennung: "Kennung",
+    adresseElektronisch: "Elektronische Adresse", kontakt: "Ansprechpartner", telefon: "Telefon", email: "E-Mail",
+    zahlungsart: "Zahlungsart", iban: "IBAN", bic: "BIC", kontoinhaber: "Kontoinhaber", verwendungszweck: "Verwendungszweck",
+    glaeubigerId: "Gläubiger-ID", mandatsreferenz: "Mandatsreferenz", kundenIban: "Konto des Kunden", karte: "Karte",
+    bedingungen: "Zahlungsbedingungen", zahlungsinfo: "Hinweis",
+  },
+  spalten: { nr: "Pos.", datum: "Datum", bezeichnung: "Bezeichnung", menge: "Menge", einheit: "Einheit", preis: "Preis", ust: "USt", gesamt: "Gesamt" },
+  artikelnummer: "Art.-Nr.",
+  jeMenge: (menge) => `je ${menge}`,
+  positionen: "Positionen",
+  nachlaesseZuschlaege: "Nachlässe und Zuschläge auf die ganze Rechnung",
+  nachlass: "Nachlass",
+  zuschlag: "Zuschlag",
+  summen: {
+    positionen: "Summe der Positionen", nachlaesse: "Nachlässe", zuschlaege: "Zuschläge", netto: "Netto",
+    ust: (satz) => `USt ${satz} %`, steuerfrei: (name) => `USt 0 % – ${name}`,
+    brutto: "Gesamtbetrag", gezahlt: "Bereits gezahlt", rundung: "Rundung", zahlbetrag: "Zu zahlen",
+  },
+  zahlung: "Zahlung",
+  bemerkungen: "Bemerkungen",
+  anhaenge: "Anhänge",
+  herunterladen: "Herunterladen",
+  nurLink: "Link",
+  skonto: (prozent, tage) => `${prozent} % Skonto bei Zahlung innerhalb von ${tage} Tagen`,
+
+  // Nachrechnen
+  stimmt: "Positionen, Steuer und Summen gehen auf",
+  abweichung: (was, berechnet, steht) => `${was}: berechnet ${berechnet}, in der Rechnung ${steht}`,
+  pruefgegenstand: {
+    position: (nr) => `Position ${nr}`,
+    positionen: "Summe der Positionen",
+    netto: "Netto",
+    steuer: (satz) => `USt ${satz} %`,
+    steuerSumme: "Umsatzsteuer gesamt",
+    brutto: "Gesamtbetrag",
+    zahlbetrag: "Zu zahlen",
+  },
+};
+
+// === CODES ====================================================================
+// Was die Codes in einer XRechnung bedeuten. Unbekannte Codes werden so
+// angezeigt, wie sie in der Datei stehen. Ergänzen ist jederzeit möglich.
+// =============================================================================
+const CODES = {
+  // Rechnungsart (BT-3, UNTDID 1001)
+  rechnungsart: {
+    326: "Teilrechnung", 380: "Rechnung", 381: "Gutschrift", 383: "Belastungsanzeige", 384: "Rechnungskorrektur",
+    386: "Vorauszahlungsrechnung", 389: "Gutschrift (Selbstfakturierung)", 751: "Rechnungsinformation",
+    875: "Teilrechnung (Bau)", 876: "Teilschlussrechnung", 877: "Schlussrechnung",
+  },
+  // Einheiten (BT-130, UN/ECE Rec. 20)
+  einheit: {
+    HUR: "Stunde", DAY: "Tag", WEE: "Woche", MON: "Monat", ANN: "Jahr", MIN: "Minute", SEC: "Sekunde",
+    LS: "Pauschale", C62: "Stück", H87: "Stück", EA: "Stück", XPP: "Stück", SET: "Satz", PR: "Paar", E48: "Leistungseinheit",
+    KMT: "Kilometer", MTR: "Meter", CMT: "Zentimeter", MMT: "Millimeter", MTK: "Quadratmeter", MTQ: "Kubikmeter",
+    KGM: "Kilogramm", GRM: "Gramm", TNE: "Tonne", LTR: "Liter", MLT: "Milliliter", KWH: "Kilowattstunde",
+    P1: "Prozent", XBX: "Karton", XPK: "Packung", XPA: "Päckchen",
+  },
+  // Umsatzsteuerkategorie (BT-118, BT-151)
+  steuerkategorie: {
+    S: "Umsatzsteuer", Z: "Nullsatz", E: "steuerbefreit", AE: "Steuerschuldnerschaft des Leistungsempfängers",
+    K: "innergemeinschaftliche Lieferung", G: "Ausfuhr außerhalb der EU", O: "nicht steuerbar",
+    L: "IGIC (Kanarische Inseln)", M: "IPSI (Ceuta und Melilla)",
+  },
+  // Zahlungsart (BT-81, UNTDID 4461)
+  zahlungsart: {
+    1: "nicht festgelegt", 10: "Bar", 20: "Scheck", 30: "Überweisung", 31: "Überweisung", 42: "Zahlung auf Bankkonto",
+    48: "Karte", 49: "Lastschrift", 54: "Kreditkarte", 55: "Debitkarte", 57: "Dauerauftrag",
+    58: "SEPA-Überweisung", 59: "SEPA-Lastschrift", 68: "Online-Zahlung", 97: "Verrechnung", ZZZ: "vereinbart",
+  },
+  // Kennungen der Steuerregistrierung (BT-31/BT-32/BT-48)
+  steuerSchema: { VA: "ustId", FC: "steuernummer" },
+};
+
+/** Name zu einem Code, sonst der Code selbst */
+function bedeutung(liste, code) {
+  return code === null || code === undefined ? null : CODES[liste][code] || code;
+}
+
+/** Ländername auf Deutsch (DE → Deutschland), sonst der Code */
+function landName(code) {
+  try { return new Intl.DisplayNames(["de"], { type: "region" }).of(code) || code; } catch { return code; }
+}
+
+// === LESEN ====================================================================
+// Aus der XML-Datei wird die Rechnung: ein einfaches Objekt mit allen
+// Angaben, unabhängig von der Syntax. Die Namen der XML-Elemente stehen nur
+// hier. Die Nummern wie BT-1 verweisen auf die Felder der Norm EN 16931.
+// =============================================================================
+
+/** Die direkten Kind-Elemente mit diesem Namen (ohne Namensraum-Präfix) */
+function kinder(knoten, name) {
+  const liste = [];
+  if (!knoten) return liste;
+  for (let i = 0; i < knoten.childNodes.length; i++) {
+    const k = knoten.childNodes.item(i);
+    if (k.nodeType === 1 && k.localName === name) liste.push(k);
+  }
+  return liste;
+}
+/** Das erste Element entlang des Pfads, z.B. pfad(x, "PostalTradeAddress", "CityName") */
+const pfad = (knoten, ...namen) => namen.reduce((k, n) => kinder(k, n)[0] || null, knoten);
+/** Alle Elemente mit dem letzten Namen des Pfads */
+const alle = (knoten, ...namen) => kinder(pfad(knoten, ...namen.slice(0, -1)), namen.at(-1));
+const text = (knoten, ...namen) => pfad(knoten, ...namen)?.textContent?.trim() || null;
+const zahl = (knoten, ...namen) => { const t = text(knoten, ...namen); return t === null ? null : Number(t); };
+/** Datum im Format 102 (JJJJMMTT) als JJJJ-MM-TT */
+const datum = (knoten, ...namen) => {
+  const t = text(knoten, ...namen, "DateTimeString");
+  return t && /^\d{8}$/.test(t) ? `${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6)}` : t;
+};
+
+/**
+ * Liest eine XRechnung. Ergebnis: die Rechnung als Objekt (siehe leseCii).
+ * Wirft einen Fehler mit verständlichem Text, wenn die Datei keine
+ * XRechnung in CII ist.
+ */
+function leseXRechnung(xml, Parser = globalThis.DOMParser) {
+  let dokument;
+  try {
+    dokument = new Parser().parseFromString(xml, "application/xml");
+  } catch {
+    throw new Error(TEXTE.keinXml);
+  }
+  const wurzel = dokument?.documentElement;
+  if (!wurzel || wurzel.localName === "parsererror" || dokument.getElementsByTagName("parsererror").length) {
+    throw new Error(TEXTE.keinXml);
+  }
+  if (wurzel.localName === "CrossIndustryInvoice") return leseCii(wurzel);
+  if ((wurzel.localName === "Invoice" || wurzel.localName === "CreditNote") && /ubl/i.test(wurzel.namespaceURI || "")) {
+    throw new Error(TEXTE.ublNochNicht);
+  }
+  throw new Error(TEXTE.keineXRechnung);
+}
+
+function leseCii(w) {
+  const dokument = pfad(w, "ExchangedDocument");
+  const handel = pfad(w, "SupplyChainTradeTransaction");
+  const vereinbarung = pfad(handel, "ApplicableHeaderTradeAgreement");
+  const lieferung = pfad(handel, "ApplicableHeaderTradeDelivery");
+  const abrechnung = pfad(handel, "ApplicableHeaderTradeSettlement");
+  const bedingungen = pfad(abrechnung, "SpecifiedTradePaymentTerms");
+  const summen = pfad(abrechnung, "SpecifiedTradeSettlementHeaderMonetarySummation");
+  const waehrung = text(abrechnung, "InvoiceCurrencyCode") || "EUR";
+  // Die Steuer kann zweimal stehen (auch in Buchungswährung); gezeigt wird die in Rechnungswährung
+  const steuerSummen = alle(summen, "TaxTotalAmount");
+  const steuerSumme = steuerSummen.find((s) => s.getAttribute("currencyID") === waehrung) || steuerSummen[0];
+
+  return {
+    syntax: "CII",
+    profil: text(w, "ExchangedDocumentContext", "GuidelineSpecifiedDocumentContextParameter", "ID"),  // BT-24
+    nummer: text(dokument, "ID"),                                         // BT-1
+    art: text(dokument, "TypeCode"),                                      // BT-3
+    datum: datum(dokument, "IssueDateTime"),                              // BT-2
+    bemerkungen: alle(dokument, "IncludedNote").map((n) => ({            // BG-1
+      thema: text(n, "SubjectCode"), text: text(n, "Content"),
+    })).filter((n) => n.text),
+    waehrung,                                                             // BT-5
+    kaeuferreferenz: text(vereinbarung, "BuyerReference"),               // BT-10
+    bestellnummer: text(vereinbarung, "BuyerOrderReferencedDocument", "IssuerAssignedID"),   // BT-13
+    auftragsnummer: text(vereinbarung, "SellerOrderReferencedDocument", "IssuerAssignedID"), // BT-14
+    vertrag: text(vereinbarung, "ContractReferencedDocument", "IssuerAssignedID"),           // BT-12
+    projekt: [text(vereinbarung, "SpecifiedProcuringProject", "ID"), text(vereinbarung, "SpecifiedProcuringProject", "Name")]
+      .filter(Boolean).join(" – ") || null,                               // BT-11
+    vorherigeRechnung: text(abrechnung, "InvoiceReferencedDocument", "IssuerAssignedID"),    // BT-25
+    absender: partei(pfad(vereinbarung, "SellerTradeParty")),            // BG-4
+    empfaenger: partei(pfad(vereinbarung, "BuyerTradeParty")),           // BG-7
+    lieferanschrift: partei(pfad(lieferung, "ShipToTradeParty")),        // BG-13
+    leistungsdatum: datum(lieferung, "ActualDeliverySupplyChainEvent", "OccurrenceDateTime"),  // BT-72
+    leistungVon: datum(abrechnung, "BillingSpecifiedPeriod", "StartDateTime"),                 // BT-73
+    leistungBis: datum(abrechnung, "BillingSpecifiedPeriod", "EndDateTime"),                   // BT-74
+    positionen: alle(handel, "IncludedSupplyChainTradeLineItem").map(position),               // BG-25
+    nachlaesseZuschlaege: alle(abrechnung, "SpecifiedTradeAllowanceCharge").map(nachlassZuschlag), // BG-20, BG-21
+    steuer: alle(abrechnung, "ApplicableTradeTax").map((s) => ({         // BG-23
+      kategorie: text(s, "CategoryCode"),                                // BT-118
+      satz: zahl(s, "RateApplicablePercent"),                            // BT-119
+      basis: zahl(s, "BasisAmount"),                                     // BT-116
+      betrag: zahl(s, "CalculatedAmount"),                               // BT-117
+      befreiungsgrund: text(s, "ExemptionReason"),                       // BT-120
+      befreiungscode: text(s, "ExemptionReasonCode"),                    // BT-121
+    })),
+    summen: {                                                             // BG-22
+      positionen: zahl(summen, "LineTotalAmount"),                       // BT-106
+      zuschlaege: zahl(summen, "ChargeTotalAmount"),                     // BT-108
+      nachlaesse: zahl(summen, "AllowanceTotalAmount"),                  // BT-107
+      netto: zahl(summen, "TaxBasisTotalAmount"),                        // BT-109
+      steuer: steuerSumme ? Number(steuerSumme.textContent.trim()) : null, // BT-110
+      brutto: zahl(summen, "GrandTotalAmount"),                          // BT-112
+      gezahlt: zahl(summen, "TotalPrepaidAmount"),                       // BT-113
+      rundung: zahl(summen, "RoundingAmount"),                           // BT-114
+      zahlbetrag: zahl(summen, "DuePayableAmount"),                      // BT-115
+    },
+    zahlung: {
+      mittel: alle(abrechnung, "SpecifiedTradeSettlementPaymentMeans").map((m) => ({ // BG-16
+        art: text(m, "TypeCode"),                                        // BT-81
+        info: text(m, "Information"),                                    // BT-82
+        iban: text(m, "PayeePartyCreditorFinancialAccount", "IBANID")
+          || text(m, "PayeePartyCreditorFinancialAccount", "ProprietaryID"), // BT-84
+        kontoinhaber: text(m, "PayeePartyCreditorFinancialAccount", "AccountName"), // BT-85
+        bic: text(m, "PayeeSpecifiedCreditorFinancialInstitution", "BICID"),        // BT-86
+        kundenIban: text(m, "PayerPartyDebtorFinancialAccount", "IBANID"),          // BT-91
+        karte: text(m, "ApplicableTradeSettlementFinancialCard", "ID"),             // BT-87
+      })),
+      glaeubigerId: text(abrechnung, "CreditorReferenceID"),             // BT-90
+      verwendungszweck: text(abrechnung, "PaymentReference"),            // BT-83
+      bedingungen: text(bedingungen, "Description"),                     // BT-20
+      faellig: datum(bedingungen, "DueDateDateTime"),                    // BT-9
+      mandatsreferenz: text(bedingungen, "DirectDebitMandateID"),        // BT-89
+    },
+    anhaenge: alle(vereinbarung, "AdditionalReferencedDocument").map((d) => { // BG-24
+      const datei = pfad(d, "AttachmentBinaryObject");
+      return {
+        kennung: text(d, "IssuerAssignedID"),                            // BT-122
+        beschreibung: text(d, "Name"),                                   // BT-123
+        link: text(d, "URIID"),                                          // BT-124
+        dateiname: datei?.getAttribute("filename") || null,
+        mime: datei?.getAttribute("mimeCode") || null,
+        inhalt: datei?.textContent.replace(/\s/g, "") || null,          // BT-125, Base64
+      };
+    }),
+  };
+}
+
+function partei(p) {
+  if (!p) return null;
+  const anschrift = pfad(p, "PostalTradeAddress");
+  const kontakt = pfad(p, "DefinedTradeContact");
+  const steuer = Object.fromEntries(alle(p, "SpecifiedTaxRegistration").map((s) => {
+    const id = pfad(s, "ID");
+    return [CODES.steuerSchema[id?.getAttribute("schemeID")] || "andere", id?.textContent.trim()];
+  }));
+  return {
+    name: text(p, "Name"),                                               // BT-27 / BT-44
+    handelsname: text(p, "SpecifiedLegalOrganization", "TradingBusinessName"), // BT-28 / BT-45
+    register: text(p, "SpecifiedLegalOrganization", "ID"),              // BT-30 / BT-47
+    kennung: [...alle(p, "ID"), ...alle(p, "GlobalID")].map((k) => k.textContent.trim()).filter(Boolean).join(", ") || null, // BT-29 / BT-46
+    adresse: ["LineOne", "LineTwo", "LineThree"].map((n) => text(anschrift, n)).filter(Boolean), // BT-35.. / BT-50..
+    plz: text(anschrift, "PostcodeCode"),                               // BT-38 / BT-53
+    ort: text(anschrift, "CityName"),                                   // BT-37 / BT-52
+    land: text(anschrift, "CountryID"),                                 // BT-40 / BT-55
+    ustId: steuer.ustId || null,                                        // BT-31 / BT-48
+    steuernummer: steuer.steuernummer || null,                          // BT-32
+    adresseElektronisch: text(p, "URIUniversalCommunication", "URIID"), // BT-34 / BT-49
+    kontakt: kontakt ? {                                                 // BG-6 / BG-9
+      name: [text(kontakt, "PersonName"), text(kontakt, "DepartmentName")].filter(Boolean).join(", ") || null,
+      telefon: text(kontakt, "TelephoneUniversalCommunication", "CompleteNumber"),
+      email: text(kontakt, "EmailURIUniversalCommunication", "URIID"),
+    } : null,
+  };
+}
+
+function position(z) {
+  const vereinbarung = pfad(z, "SpecifiedLineTradeAgreement");
+  const abrechnung = pfad(z, "SpecifiedLineTradeSettlement");
+  const menge = pfad(z, "SpecifiedLineTradeDelivery", "BilledQuantity");
+  return {
+    nr: text(z, "AssociatedDocumentLineDocument", "LineID"),            // BT-126
+    notiz: text(z, "AssociatedDocumentLineDocument", "IncludedNote", "Content"), // BT-127
+    name: text(z, "SpecifiedTradeProduct", "Name"),                     // BT-153
+    beschreibung: text(z, "SpecifiedTradeProduct", "Description"),      // BT-154
+    artikelnummer: text(z, "SpecifiedTradeProduct", "SellerAssignedID"), // BT-155
+    menge: menge ? Number(menge.textContent.trim()) : null,             // BT-129
+    einheit: menge?.getAttribute("unitCode") || null,                   // BT-130
+    einzelpreis: zahl(vereinbarung, "NetPriceProductTradePrice", "ChargeAmount"), // BT-146
+    preisbasis: zahl(vereinbarung, "NetPriceProductTradePrice", "BasisQuantity"), // BT-149
+    kategorie: text(abrechnung, "ApplicableTradeTax", "CategoryCode"),  // BT-151
+    satz: zahl(abrechnung, "ApplicableTradeTax", "RateApplicablePercent"), // BT-152
+    von: datum(abrechnung, "BillingSpecifiedPeriod", "StartDateTime"),  // BT-134
+    bis: datum(abrechnung, "BillingSpecifiedPeriod", "EndDateTime"),    // BT-135
+    nachlaesseZuschlaege: alle(abrechnung, "SpecifiedTradeAllowanceCharge").map(nachlassZuschlag), // BG-27, BG-28
+    gesamt: zahl(abrechnung, "SpecifiedTradeSettlementLineMonetarySummation", "LineTotalAmount"), // BT-131
+  };
+}
+
+function nachlassZuschlag(a) {
+  return {
+    zuschlag: text(a, "ChargeIndicator", "Indicator") === "true",
+    betrag: zahl(a, "ActualAmount"),
+    grund: text(a, "Reason") || text(a, "ReasonCode"),
+    kategorie: text(a, "CategoryTradeTax", "CategoryCode"),
+    satz: zahl(a, "CategoryTradeTax", "RateApplicablePercent"),
+  };
+}
+
+/**
+ * Zahlungsbedingungen lesbar machen: XRechnung schreibt Skonto als
+ * #SKONTO#TAGE=14#PROZENT=2.00#; daraus wird ein Satz.
+ */
+function lesbareBedingungen(bedingungen) {
+  if (!bedingungen) return null;
+  return bedingungen.split(/\r?\n/).map((zeile) => {
+    const skonto = /^#SKONTO#TAGE=(\d+)#PROZENT=([\d.]+)#/.exec(zeile.trim());
+    return skonto ? TEXTE.skonto(alsZahl(Number(skonto[2]), 2), skonto[1]) : zeile;
+  }).join("\n");
+}
+
+// === NACHRECHNEN ==============================================================
+// Gehen Positionen, Steuer und Summen auf? Das ist keine Prüfung der
+// Gültigkeit, nur eine Kontrolle der Rechenwerte.
+// =============================================================================
+const NACHRECHNEN = {
+  // Erlaubte Abweichung, in der Währung der Rechnung
+  rundungstoleranz: 0.01,
+};
+
+/** Liste der Abweichungen; leer, wenn alles aufgeht. */
+function rechneNach(r) {
+  const abweichungen = [];
+  const g = TEXTE.pruefgegenstand;
+  const pruefe = (was, berechnet, steht) => {
+    if (steht === null || steht === undefined || berechnet === null) return;
+    if (Math.abs(runde(berechnet) - steht) > NACHRECHNEN.rundungstoleranz) {
+      abweichungen.push(TEXTE.abweichung(was, alsBetrag(berechnet, r.waehrung), alsBetrag(steht, r.waehrung)));
+    }
+  };
+  const summe = (liste, wert) => liste.reduce((s, x) => s + (wert(x) || 0), 0);
+  const mitVorzeichen = (a) => (a.zuschlag ? a.betrag : -a.betrag);
+
+  for (const p of r.positionen) {
+    if (p.menge === null || p.einzelpreis === null) continue;
+    pruefe(g.position(p.nr), p.menge * p.einzelpreis / (p.preisbasis || 1) + summe(p.nachlaesseZuschlaege, mitVorzeichen), p.gesamt);
+  }
+  const positionen = summe(r.positionen, (p) => p.gesamt);
+  pruefe(g.positionen, positionen, r.summen.positionen);
+  pruefe(g.netto, positionen + summe(r.nachlaesseZuschlaege, mitVorzeichen), r.summen.netto);
+  for (const s of r.steuer) {
+    if (s.basis !== null && s.satz !== null) pruefe(g.steuer(alsZahl(s.satz)), s.basis * s.satz / 100, s.betrag);
+  }
+  pruefe(g.steuerSumme, summe(r.steuer, (s) => s.betrag), r.summen.steuer);
+  if (r.summen.netto !== null) pruefe(g.brutto, r.summen.netto + (r.summen.steuer || 0), r.summen.brutto);
+  if (r.summen.brutto !== null) pruefe(g.zahlbetrag, r.summen.brutto - (r.summen.gezahlt || 0) + (r.summen.rundung || 0), r.summen.zahlbetrag);
+  return abweichungen;
+}
+
+function runde(betrag) {
+  return Math.round(betrag * 100) / 100;
+}
+
+// --- Darstellung von Zahlen und Daten ---------------------------------------
+
+function alsBetrag(betrag, waehrung = "EUR") {
+  try {
+    return new Intl.NumberFormat("de-DE", { style: "currency", currency: waehrung }).format(betrag);
+  } catch {
+    return `${alsZahl(betrag, 2)} ${waehrung}`;
+  }
+}
+
+function alsZahl(zahl, stellen = null) {
+  return new Intl.NumberFormat("de-DE", stellen === null
+    ? { maximumFractionDigits: 4 } : { minimumFractionDigits: stellen, maximumFractionDigits: stellen }).format(zahl);
+}
+
+function alsDatum(iso) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  const [jahr, monat, tag] = iso.split("-");
+  return `${tag}.${monat}.${jahr}`;
+}
+
+// Für die Oberfläche, für Tests und für Neugierige.
+window.XFactViewer = {
+  TEXTE, CODES, NACHRECHNEN,
+  leseXRechnung, lesbareBedingungen, rechneNach, bedeutung, landName,
+  alsBetrag, alsZahl, alsDatum,
+};
+</script>
+
+<script type="module" id="viewer-ablauf">
+// === ANZEIGE ==================================================================
+// Die Rechnung auf dem Bildschirm. Jede Bezeichnung trägt ihre BT-Nummer
+// (data-bt); sichtbar wird sie mit "BT-Nummern zeigen".
+// Alle Werte aus der Datei kommen als Text auf die Seite, nie als HTML.
+// =============================================================================
+
+const { TEXTE, leseXRechnung, lesbareBedingungen, rechneNach, bedeutung, landName, alsBetrag, alsZahl, alsDatum } = window.XFactViewer;
+
+const $ = (id) => document.getElementById(id);
+
+function el(name, eigenschaften = {}, ...kinder) {
+  const element = document.createElement(name);
+  for (const [schluessel, wert] of Object.entries(eigenschaften)) {
+    if (wert === undefined || wert === null || wert === false) continue;
+    if (schluessel === "class") element.className = wert;
+    else if (schluessel.startsWith("on")) element.addEventListener(schluessel.slice(2), wert);
+    else element.setAttribute(schluessel, wert === true ? "" : wert);
+  }
+  element.append(...kinder.flat(Infinity).filter((k) => k !== null && k !== undefined && k !== false && k !== ""));
+  return element;
+}
+
+/** Bezeichnung und Wert als Zeile einer Angabenliste; ohne Wert keine Zeile */
+function angabe(bezeichnung, bt, wert) {
+  if (wert === null || wert === undefined || wert === "") return null;
+  return [el("dt", { "data-bt": bt }, bezeichnung), el("dd", {}, wert)];
+}
+
+function zeigeRechnung(r) {
+  const f = TEXTE.felder;
+  const zeitraum = r.leistungVon && r.leistungBis ? `${alsDatum(r.leistungVon)} – ${alsDatum(r.leistungBis)}` : null;
+  return el("div", {},
+    el("div", { class: "rechnung-kopf" },
+      el("div", { class: "titel" },
+        el("span", { "data-bt": "BT-3" }, bedeutung("rechnungsart", r.art) || ""), " ",
+        el("span", { "data-bt": "BT-1" }, r.nummer || "")),
+      el("div", { "data-bt": "BT-2" }, alsDatum(r.datum))),
+    el("div", { class: "parteien" },
+      zeigePartei(TEXTE.absender, r.absender, "BG-4", { name: "BT-27", ustId: "BT-31", steuernummer: "BT-32", elektronisch: "BT-34", kontakt: "BG-6" }),
+      zeigePartei(TEXTE.empfaenger, r.empfaenger, "BG-7", { name: "BT-44", ustId: "BT-48", elektronisch: "BT-49", kontakt: "BG-9" })),
+    el("dl", { class: "angaben kopfdaten" },
+      angabe(f.datum, "BT-2", alsDatum(r.datum)),
+      angabe(f.faellig, "BT-9", alsDatum(r.zahlung.faellig)),
+      angabe(f.leistungsdatum, "BT-72", alsDatum(r.leistungsdatum)),
+      angabe(f.leistungszeitraum, "BG-14", zeitraum),
+      angabe(f.kaeuferreferenz, "BT-10", r.kaeuferreferenz),
+      angabe(f.bestellnummer, "BT-13", r.bestellnummer),
+      angabe(f.auftragsnummer, "BT-14", r.auftragsnummer),
+      angabe(f.vertrag, "BT-12", r.vertrag),
+      angabe(f.projekt, "BT-11", r.projekt),
+      angabe(f.vorherigeRechnung, "BT-25", r.vorherigeRechnung),
+      r.waehrung !== "EUR" ? angabe(f.waehrung, "BT-5", r.waehrung) : null),
+    zeigePositionen(r),
+    zeigeNachlaesseZuschlaege(r),
+    zeigeSummen(r),
+    zeigeKontrolle(r),
+    zeigeZahlung(r),
+    r.bemerkungen.length ? el("div", { class: "abschnitt" },
+      el("h3", { "data-bt": "BG-1" }, TEXTE.bemerkungen),
+      r.bemerkungen.map((b) => el("p", { class: "bemerkung" }, b.text))) : null,
+    r.lieferanschrift ? el("div", { class: "abschnitt" }, zeigePartei(TEXTE.lieferanschrift, r.lieferanschrift, "BG-13", {})) : null,
+    zeigeAnhaenge(r));
+}
+
+function zeigePartei(titel, p, bg, bt) {
+  if (!p) return el("div", { class: "partei" }, el("h3", { "data-bt": bg }, titel));
+  const f = TEXTE.felder;
+  const ausland = p.land && p.land !== "DE" ? landName(p.land) : null;
+  return el("div", { class: "partei" },
+    el("h3", { "data-bt": bg }, titel),
+    el("div", { class: "name", "data-bt": bt.name }, p.name),
+    p.handelsname && p.handelsname !== p.name ? el("div", {}, p.handelsname) : null,
+    p.adresse.map((zeile) => el("div", {}, zeile)),
+    el("div", {}, [p.plz, p.ort].filter(Boolean).join(" ")),
+    ausland ? el("div", {}, ausland) : null,
+    el("dl", { class: "angaben" },
+      angabe(f.ustId, bt.ustId, p.ustId),
+      angabe(f.steuernummer, bt.steuernummer, p.steuernummer),
+      angabe(f.register, null, p.register),
+      angabe(f.kennung, null, p.kennung),
+      angabe(f.adresseElektronisch, bt.elektronisch, p.adresseElektronisch),
+      p.kontakt ? [
+        angabe(f.kontakt, bt.kontakt, p.kontakt.name),
+        angabe(f.telefon, null, p.kontakt.telefon),
+        angabe(f.email, null, p.kontakt.email),
+      ] : null));
+}
+
+function zeigePositionen(r) {
+  const s = TEXTE.spalten;
+  const bereich = el("div", { class: "positionen" }, el("h3", { "data-bt": "BG-25" }, TEXTE.positionen));
+  if (!r.positionen.length) {
+    bereich.append(el("div", { class: "leise" }, TEXTE.ohneZeilen));
+    return bereich;
+  }
+  const zeile = (p) => {
+    const datum = p.von && p.bis && p.von !== p.bis ? `${alsDatum(p.von)} – ${alsDatum(p.bis)}` : alsDatum(p.von);
+    const einheit = bedeutung("einheit", p.einheit);
+    return el("tr", {},
+      el("td", { class: "zahl" }, p.nr),
+      el("td", { class: "datum" }, datum),
+      el("td", {},
+        el("div", { class: "bezeichnung" }, p.name),
+        p.beschreibung ? el("div", { class: "beschreibung" }, p.beschreibung) : null,
+        p.artikelnummer ? el("div", { class: "beschreibung" }, `${TEXTE.artikelnummer} ${p.artikelnummer}`) : null,
+        p.notiz ? el("div", { class: "beschreibung" }, p.notiz) : null,
+        p.nachlaesseZuschlaege.map((a) => el("div", { class: "beschreibung" },
+          `${a.zuschlag ? TEXTE.zuschlag : TEXTE.nachlass}${a.grund ? ` (${a.grund})` : ""}: ${alsBetrag(a.zuschlag ? a.betrag : -a.betrag, r.waehrung)}`))),
+      el("td", { class: "zahl" }, p.menge === null ? "" : alsZahl(p.menge)),
+      el("td", {}, einheit),
+      el("td", { class: "zahl" }, p.einzelpreis === null ? "" : alsBetrag(p.einzelpreis, r.waehrung),
+        p.preisbasis && p.preisbasis !== 1 ? el("div", { class: "beschreibung" }, TEXTE.jeMenge(alsZahl(p.preisbasis))) : null),
+      el("td", { class: "zahl" }, p.satz === null ? p.kategorie || "" : `${alsZahl(p.satz)} %`),
+      el("td", { class: "zahl" }, p.gesamt === null ? "" : alsBetrag(p.gesamt, r.waehrung)));
+  };
+  bereich.append(el("table", { class: "tabelle" },
+    el("thead", {}, el("tr", {},
+      el("th", { class: "zahl", "data-bt": "BT-126" }, s.nr), el("th", { "data-bt": "BT-134" }, s.datum),
+      el("th", { "data-bt": "BT-153" }, s.bezeichnung), el("th", { class: "zahl", "data-bt": "BT-129" }, s.menge),
+      el("th", { "data-bt": "BT-130" }, s.einheit), el("th", { class: "zahl", "data-bt": "BT-146" }, s.preis),
+      el("th", { class: "zahl", "data-bt": "BT-152" }, s.ust), el("th", { class: "zahl", "data-bt": "BT-131" }, s.gesamt))),
+    el("tbody", {}, r.positionen.map(zeile))));
+  return bereich;
+}
+
+function zeigeNachlaesseZuschlaege(r) {
+  if (!r.nachlaesseZuschlaege.length) return null;
+  return el("div", { class: "positionen" },
+    el("h3", { "data-bt": "BG-20" }, TEXTE.nachlaesseZuschlaege),
+    el("table", { class: "tabelle" }, el("tbody", {}, r.nachlaesseZuschlaege.map((a) => el("tr", {},
+      el("td", {}, a.zuschlag ? TEXTE.zuschlag : TEXTE.nachlass),
+      el("td", {}, a.grund || ""),
+      el("td", { class: "zahl" }, a.satz === null ? a.kategorie || "" : `${alsZahl(a.satz)} %`),
+      el("td", { class: "zahl" }, alsBetrag(a.zuschlag ? a.betrag : -a.betrag, r.waehrung)))))));
+}
+
+function zeigeSummen(r) {
+  const t = TEXTE.summen;
+  const s = r.summen;
+  const zeile = (bezeichnung, bt, betrag, klasse = "") => (betrag === null || betrag === undefined ? null
+    : el("div", { class: `summe ${klasse}` }, el("span", { "data-bt": bt }, bezeichnung), el("span", { class: "zahl" }, alsBetrag(betrag, r.waehrung))));
+  const mitNachlass = s.nachlaesse || s.zuschlaege;
+  return el("div", { class: "summen" },
+    mitNachlass ? zeile(t.positionen, "BT-106", s.positionen) : null,
+    s.nachlaesse ? zeile(t.nachlaesse, "BT-107", -s.nachlaesse) : null,
+    s.zuschlaege ? zeile(t.zuschlaege, "BT-108", s.zuschlaege) : null,
+    zeile(t.netto, "BT-109", s.netto ?? s.positionen),
+    r.steuer.map((g) => zeile(g.kategorie === "S" ? t.ust(alsZahl(g.satz)) : t.steuerfrei(g.befreiungsgrund || bedeutung("steuerkategorie", g.kategorie)),
+      "BT-117", g.betrag)),
+    zeile(t.brutto, "BT-112", s.brutto, "gesamt"),
+    s.gezahlt ? zeile(t.gezahlt, "BT-113", -s.gezahlt) : null,
+    s.rundung ? zeile(t.rundung, "BT-114", s.rundung) : null,
+    s.zahlbetrag !== s.brutto ? zeile(t.zahlbetrag, "BT-115", s.zahlbetrag, "gesamt") : null);
+}
+
+function zeigeKontrolle(r) {
+  const abweichungen = rechneNach(r);
+  return el("div", { class: "kontrolle" }, abweichungen.length
+    ? el("ul", {}, abweichungen.map((a) => el("li", {}, a)))
+    : el("span", { class: "ok" }, TEXTE.stimmt));
+}
+
+function zeigeZahlung(r) {
+  const f = TEXTE.felder;
+  const z = r.zahlung;
+  const mittel = z.mittel.map((m) => [
+    angabe(f.zahlungsart, "BT-81", bedeutung("zahlungsart", m.art)),
+    angabe(f.zahlungsinfo, "BT-82", m.info),
+    angabe(f.iban, "BT-84", m.iban && gruppiert(m.iban)),
+    angabe(f.bic, "BT-86", m.bic),
+    angabe(f.kontoinhaber, "BT-85", m.kontoinhaber),
+    angabe(f.kundenIban, "BT-91", m.kundenIban && gruppiert(m.kundenIban)),
+    angabe(f.karte, "BT-87", m.karte),
+  ]);
+  return el("div", { class: "abschnitt" },
+    el("h3", { "data-bt": "BG-16" }, TEXTE.zahlung),
+    el("dl", { class: "angaben" },
+      mittel,
+      angabe(f.glaeubigerId, "BT-90", z.glaeubigerId),
+      angabe(f.mandatsreferenz, "BT-89", z.mandatsreferenz),
+      angabe(f.verwendungszweck, "BT-83", z.verwendungszweck),
+      angabe(f.faellig, "BT-9", alsDatum(z.faellig)),
+      angabe(f.bedingungen, "BT-20", lesbareBedingungen(z.bedingungen) && el("span", { class: "bemerkung" }, lesbareBedingungen(z.bedingungen)))));
+}
+
+function zeigeAnhaenge(r) {
+  if (!r.anhaenge.length) return null;
+  return el("div", { class: "abschnitt" },
+    el("h3", { "data-bt": "BG-24" }, TEXTE.anhaenge),
+    r.anhaenge.map((a) => el("div", { class: "anhang" },
+      el("span", {}, a.beschreibung || a.dateiname || a.kennung),
+      a.dateiname && a.dateiname !== a.beschreibung ? el("span", { class: "leise" }, a.dateiname) : null,
+      a.inhalt ? el("button", { class: "knopf klein", onclick: () => anhangSpeichern(a) }, TEXTE.herunterladen) : null,
+      // Ein Link wird nur angezeigt, nicht geöffnet: Er führt auf eine fremde Website
+      a.link ? el("span", { class: "leise" }, `${TEXTE.nurLink}: ${a.link}`) : null)));
+}
+
+const gruppiert = (iban) => iban.replace(/\s/g, "").replace(/(.{4})/g, "$1 ").trim();
+
+/** Speichert einen eingebetteten Anhang als Datei (er wird nicht geöffnet). */
+function anhangSpeichern(a) {
+  const bytes = Uint8Array.from(atob(a.inhalt), (z) => z.charCodeAt(0));
+  const adresse = URL.createObjectURL(new Blob([bytes], { type: a.mime || "application/octet-stream" }));
+  const link = el("a", { href: adresse, download: a.dateiname || a.kennung || "anhang" });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(adresse), 1000);
+}
+
+// === ABLAUF ===================================================================
+// Datei wählen oder hineinziehen, anzeigen, drucken.
+// =============================================================================
+
+function zeigeSchritt(name) {
+  $("schritt-oeffnen").hidden = name !== "oeffnen";
+  $("schritt-ansehen").hidden = name !== "ansehen";
+}
+
+function zeigeMeldung(text) {
+  $("meldung").textContent = text || "";
+  $("meldung").hidden = !text;
+}
+
+async function dateiGewaehlt(datei) {
+  zeigeMeldung("");
+  if (!datei) return;
+  let r;
+  try {
+    r = leseXRechnung(await datei.text());
+  } catch (fehler) {
+    console.error(fehler);
+    return zeigeMeldung(fehler.message);
+  }
+  $("dateiname").textContent = datei.name;
+  $("datei-info").textContent = [r.profil?.includes("xrechnung") ? "XRechnung" : null, TEXTE.syntax[r.syntax]].filter(Boolean).join(" · ");
+  $("rechnung").replaceChildren(zeigeRechnung(r));
+  document.title = `${r.nummer || datei.name} – XFactViewer`;
+  zeigeSchritt("ansehen");
+}
+
+function start() {
+  for (const knoten of document.querySelectorAll("[data-text]")) knoten.textContent = TEXTE[knoten.dataset.text];
+  $("fuss").append(TEXTE.fusszeile, el("a", { href: TEXTE.pruefdienst, target: "_blank", rel: "noopener" }, TEXTE.pruefdienstText));
+
+  const eingabe = $("datei-eingabe");
+  eingabe.addEventListener("change", () => { dateiGewaehlt(eingabe.files[0]); eingabe.value = ""; });
+  const ablage = $("ablage");
+  ablage.addEventListener("dragover", (e) => { e.preventDefault(); ablage.classList.add("beim-ziehen"); });
+  ablage.addEventListener("dragleave", () => ablage.classList.remove("beim-ziehen"));
+  ablage.addEventListener("drop", (e) => {
+    e.preventDefault();
+    ablage.classList.remove("beim-ziehen");
+    dateiGewaehlt(e.dataTransfer.files[0]);
+  });
+  $("knopf-andere").addEventListener("click", () => { zeigeSchritt("oeffnen"); document.title = "XFactViewer"; });
+  $("knopf-drucken").addEventListener("click", () => window.print());
+  $("bt-zeigen").addEventListener("change", (e) => $("rechnung").classList.toggle("mit-bt", e.target.checked));
+}
+
+start();
+Object.assign(window.XFactViewer, { dateiGewaehlt });
+</script>
+</body>
+</html>

@@ -64,8 +64,16 @@ describe("KI fragen", () => {
     expect(befund.rechnung.bestellnummer).toBeNull();
     expect(befund.verkaeufer).toMatchObject({ ustId: "DE123456789", land: "DE", steuernummer: null });
     expect(befund.kaeufer.oeffentlich).toBe(true);
+    expect(befund.zahlung.art).toBe("ueberweisung");
     expect(befund.zahlung.iban).toBe("DE89370400440532013000");
     expect(befund.positionen[0]).toMatchObject({ nr: 1, menge: 8, einheitCode: "HUR", gesamt: 520 });
+  });
+
+  it("Lastschrift: Gläubiger-ID ohne Leerzeichen, eine maskierte IBAN des Kunden zählt nicht", () => {
+    const zahlung = { art: "lastschrift", iban: "", bic: "", verwendungszweck: "", glaeubigerId: "DE98 ZZZ 0999 9999 999",
+      mandatsreferenz: "M-4711", kundenIban: "DE12 **** **** 3456" };
+    const befund = XFact.befundAusKi({ ...roh, zahlung }, "x");
+    expect(befund.zahlung).toMatchObject({ art: "lastschrift", glaeubigerId: "DE98ZZZ09999999999", mandatsreferenz: "M-4711", kundenIban: null });
   });
 
   it("liest JSON auch, wenn es in Text eingebettet ist", async () => {
@@ -107,12 +115,22 @@ describe("Prüfer Jev", () => {
     expect(Object.keys(fragen)).toEqual([
       "nummer", "datum", "faellig",
       "absender_name", "absender_ort", "absender_ust", "empfaenger_name", "empfaenger_ort",
-      "iban", "kontakt", "p1_menge", "p1_preis", "p1_gesamt", "p1_einheit", "steuerfall",
+      "iban", "kontakt", "p1_menge", "p1_preis", "p1_gesamt", "p1_einheit", "steuerfall", "zahlungsart",
     ]);
     expect(fragen.datum.instructions).toContain("„12.09.2026“");
     expect(fragen.p1_einheit.criteria.HUR).toBe("Stunde");
     expect(felder.p1_einheit).toEqual({ pfad: "position.1.einheit", art: "choice", erwartet: "HUR" });
     expect(felder.absender_ort).toEqual({ pfad: "absender.plz", art: "noul" });
+  });
+
+  it("bei Lastschrift: Gläubiger-ID und IBAN des Kunden statt der eigenen IBAN", () => {
+    const r = musterRechnung({ zahlungsart: "lastschrift",
+      absender: { ...musterRechnung().absender, glaeubigerId: "DE98ZZZ09999999999" },
+      empfaenger: { ...musterRechnung().empfaenger, iban: "DE02120300000000202051" } });
+    const { fragen, felder } = XFact.jevFragen(r);
+    expect(Object.keys(fragen)).toEqual(expect.arrayContaining(["glaeubiger", "kunden_iban"]));
+    expect(fragen.iban).toBeUndefined();
+    expect(felder.zahlungsart).toEqual({ pfad: "zahlungsart", art: "choice", erwartet: "lastschrift" });
   });
 
   it("schickt alle Fragen in einer Anfrage an die Decisions-Schnittstelle", async () => {

@@ -33,6 +33,17 @@ describe("Pflichtangaben", () => {
     expect(XFact.hinweiseZurRechnung(r, musterBefund())).toContainEqual({ feld: "position.1.datum", stufe: "fehlt", text: XFact.TEXTE.pruefer.zeitraumVerkehrt });
   });
 
+  it("Lastschrift: Gläubiger-ID und IBAN des Kunden statt eigener IBAN und Fälligkeit", () => {
+    const fehlt = XFact.pruefeRechnung(musterRechnung({ zahlungsart: "lastschrift", faellig: null, bank: { iban: null, bic: null } }));
+    expect(fehlt.map((f: any) => f.feld)).toEqual(["absender.glaeubigerId", "empfaenger.iban"]);
+    const r = musterRechnung({ zahlungsart: "lastschrift",
+      absender: { ...musterRechnung().absender, glaeubigerId: "DE98ZZZ09999999998" },
+      empfaenger: { ...musterRechnung().empfaenger, iban: "DE02120300000000202052" } });
+    expect(XFact.pruefeRechnung(r)).toEqual([]);
+    expect(gelb(hinweise(r))).toEqual([
+      `empfaenger.iban: ${XFact.TEXTE.ibanPruefziffer}`, `absender.glaeubigerId: ${XFact.TEXTE.pruefer.glaeubigerIdAufbau}`]);
+  });
+
   it("ein Steuerfall, den XFact nicht kennt, ist rot", () => {
     const fehlt = XFact.pruefeRechnung(musterRechnung({ steuerfall: { art: null, kategorie: null, text: null } }));
     expect(fehlt.map((f: any) => f.feld)).toContain("steuerfall");
@@ -63,6 +74,13 @@ describe("formale Regeln", () => {
     expect(XFact.leitwegIdOk("Auftrag 4711")).toBe(false);
     expect(gelb(hinweise({ leitwegId: "04011000-1234512345-07" }))).toEqual([`leitwegId: ${XFact.TEXTE.pruefer.leitwegIdAufbau}`]);
     expect(gelb(hinweise({ leitwegId: "04011000-1234512345-06" }))).toEqual([]);
+  });
+
+  it("Aufbau und Prüfziffer der Gläubiger-ID", () => {
+    expect(XFact.glaeubigerIdOk("DE98ZZZ09999999999")).toBe(true);
+    expect(XFact.glaeubigerIdOk("DE98 ABC 09999999999")).toBe(true);
+    expect(XFact.glaeubigerIdOk("DE98ZZZ09999999998")).toBe(false);
+    expect(XFact.glaeubigerIdOk("DE98ZZZ0999999999")).toBe(false);
   });
 
   it("Behörde ohne Leitweg-ID: gelb, mit „Stimmt“ erledigt", () => {

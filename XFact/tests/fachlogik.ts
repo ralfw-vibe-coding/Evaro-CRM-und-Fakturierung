@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createContext, runInContext } from "node:vm";
+import { DOMParser } from "@xmldom/xmldom";
 
 /**
  * Lädt den Fachlogik-Teil von xfact.html (<script id="xfact-fachlogik">) in
@@ -51,4 +52,20 @@ export function musterBefund(aenderung: object = {}) {
 /** Aufgezeichnete Antwort von KI und Prüfer zu einer Beispielrechnung (siehe aufzeichnen.mjs). */
 export function beispiel(name: string): { modell: string; befund: any; pruefung: any } {
   return JSON.parse(readFileSync(join(__dirname, "ki-antworten", `${name}.json`), "utf8"));
+}
+
+/**
+ * Lädt den Fachlogik-Teil von XFactViewer.html (<script id="viewer-fachlogik">)
+ * und gibt window.XFactViewer zurück. Den XML-Parser des Browsers ersetzt
+ * @xmldom/xmldom.
+ */
+export function ladeViewer(): any {
+  const html = readFileSync(join(__dirname, "..", "XFactViewer.html"), "utf8");
+  const treffer = /<script type="module" id="viewer-fachlogik">([\s\S]*?)<\/script>/.exec(html);
+  if (!treffer) throw new Error('<script id="viewer-fachlogik"> nicht in XFactViewer.html gefunden');
+  const umgebung: any = { console, DOMParser };
+  umgebung.window = umgebung;
+  createContext(umgebung);
+  runInContext(treffer[1], umgebung, { filename: "XFactViewer.html#viewer-fachlogik" });
+  return umgebung.XFactViewer;
 }

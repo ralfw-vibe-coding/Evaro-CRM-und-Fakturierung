@@ -127,8 +127,8 @@ Der Knopf **„XML erzeugen“** ist aktiv, sobald kein roter Hinweis mehr offen
 | Wer | Was | Wie |
 |---|---|---|
 | **Sprach-KI** (ein Aufruf je Rechnung) | liest den ganzen Text und füllt die Felder der XRechnung: Kopf, beide Parteien, Zahlung, Positionen, Steuer, Summen; leitet ab, was eindeutig ist (Einheitencode, Steuerkategorie, Fälligkeit aus Zahlungsziel, Leistungsdatum aus Beschreibung oder Zeitraum); schätzt ein, ob der Empfänger eine öffentliche Stelle ist (dann wird nach der Leitweg-ID gefragt); meldet unter „fehlt“ fehlende Pflichtangaben | `frageKi`: Anweisung `KI_ANWEISUNG`, Antwortschema `KI_SCHEMA` (`response_format: json_schema`, `strict`), Eingabe ist nur der Text aus „PDF lesen“ |
-| **Prüfer Jev** (ein Aufruf, alle Fragen parallel) | „Steht in der Rechnung, dass X der Wert Y ist?“ für Nummer, Daten, Namen, PLZ/Ort, USt-IdNrn., IBAN, Ansprechpartner, Menge/Preis/Betrag je Position; Auswahlfragen für Einheit und Steuerfall | `frageJev` über die Decisions-Schnittstelle von OpenRouter (`typesafe/jev-1.13`); Wert unter 0,5 oder andere Wahl ergibt gelb |
-| **Feste Regeln** | IBAN-Prüfziffer und -Länge, Aufbau der USt-IdNr. je Land, Aufbau und Prüfziffer der Leitweg-ID (ISO 7064 Mod 97-10), gültige Daten, Fälligkeit nicht vor Rechnungsdatum, Zeitraum nicht verkehrt herum, Einheitencode aus der Liste, Rechnungsnummer/IBAN/USt-IdNr. wörtlich im Text, Menge × Preis, Summen gegen die von der KI gelesenen Summen | Abschnitte REGELN und PRÜFUNGEN |
+| **Prüfer Jev** (ein Aufruf, alle Fragen parallel) | „Steht in der Rechnung, dass X der Wert Y ist?“ für Nummer, Daten, Namen, PLZ/Ort, USt-IdNrn., IBAN, Ansprechpartner, Menge/Preis/Betrag je Position, bei Lastschrift Gläubiger-ID und Kunden-IBAN; Auswahlfragen für Einheit, Steuerfall und Zahlungsart | `frageJev` über die Decisions-Schnittstelle von OpenRouter (`typesafe/jev-1.13`); Wert unter 0,5 oder andere Wahl ergibt gelb |
+| **Feste Regeln** | IBAN-Prüfziffer und -Länge, Aufbau der USt-IdNr. je Land, Aufbau und Prüfziffer von Leitweg-ID und Gläubiger-ID (ISO 7064 Mod 97-10), gültige Daten, Fälligkeit nicht vor Rechnungsdatum, Zeitraum nicht verkehrt herum, Einheitencode aus der Liste, Rechnungsnummer/IBAN/USt-IdNr. wörtlich im Text, Menge × Preis, Summen gegen die von der KI gelesenen Summen | Abschnitte REGELN und PRÜFUNGEN |
 
 Die Antwort der KI wird zum **Befund** vereinheitlicht (`befundAusKi`: leere Texte → null, Zahlen als Zahl, USt-IdNr. und IBAN ohne Leerzeichen); daraus und aus den Ergänzungen des Nutzers baut `baueRechnung` die Rechnung, mit der Prüfansicht, Gedächtnis und XML-Erzeugung arbeiten.
 
@@ -178,7 +178,8 @@ Ist keiner dieser Fälle erkennbar, kommt eine Rückfrage unter „Weitere Angab
 - Rabatte oder Zuschläge auf Summenebene werden **nicht** unterstützt. Taucht so etwas auf, gibt es einen roter Hinweis.
 
 **Zahlung:**
-- Fälligkeitsdatum und Bankverbindung, Zahlungsart SEPA-Überweisung (`58`).
+- **SEPA-Überweisung** (`58`, BG-17): Fälligkeitsdatum, IBAN und BIC des Rechnungsstellers.
+- **SEPA-Lastschrift** (`59`, BG-19): Gläubiger-ID (BT-90, Pflicht nach BR-DE-30), IBAN des Kunden (BT-91, Pflicht nach BR-DE-31), Mandatsreferenz (BT-89, optional). Keine eigene Bankverbindung (BR-DE-25-b), Fälligkeit optional; die Zahlungsbedingungen (BT-20) nennen den Einzug (BR-CO-25). Die KI erkennt die Zahlungsart; eine maskierte Kunden-IBAN wird nicht übernommen. Gemerkt: Gläubiger-ID im Firmenprofil, IBAN und Mandatsreferenz im Kundenprofil.
 - Skontotexte werden als Freitext übernommen. Ein Text, der mit `#` beginnt, wird entschärft, weil XRechnung ihn sonst als strukturiertes Skonto auswertet.
 
 **Pflichtangaben, die meist nicht im PDF stehen**, und wo sie gemerkt werden:
@@ -319,3 +320,4 @@ Begründung: Aus React- und Tailwind-Code entsteht beim Bauen eine Datei, die ma
 2. **Menü:** „Hilfe“ (Dokumentation in der App) und „Offline-Version herunterladen“ fehlen noch; ebenso das Ausliefern unter `/xfact/` auf der Netlify-Site.
 3. **Firefox und Safari** sind noch nicht geprüft, insbesondere `file://`.
 4. **Lokale KI** (LM Studio): angebunden und getestet ist nur die Anfrage; welches lokale Modell gut genug ist, ist offen.
+5. **XFactViewer** (`XFact/XFactViewer.html`, eigene Dokumentation `XFactViewer-Dokumentation.md`): zeigt XRechnungen lesbar an, ohne KI, vollständig im Browser. Gebaut ist Schritt 1: Syntax CII, Codes übersetzt, Nachrechnen, BT-Nummern, Anhänge speichern, Drucken; getestet mit den XMLs aus XFact (hin und zurück) und einer handgeschriebenen XRechnung. Offen: Syntax UBL, XML aus ZUGFeRD-/Factur-X-PDFs holen, Tests mit der offiziellen KoSIT-Testsuite, Ausliefern neben XFact.

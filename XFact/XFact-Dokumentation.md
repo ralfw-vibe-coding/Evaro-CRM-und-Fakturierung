@@ -19,7 +19,7 @@ Diese XML-Datei verschicken Sie zusammen mit Ihrem gewohnten PDF an Ihren Kunden
 **XFact kann:**
 - PDF-Rechnungen mit Textebene einlesen. So sind fast alle PDFs, die aus Word, Excel oder einem Programm erzeugt werden. Ein bestimmtes Layout ist nicht nötig.
 - Rechnungsdaten erkennen, mit KI: Nummer, Datum, Absender, Empfänger, Positionen, Summen, Steuer, Bankverbindung, dazu Einheiten und Steuerfall in der Sprache der XRechnung.
-- Kontrollieren: Ein Prüfer bestätigt die erkannten Werte, feste Regeln prüfen IBAN und USt-IdNr., und XFact rechnet Positionen, Netto, Umsatzsteuer und Gesamtbetrag nach.
+- Kontrollieren: Ein Prüfer bestätigt die erkannten Werte, feste Regeln prüfen IBAN, USt-IdNr., Leitweg-ID und Gläubiger-ID, und XFact rechnet Positionen, Netto, Umsatzsteuer und Gesamtbetrag nach.
 - Fehlende Pflichtangaben gezielt nachfragen und sich die Antworten merken, auch pro Kunde.
 - Eine **XRechnung 3.0** erzeugen, die den offiziellen Prüfregeln entspricht.
 - Mit einer KI Ihrer Wahl arbeiten: voreingestellt OpenRouter, oder eine KI auf Ihrem eigenen Rechner.
@@ -84,6 +84,10 @@ Bei den Summen zeigt ein **✓**, dass alles aufgeht. Sonst nennt XFact die Diff
 
 **Ändern:** Klicken Sie auf einen Wert, ändern Sie ihn und drücken Sie Enter, oder wechseln Sie mit Tab ins nächste Feld. Mit Escape brechen Sie ab. Die Einheit jeder Position steht als Auswahl in der Tabelle (Stunde, Tag, Pauschale, Stück …). Ändern Sie sie, gilt das für alle Positionen mit derselben Schreibweise, und XFact merkt es sich für Ihre Firma.
 
+**Zahlung:** Unter den Summen wählen Sie **Überweisung** oder **Lastschrift**. Vorgewählt ist, was die KI auf der Rechnung erkannt hat, z.B. „Der Betrag wird von Ihrem Konto eingezogen“.
+- **Überweisung:** Fälligkeit („Zahlbar bis“), Ihre IBAN und BIC.
+- **Lastschrift:** Ihre **Gläubiger-ID**, die **IBAN des Kunden**, von der abgebucht wird, die **Mandatsreferenz** (optional) und das Datum des Einzugs (optional). Ihre eigene IBAN und eine Fälligkeit braucht die XRechnung dann nicht. Steht die IBAN des Kunden gekürzt auf der Rechnung (z.B. „DE12 **** 3456“), tragen Sie sie einmal vollständig ein; XFact merkt sie sich für diesen Kunden.
+
 Unter der Rechnung stehen **Weitere Angaben**, die im Rechnungsbild keinen Platz haben:
 - **Steuer:** normal mit 19 % / 7 %, Steuerschuldnerschaft des Leistungsempfängers (§ 13b) oder Kleinunternehmer (§ 19). Vorgewählt ist, was die KI auf der Rechnung erkannt hat.
 - **Leistungsdatum für Positionen ohne Datum:** Mit **„= Rechnungsdatum“** übernehmen Sie das Rechnungsdatum.
@@ -108,6 +112,8 @@ Eine XRechnung verlangt einige Angaben, die auf vielen PDF-Rechnungen fehlen. XF
 | **E-Mail des Kunden für Rechnungen** | Die XRechnung braucht eine elektronische Adresse des Empfängers. | diesen Kunden |
 | **Ihre E-Mail, Ihr Ansprechpartner, Ihre Telefonnummer** | Pflicht in der XRechnung, damit der Empfänger bei Fragen jemanden erreicht | Ihre Firma |
 | **Käuferreferenz bzw. Leitweg-ID** | Behörden verlangen ihre Leitweg-ID; ohne sie lehnt ihr Rechnungsportal die Rechnung ab, auch wenn die XRechnung sonst gültig ist. XFact fragt danach, wenn der Empfänger vermutlich eine Behörde ist. Bei Firmen ist es optional, z.B. eine Bestellnummer. | diesen Kunden |
+| **Lastschrift:** Gläubiger-ID | Pflicht, wenn der Betrag eingezogen wird | Ihre Firma |
+| **Lastschrift:** IBAN des Kunden, Mandatsreferenz | Die IBAN ist Pflicht, die Mandatsreferenz hilft dem Kunden bei der Zuordnung. | diesen Kunden |
 | **Einheit**, z.B. „Std“, „Pausch.“ | Die XRechnung verwendet genormte Einheiten. Die KI ordnet sie zu; korrigieren Sie eine Zuordnung, gilt das künftig. | Ihre Firma |
 | **Leistungsdatum** | Steuerlich vorgeschrieben. Fehlt es, genügt ein Klick auf „= Rechnungsdatum“, wenn beides gleich ist. | diese Rechnung |
 | **Steuerfall** | Nur wenn ihn die KI nicht eindeutig erkennt, siehe Abschnitt 7 | diese Rechnung |
@@ -128,8 +134,8 @@ Den Fall erkennt die KI aus der Rechnung, der Prüfer kontrolliert ihn. Für Ihr
 
 Wenn Sie „XML erzeugen“ klicken und das Häkchen „Ergänzte Angaben merken“ gesetzt ist, merkt sich XFact, was Sie ergänzt haben:
 
-- **Für Ihre Firma:** E-Mail, Telefon, Ansprechpartner, USt-IdNr. bzw. Steuernummer, falls sie nicht auf der Rechnung stehen. Dazu Einheiten, deren Zuordnung Sie geändert haben (z.B. „Fahrt“ = Stück). Arbeiten Sie für mehrere Firmen, z.B. als Buchhalter, legt XFact je Firma ein eigenes Profil an. Erkannt wird die Firma an ihrer USt-IdNr. oder Steuernummer.
-- **Für jeden Kunden:** E-Mail für Rechnungen, USt-IdNr. und Leitweg-ID. Erkannt wird der Kunde an seiner USt-IdNr., sonst an Name und PLZ.
+- **Für Ihre Firma:** E-Mail, Telefon, Ansprechpartner, USt-IdNr. bzw. Steuernummer und Gläubiger-ID, falls sie nicht auf der Rechnung stehen. Dazu Einheiten, deren Zuordnung Sie geändert haben (z.B. „Fahrt“ = Stück). Arbeiten Sie für mehrere Firmen, z.B. als Buchhalter, legt XFact je Firma ein eigenes Profil an. Erkannt wird die Firma an ihrer USt-IdNr. oder Steuernummer.
+- **Für jeden Kunden:** E-Mail für Rechnungen, USt-IdNr., Leitweg-ID, für Lastschriften IBAN und Mandatsreferenz. Erkannt wird der Kunde an seiner USt-IdNr., sonst an Name und PLZ.
 - **Logbuch:** Datum, Dateiname, Rechnungsnummer, Kunde und Betrag jeder umgewandelten Rechnung. Das wird immer eingetragen, auch ohne Häkchen.
 
 **Ihre Rechnungen selbst speichert XFact nicht.**
@@ -158,7 +164,7 @@ Ohne KI geht es nicht: Die KI liest Ihre Rechnung und ordnet sie der XRechnung z
 - Die KI liefert die Felder der XRechnung zurück, dazu eine Liste, was auf der Rechnung fehlt.
 - Danach kontrolliert der **Prüfer Jev** jeden erkannten Wert gegen den Rechnungstext („Steht das wirklich da?“), außerdem Einheit und Steuerfall. Was er nicht bestätigt, ist gelb. Jev ist ein Entscheidungsmodell, kein zweites Sprachmodell; die Prüfung kostet etwa 0,02 Cent je Rechnung und läuft nur über OpenRouter.
 - Die KI schätzt außerdem ein, ob der Empfänger eine Behörde ist. Dann fragt XFact nach der Leitweg-ID.
-- Zusätzlich prüfen feste Regeln: IBAN-Prüfziffer, Aufbau der USt-IdNr., Aufbau und Prüfziffer der Leitweg-ID, gültige Daten, Rechenwerte, und ob Rechnungsnummer, IBAN und USt-IdNr. wörtlich in der Rechnung stehen.
+- Zusätzlich prüfen feste Regeln: IBAN-Prüfziffer, Aufbau der USt-IdNr., Aufbau und Prüfziffer von Leitweg-ID und Gläubiger-ID, gültige Daten, Rechenwerte, und ob Rechnungsnummer, IBAN und USt-IdNr. wörtlich in der Rechnung stehen.
 
 ### Mit OpenRouter (voreingestellt)
 
@@ -242,7 +248,7 @@ Am Anfang der Datei steht eine Übersicht. Darunter folgen deutlich markierte Ab
 | **LAYOUT** | Aussehen der Bausteine: Karten, Knöpfe, Ablagefläche |
 | **SEITE** | Aufbau der Oberfläche: Kopfzeile, die drei Schritte, Fußzeile |
 | **TEXTE** | Hinweise beim Start, Meldungen, Beschriftungen |
-| **REGELN** | formale Regeln: Aufbau von USt-IdNr., IBAN und Leitweg-ID, erlaubte Einheiten, unterstützte Steuerfälle |
+| **REGELN** | formale Regeln: Aufbau von USt-IdNr., IBAN, Leitweg-ID und Gläubiger-ID, erlaubte Einheiten, unterstützte Steuerfälle |
 | **PRÜFUNGEN** | was rot oder gelb markiert wird |
 | **KI** | Voreinstellungen für Anbieter und Modell, **die Anweisung an die KI**, das Antwortschema, die Fragen an den Prüfer |
 | **RECHNUNG** | wie aus dem Ergebnis der KI und Ihren Ergänzungen die Rechnung wird |

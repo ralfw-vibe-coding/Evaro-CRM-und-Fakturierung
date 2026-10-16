@@ -77,18 +77,19 @@ describe("Beispielrechnungen (aufgezeichnete KI-Antworten)", () => {
 });
 
 /** KI-Antwort für eine Rechnung eines deutschen Handwerksbetriebs; Positionen, Steuer und Käufer austauschbar */
-function musterBefund({ positionen, steuer, kaeuferUstId = "", summen, leitwegId = "" }: {
-  positionen: object[]; steuer: object[]; kaeuferUstId?: string; summen: object; leitwegId?: string;
+function musterBefund({ positionen, steuer, kaeuferUstId = "", summen, leitwegId = "", zahlung = {}, faellig = "2026-09-26" }: {
+  positionen: object[]; steuer: object[]; kaeuferUstId?: string; summen: object; leitwegId?: string; zahlung?: object; faellig?: string;
 }) {
   const text = "Muster Handwerk GmbH … Rechnungsnummer: 2026-0153 … IBAN DE89 3704 0044 0532 0130 00 … DE196047852";
   return XFact.befundAusKi({
-    rechnung: { nummer: "2026-0153", datum: "2026-09-12", art: "380", faellig: "2026-09-26", zahlungsbedingungen: "",
+    rechnung: { nummer: "2026-0153", datum: "2026-09-12", art: "380", faellig, zahlungsbedingungen: "",
       bestellnummer: "Auftrag 4711", leitwegId, leistungVon: "", leistungBis: "", bemerkung: "" },
     verkaeufer: { name: "Muster Handwerk GmbH", strasse: "Hauptstr. 1", zusatz: "", plz: "20095", ort: "Hamburg", land: "DE",
       ustId: "", steuernummer: "12/345/67890", email: "info@muster-handwerk.example", telefon: "040 123456", kontakt: "Max Muster" },
     kaeufer: { name: "Berg GmbH & Co. KG", strasse: "Alte Ziegelei 21", zusatz: "", plz: "51491", ort: "Overath", land: "DE",
       ustId: kaeuferUstId, steuernummer: "", email: "rechnung@berg.example", telefon: "", kontakt: "" },
-    zahlung: { iban: "DE89370400440532013000", bic: "COBADEFFXXX", verwendungszweck: "" },
+    zahlung: { art: "ueberweisung", iban: "DE89370400440532013000", bic: "COBADEFFXXX", verwendungszweck: "",
+      glaeubigerId: "", mandatsreferenz: "", kundenIban: "", ...zahlung },
     positionen, steuer, summen, fehlt: [],
   }, text);
 }
@@ -146,6 +147,29 @@ describe("die drei Steuerfälle", () => {
     const { xml } = zurXml(befund, {}, "Muster-Leitweg.xml");
     expect(xml).toContain("<ram:BuyerReference>04011000-1234512345-06</ram:BuyerReference>");
     expect(xml).toContain("<ram:IssuerAssignedID>Auftrag 4711</ram:IssuerAssignedID>");
+  });
+
+  it("SEPA-Lastschrift: Gläubiger-ID, IBAN des Kunden, Mandat; ohne eigene IBAN und ohne Fälligkeit", () => {
+    const befund = musterBefund({ positionen: [pos("Wartung Heizung", 2, "Std", 65, 130, "S", 19)],
+      steuer: [{ kategorie: "S", satz: 19, basis: 130, betrag: 24.7, befreiungsgrund: "" }],
+      summen: { netto: 130, steuer: 24.7, brutto: 154.7, zahlbetrag: 154.7 }, faellig: "",
+      zahlung: { art: "lastschrift", iban: "", bic: "", glaeubigerId: "DE98ZZZ09999999999", mandatsreferenz: "M-4711",
+        kundenIban: "DE02120300000000202051" } });
+    const { fehlt, xml } = zurXml(befund, {}, "Muster-Lastschrift.xml");
+    expect(fehlt).toEqual([]);
+    expect(element(xml!, "TypeCode")).toContain("59");
+    expect(element(xml!, "CreditorReferenceID")).toEqual(["DE98ZZZ09999999999"]);
+    expect(xml).toMatch(/<ram:PayerPartyDebtorFinancialAccount>\s*<ram:IBANID>DE02120300000000202051<\/ram:IBANID>/);
+    expect(element(xml!, "DirectDebitMandateID")).toEqual(["M-4711"]);
+    expect(element(xml!, "Description")).toContain(XFact.TEXTE.lastschrift(null));
+    expect(xml).not.toContain("PayeePartyCreditorFinancialAccount");
+    expect(xml).not.toContain("DueDateDateTime");
+  });
+
+  it("Lastschrift ohne Gläubiger-ID und IBAN des Kunden: fehlt", () => {
+    const befund = musterBefund({ positionen: [pos("Wartung Heizung", 2, "Std", 65, 130, "E", 0)],
+      ...keineSteuer(130, "E", "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."), zahlung: { art: "lastschrift" } });
+    expect(zurXml(befund, {}, "nicht-erzeugt.xml").fehlt.map((f: any) => f.feld)).toEqual(["absender.glaeubigerId", "empfaenger.iban"]);
   });
 
   it("Sonderzeichen werden maskiert", () => {

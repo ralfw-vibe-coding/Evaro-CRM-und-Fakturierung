@@ -519,6 +519,7 @@ const TEXTE = {
     faelligVorDatum: "liegt vor dem Rechnungsdatum",
     ustIdAufbau: "Aufbau der USt-IdNr. stimmt nicht",
     leitwegIdAufbau: "Aufbau oder Prüfziffer der Leitweg-ID stimmt nicht",
+    glaeubigerIdAufbau: "Aufbau oder Prüfziffer der Gläubiger-ID stimmt nicht",
     leitwegIdBehoerde: "Empfänger ist vermutlich eine Behörde – dann meist Pflicht",
     steuerfallNicht: (kategorie) => `Steuerkategorie „${kategorie}“ unterstützt XFact nicht`,
   },
@@ -590,6 +591,9 @@ const TEXTE = {
   },
   // Text der Zahlungsbedingungen in der XML
   zahlbarBis: (datum) => `Zahlbar bis ${datum}`,
+  lastschrift: (datum) => datum
+    ? `Der Rechnungsbetrag wird am ${datum} per SEPA-Lastschrift eingezogen.`
+    : "Der Rechnungsbetrag wird per SEPA-Lastschrift eingezogen.",
   // Ersatzwert für die Käuferreferenz (BT-10), wenn nichts bekannt ist
   keineKaeuferreferenz: "keine Angabe",
 
@@ -626,7 +630,8 @@ const TEXTE = {
     keineEinheiten: "Keine eigenen Einheiten.",
     kunden: "Kunden",
     keineKunden: "Noch keine Kunden gemerkt.",
-    kundenSpalten: { name: "Kunde", email: "E-Mail für Rechnungen", ustId: "USt-IdNr.", leitwegId: "Leitweg-ID" },
+    kundenSpalten: { name: "Kunde", email: "E-Mail für Rechnungen", ustId: "USt-IdNr.", leitwegId: "Leitweg-ID",
+      iban: "IBAN (Lastschrift)", mandatsreferenz: "Mandatsreferenz" },
     logbuch: "Logbuch",
     keinLogbuch: "Noch keine Rechnung umgewandelt.",
     logbuchSpalten: { zeitpunkt: "Umgewandelt", dateiname: "Datei", nummer: "Rechnung", kunde: "Kunde", betrag: "Betrag" },
@@ -662,6 +667,11 @@ const TEXTE = {
     },
     gesamt: "Gesamtbetrag",
     zahlbarBis: "Zahlbar bis",
+    einzugAm: "Einzug am",
+    zahlungsarten: { ueberweisung: "Überweisung", lastschrift: "Lastschrift" },
+    glaeubigerId: "Gläubiger-ID",
+    mandatsreferenz: "Mandatsreferenz",
+    kundenIban: "IBAN des Kunden",
     weitereAngaben: "Weitere Angaben",
     steuerfall: "Steuer",
     steuerfaelle: {
@@ -675,7 +685,8 @@ const TEXTE = {
     leitwegId: "Leitweg-ID (nur bei Behörden)",
     einheitWaehlen: "Einheit wählen …",
     stimmt: "Stimmt",
-    felder: { email: "E-Mail", telefon: "Telefon", kontakt: "Ansprechpartner", ustId: "USt-IdNr.", steuernummer: "Steuernummer" },
+    felder: { email: "E-Mail", telefon: "Telefon", kontakt: "Ansprechpartner", ustId: "USt-IdNr.", steuernummer: "Steuernummer",
+      glaeubigerId: "Gläubiger-ID (Lastschrift)", iban: "IBAN (Lastschrift)", mandatsreferenz: "Mandatsreferenz" },
     stimmtTitel: "Der Wert ist richtig",
   },
   summenWieAufRechnung: "wie auf der Rechnung",
@@ -699,11 +710,13 @@ const TEXTE = {
       name: "Name des Rechnungsstellers", plz: "PLZ des Rechnungsstellers", ort: "Ort des Rechnungsstellers",
       ustId: "USt-IdNr. oder Steuernummer des Rechnungsstellers", email: "E-Mail des Rechnungsstellers",
       telefon: "Telefon des Rechnungsstellers", kontakt: "Ansprechpartner beim Rechnungssteller",
+      glaeubigerId: "Gläubiger-ID des Rechnungsstellers (für die Lastschrift)",
     },
     empfaenger: {
       name: "Name des Empfängers", plz: "PLZ des Empfängers", ort: "Ort des Empfängers",
       email: "E-Mail des Empfängers für Rechnungen",
       ustId: "USt-IdNr. des Empfängers (nötig bei Steuerschuldnerschaft des Leistungsempfängers)",
+      iban: "IBAN des Empfängers, von der abgebucht wird (für die Lastschrift)",
     },
     einheit: (nr, einheit) => `Position ${nr}: Einheit${einheit ? ` „${einheit}“` : ""} zuordnen`,
     leistungsdatum: (nr) => `Position ${nr}: Leistungsdatum`,
@@ -733,7 +746,7 @@ const REGELN = {
   // Einheiten der XRechnung (UN/ECE Rec. 20), die XFact anbietet
   einheiten: [
     { code: "HUR", name: "Stunde" }, { code: "DAY", name: "Tag" }, { code: "LS", name: "Pauschale" },
-    { code: "C62", name: "Stück" }, { code: "KMT", name: "Kilometer" }, { code: "MON", name: "Monat" },
+    { code: "C62", name: "Stück" }, { code: "KMT", name: "Kilometer" }, { code: "MON", name: "Monat" }, { code: "ANN", name: "Jahr" },
     { code: "WEE", name: "Woche" }, { code: "MIN", name: "Minute" }, { code: "MTR", name: "Meter" },
     { code: "MTK", name: "Quadratmeter" }, { code: "MTQ", name: "Kubikmeter" }, { code: "KGM", name: "Kilogramm" },
     { code: "LTR", name: "Liter" },
@@ -742,6 +755,10 @@ const REGELN = {
   // Aufbau der Leitweg-ID: Grobadressierung (2–12 Ziffern), optional
   // Feinadressierung (bis 30 Buchstaben/Ziffern), Prüfziffer (2 Ziffern)
   leitwegId: /^(\d{2,12})(?:-([0-9A-Z]{1,30}))?-(\d{2})$/,
+
+  // Gläubiger-ID für SEPA-Lastschriften: Land, Prüfziffer, Geschäftsbereich
+  // (z.B. ZZZ, zählt nicht für die Prüfziffer), nationale Kennung (DE: 11 Ziffern)
+  glaeubigerId: /^([A-Z]{2})(\d{2})[A-Z0-9]{3}([A-Z0-9]{1,28})$/,
 
   // Steuerkategorien (BT-151), die XFact unterstützt, und ihr Steuerfall
   steuerfaelle: { S: "standard", AE: "reverse_charge", E: "kleinunternehmer" },
@@ -779,6 +796,16 @@ function leitwegIdOk(leitwegId) {
   return rest === 1;
 }
 
+/** Aufbau und Prüfziffer der Gläubiger-ID (wie bei der IBAN, ohne den Geschäftsbereich) */
+function glaeubigerIdOk(glaeubigerId) {
+  const teile = REGELN.glaeubigerId.exec(String(glaeubigerId).replace(/\s/g, "").toUpperCase());
+  if (!teile || (teile[1] === "DE" && !/^\d{11}$/.test(teile[3]))) return false;
+  const ziffern = (teile[3] + teile[1] + teile[2]).replace(/[A-Z]/g, (b) => String(b.charCodeAt(0) - 55));
+  let rest = 0;
+  for (const ziffer of ziffern) rest = (rest * 10 + Number(ziffer)) % 97;
+  return rest === 1;
+}
+
 function datumGueltig(iso) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || "")) return false;
   const datum = new Date(`${iso}T00:00:00Z`);
@@ -811,14 +838,20 @@ function pruefeRechnung(r) {
   const codes = REGELN.einheiten.map((x) => x.code);
   pflicht("nummer", r.nummer, p.nummer);
   pflicht("datum", r.datum, p.datum);
-  pflicht("faellig", r.faellig, p.faellig);
-  pflicht("iban", r.bank.iban, p.iban);
+  // Bei Lastschrift zieht der Rechnungssteller ein: keine eigene IBAN, keine Fälligkeit
+  const lastschrift = r.zahlungsart === "lastschrift";
+  if (!lastschrift) pflicht("faellig", r.faellig, p.faellig);
+  if (!lastschrift) pflicht("iban", r.bank.iban, p.iban);
   pflicht("steuerfall", r.steuerfall.kategorie, p.steuerfall);
   for (const feld of ["name", "plz", "ort"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
   pflicht("absender.ustId", r.absender.ustId || r.absender.steuernummer, p.absender.ustId);
   for (const feld of ["kontakt", "telefon", "email"]) pflicht(`absender.${feld}`, r.absender[feld], p.absender[feld]);
   for (const feld of ["name", "plz", "ort", "email"]) pflicht(`empfaenger.${feld}`, r.empfaenger[feld], p.empfaenger[feld]);
   if (r.steuerfall.art === "reverse_charge") pflicht("empfaenger.ustId", r.empfaenger.ustId, p.empfaenger.ustId);
+  if (lastschrift) {
+    pflicht("absender.glaeubigerId", r.absender.glaeubigerId, p.absender.glaeubigerId);
+    pflicht("empfaenger.iban", r.empfaenger.iban, p.empfaenger.iban);
+  }
   pflicht("positionen", r.positionen.length, p.positionen);
   for (const pos of r.positionen) {
     pflicht(`position.${pos.nr}.einheit`, codes.includes(pos.einheitCode), p.einheit(pos.nr, pos.einheit));
@@ -855,7 +888,9 @@ function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null,
 
   // Formale Regeln
   if (r.steuerfall.art === null) unsicher("steuerfall", t.steuerfallNicht(befund.positionen[0]?.steuerkategorie || "?"));
-  if (r.bank.iban && !ibanPruefzifferOk(r.bank.iban)) regel("iban", TEXTE.ibanPruefziffer);
+  if (r.zahlungsart !== "lastschrift" && r.bank.iban && !ibanPruefzifferOk(r.bank.iban)) regel("iban", TEXTE.ibanPruefziffer);
+  if (r.empfaenger.iban && !ibanPruefzifferOk(r.empfaenger.iban)) regel("empfaenger.iban", TEXTE.ibanPruefziffer);
+  if (r.absender.glaeubigerId && !glaeubigerIdOk(r.absender.glaeubigerId)) regel("absender.glaeubigerId", t.glaeubigerIdAufbau);
   for (const rolle of ["absender", "empfaenger"]) {
     const p = r[rolle];
     if (p.ustId && !ustIdAufbauOk(p.ustId)) regel(`${rolle}.ustId`, t.ustIdAufbau);
@@ -870,7 +905,8 @@ function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null,
 
   // Steht es wörtlich in der Rechnung? (gegen erfundene Werte)
   if (befund.text) {
-    for (const [feld, wert] of [["nummer", r.nummer], ["iban", r.bank.iban], ["absender.ustId", r.absender.ustId], ["empfaenger.ustId", r.empfaenger.ustId]]) {
+    for (const [feld, wert] of [["nummer", r.nummer], ["iban", r.bank.iban], ["absender.ustId", r.absender.ustId],
+      ["empfaenger.ustId", r.empfaenger.ustId], ["absender.glaeubigerId", r.absender.glaeubigerId], ["empfaenger.iban", r.empfaenger.iban]]) {
       if (wert && !stehtImText(wert, befund.text)) unsicher(feld, t.nichtImText);
     }
   }
@@ -909,7 +945,7 @@ function hinweiseZurRechnung(r, befund, bestaetigt = new Set(), pruefung = null,
     if (frage.art === "noul" && antwort.noul < KI.jevSchwelle) unsicher(frage.pfad, t.nichtBestaetigt);
     if (frage.art === "choice" && antwort.choice && antwort.choice !== frage.erwartet) {
       const name = REGELN.einheiten.find((x) => x.code === antwort.choice)?.name
-        || TEXTE.ansicht.steuerfaelle[REGELN.steuerfaelle[antwort.choice]] || antwort.choice;
+        || TEXTE.ansicht.steuerfaelle[REGELN.steuerfaelle[antwort.choice]] || TEXTE.ansicht.zahlungsarten[antwort.choice] || antwort.choice;
       unsicher(frage.pfad, t.eher(name));
     }
   }
@@ -947,10 +983,11 @@ Vorgehen:
 1. Lies die ganze Rechnung und erkenne ihre Teile: Rechnungssteller (meist Briefkopf, Absenderzeile oder Fußzeile), Rechnungsempfänger (Anschriftfeld), Kopfdaten, Positionen, Summen, Steuerhinweise, Zahlungsangaben.
 2. Übernimm Werte, die auf der Rechnung stehen. Ein Layout ist nicht vorgegeben; Beschriftungen können beliebig lauten ("Ausgangsrechnung", "Beleg-Nr.", "Invoice No.", ...).
 3. Leite ab, was eindeutig ableitbar ist:
-   - Einheitencode (UN/ECE Rec. 20): Stunde HUR, Tag DAY, Pauschale LS, Stück C62, Kilometer KMT, Monat MON, Woche WEE, Minute MIN, Meter MTR, Quadratmeter MTK, Kubikmeter MTQ, Kilogramm KGM, Liter LTR.
+   - Einheitencode (UN/ECE Rec. 20): Stunde HUR, Tag DAY, Pauschale LS, Stück C62, Kilometer KMT, Monat MON, Jahr ANN, Woche WEE, Minute MIN, Meter MTR, Quadratmeter MTK, Kubikmeter MTQ, Kilogramm KGM, Liter LTR.
    - Steuerkategorie: S = Umsatzsteuer wird ausgewiesen (19 %, 7 %); AE = Steuerschuldnerschaft des Leistungsempfängers / Reverse Charge (§ 13b UStG, auch EU-Reverse-Charge), Satz 0; E = steuerbefreit, z.B. Kleinunternehmer § 19 UStG, Satz 0; K = innergemeinschaftliche Lieferung von Waren; Z = Nullsatz; G = Ausfuhr außerhalb der EU; O = nicht steuerbar.
    - Leistungsdatum einer Position: aus der Datumsspalte, sonst aus der Beschreibung (z.B. "06.02.26, 10-12 Uhr" → 2026-02-06), sonst aus einem Leistungszeitraum der ganzen Rechnung. Ein einzelner Tag: von = bis.
-   - Fälligkeit: aus "zahlbar bis" oder Rechnungsdatum + Zahlungsziel in Tagen.
+   - Fälligkeit: aus "zahlbar bis" oder Rechnungsdatum + Zahlungsziel in Tagen. Bei Lastschrift das Datum des Einzugs, falls genannt.
+   - Zahlungsart: "lastschrift", wenn der Betrag vom Konto des Kunden eingezogen bzw. abgebucht wird (SEPA-Lastschrift); sonst "ueberweisung". Bei Lastschrift außerdem Gläubiger-ID, Mandatsreferenz und IBAN des Kunden, soweit angegeben; eine gekürzte oder maskierte IBAN (z.B. DE12 **** 3456) als "".
    - Zweistellige Jahre: 26 = 2026.
    - Öffentliche Stelle: Ist der Rechnungsempfänger eine Behörde oder ein öffentlicher Auftraggeber (Bund, Land, Kommune, Amt, öffentliche Hochschule, Anstalt oder Körperschaft des öffentlichen Rechts)? Firmen in Privatrechtsform (GmbH, AG, KG, e.V., …) sind es nicht, auch wenn sie der öffentlichen Hand gehören.
 4. Nichts erfinden. Was weder steht noch eindeutig ableitbar ist: leerer Text "" bzw. Zahl 0.
@@ -1002,7 +1039,11 @@ const KI_SCHEMA = (() => {
       oeffentlich: { type: "boolean", description: "Ist der Rechnungsempfänger eine Behörde bzw. ein öffentlicher Auftraggeber? (dann braucht er meist eine Leitweg-ID)" },
     }),
     zahlung: objekt({
-      iban: T("IBAN des Rechnungsstellers ohne Leerzeichen (BT-84)"),
+      art: { type: "string", enum: ["ueberweisung", "lastschrift"], description: "Zahlungsart (BT-81): Überweisung (58) oder SEPA-Lastschrift (59)" },
+      iban: T("IBAN des Rechnungsstellers ohne Leerzeichen (BT-84), bei Überweisung"),
+      glaeubigerId: T("Gläubiger-Identifikationsnummer des Rechnungsstellers (BT-90), bei Lastschrift"),
+      mandatsreferenz: T("Mandatsreferenz (BT-89), bei Lastschrift"),
+      kundenIban: T("IBAN des Kunden, von der abgebucht wird, ohne Leerzeichen (BT-91), bei Lastschrift"),
       bic: T("BIC (BT-86)"),
       verwendungszweck: T("Verwendungszweck (BT-83)"),
     }),
@@ -1119,7 +1160,14 @@ function befundAusKi(daten, text) {
       "leitwegId", "leistungVon", "leistungBis", "bemerkung"]),
     verkaeufer,
     kaeufer,
-    zahlung: { ...felder(daten.zahlung, ["bic", "verwendungszweck"]), iban: ohneLeerzeichen(t(daten.zahlung?.iban)) },
+    zahlung: {
+      ...felder(daten.zahlung, ["bic", "verwendungszweck", "mandatsreferenz"]),
+      art: daten.zahlung?.art === "lastschrift" ? "lastschrift" : "ueberweisung",
+      iban: ohneLeerzeichen(t(daten.zahlung?.iban)),
+      glaeubigerId: ohneLeerzeichen(t(daten.zahlung?.glaeubigerId)),
+      // Eine maskierte IBAN (DE12****3456) taugt nicht für den Einzug
+      kundenIban: [ohneLeerzeichen(t(daten.zahlung?.kundenIban))].map((i) => (i && /^[A-Z0-9]+$/.test(i) ? i : null))[0],
+    },
     positionen: (daten.positionen || []).map((p, i) => ({
       nr: i + 1,
       ...felder(p, ["name", "beschreibung", "einheitText", "einheitCode", "steuerkategorie", "von", "bis"]),
@@ -1160,14 +1208,21 @@ function jevFragen(r) {
 
   stimmt("nummer", "nummer", "die Rechnungsnummer", r.nummer);
   stimmt("datum", "datum", "das Rechnungsdatum", r.datum && alsDatum(r.datum));
-  stimmt("faellig", "faellig", "das Fälligkeitsdatum (zahlbar bis, ggf. aus dem Zahlungsziel errechnet)", r.faellig && alsDatum(r.faellig));
+  const lastschrift = r.zahlungsart === "lastschrift";
+  stimmt("faellig", "faellig", lastschrift ? "das Datum, an dem der Betrag eingezogen wird"
+    : "das Fälligkeitsdatum (zahlbar bis, ggf. aus dem Zahlungsziel errechnet)", r.faellig && alsDatum(r.faellig));
   for (const [rolle, wer] of [["absender", "des Rechnungsstellers (Verkäufer, Absender)"], ["empfaenger", "des Rechnungsempfängers (Käufer, Kunde)"]]) {
     const p = r[rolle];
     stimmt(`${rolle}_name`, `${rolle}.name`, `der Name ${wer}`, p.name);
     stimmt(`${rolle}_ort`, `${rolle}.plz`, `PLZ und Ort ${wer}`, p.plz && p.ort ? `${p.plz} ${p.ort}` : null);
     stimmt(`${rolle}_ust`, `${rolle}.ustId`, `die USt-IdNr. ${wer}`, p.ustId);
   }
-  stimmt("iban", "iban", "die IBAN des Rechnungsstellers", r.bank.iban);
+  if (lastschrift) {
+    stimmt("glaeubiger", "absender.glaeubigerId", "die Gläubiger-ID des Rechnungsstellers", r.absender.glaeubigerId);
+    stimmt("kunden_iban", "empfaenger.iban", "die IBAN des Kunden, von der abgebucht wird", r.empfaenger.iban);
+  } else {
+    stimmt("iban", "iban", "die IBAN des Rechnungsstellers", r.bank.iban);
+  }
   stimmt("kontakt", "absender.kontakt", "der Ansprechpartner beim Rechnungssteller", r.absender.kontakt);
   const einheiten = Object.fromEntries(REGELN.einheiten.map((x) => [x.code, x.name]));
   for (const p of r.positionen) {
@@ -1186,6 +1241,10 @@ function jevFragen(r) {
       O: "Nicht steuerbar.",
     }, r.steuerfall.kategorie);
   }
+  auswahl("zahlungsart", "zahlungsart", "Wie wird der Rechnungsbetrag bezahlt", {
+    ueberweisung: "Der Kunde überweist den Betrag (oder es ist nichts dazu angegeben).",
+    lastschrift: "Der Betrag wird per Lastschrift vom Konto des Kunden eingezogen bzw. abgebucht.",
+  }, r.zahlungsart || "ueberweisung");
   return { fragen, felder };
 }
 
@@ -1214,8 +1273,9 @@ async function frageJev(r, text, einstellungen, holen) {
  * "ergaenzungen" enthält, was der Nutzer ergänzt oder geändert hat; es hat
  * immer Vorrang, auch ein bewusst geleertes Feld (null):
  *   { nummer, datum, faellig, iban, bic, steuerfall: "standard" | "reverse_charge" | "kleinunternehmer",
- *     absender: { name, adresse: [...], plz, ort, ustId, steuernummer, email, telefon, kontakt },
- *     empfaenger: { …wie absender },
+ *     zahlungsart: "ueberweisung" | "lastschrift",
+ *     absender: { name, adresse: [...], plz, ort, ustId, steuernummer, email, telefon, kontakt, glaeubigerId },
+ *     empfaenger: { …wie absender, iban, mandatsreferenz },
  *     positionen: { 1: { name, beschreibung, menge, einheitCode, einzelpreis, gesamt, satz, von, bis } },
  *     kaeuferreferenz, leitwegId, leistungsdatum, einheiten: { "pauschale": "LS" } }
  */
@@ -1224,8 +1284,11 @@ function baueRechnung(befund, ergaenzungen = {}) {
   const partei = (p, geaendert = {}) => ({
     name: p.name, adresse: [p.zusatz, p.strasse].filter(Boolean), plz: p.plz, ort: p.ort, land: p.land || "DE",
     ustId: p.ustId, steuernummer: p.steuernummer, email: p.email, telefon: p.telefon, kontakt: p.kontakt,
+    // für die Lastschrift: Gläubiger-ID des Rechnungsstellers, IBAN und Mandat des Kunden
+    glaeubigerId: p.glaeubigerId ?? null, iban: p.iban ?? null, mandatsreferenz: p.mandatsreferenz ?? null,
     ...geaendert,
   });
+  const zahlung = befund.zahlung;
   const kiArt = steuerfallAusBefund(befund);
   const art = waehle(e, "steuerfall", kiArt);
   const kategorie = Object.entries(REGELN.steuerfaelle).find(([, a]) => a === art)?.[0] || null;
@@ -1240,14 +1303,17 @@ function baueRechnung(befund, ergaenzungen = {}) {
     datum: waehle(e, "datum", befund.rechnung.datum),
     faellig: waehle(e, "faellig", befund.rechnung.faellig),
     waehrung: "EUR",
+    zahlungsart: waehle(e, "zahlungsart", zahlung.art || "ueberweisung"),
+    zahlungsbedingungen: befund.rechnung.zahlungsbedingungen ?? null,
     referenz, leitwegId, leistungsdatum,
     // BT-10: bei Behörden die Leitweg-ID, sonst die Referenz des Kunden
     kaeuferreferenz: leitwegId || referenz || TEXTE.keineKaeuferreferenz,
     bestellreferenz: leitwegId ? referenz : null,
     steuerfall: { art, kategorie, text },
-    absender: partei(befund.verkaeufer, e.absender),
+    absender: partei({ ...befund.verkaeufer, glaeubigerId: zahlung.glaeubigerId }, e.absender),
     empfaenger: {
-      ...partei({ ...befund.kaeufer, telefon: null, kontakt: null, steuernummer: null }, e.empfaenger),
+      ...partei({ ...befund.kaeufer, telefon: null, kontakt: null, steuernummer: null,
+        iban: zahlung.kundenIban, mandatsreferenz: zahlung.mandatsreferenz }, e.empfaenger),
       // Behörde laut KI: dann wird nach der Leitweg-ID gefragt
       oeffentlich: Boolean(befund.kaeufer.oeffentlich),
     },
@@ -1314,7 +1380,7 @@ const XRECHNUNG = {
   profil: "urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0",
   prozess: "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0",
   rechnungsart: "380",          // Rechnung
-  zahlungsart: "58",            // SEPA-Überweisung
+  zahlungsart: { ueberweisung: "58", lastschrift: "59" },   // SEPA-Überweisung, SEPA-Lastschrift
   befreiungscode: { AE: "VATEX-EU-AE" },
 };
 
@@ -1322,6 +1388,7 @@ const XRECHNUNG = {
 function erzeugeXml(r) {
   const { gruppen, netto, steuer, brutto } = summenDerRechnung(r);
   const zeitraum = leistungszeitraumGesamt(r.positionen);
+  const lastschrift = r.zahlungsart === "lastschrift";
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice
@@ -1356,27 +1423,14 @@ ${zeitraum.einTag ? `    <ram:ApplicableHeaderTradeDelivery>
     </ram:ApplicableHeaderTradeDelivery>
 ` : `    <ram:ApplicableHeaderTradeDelivery/>
 `}    <ram:ApplicableHeaderTradeSettlement>
-      <ram:PaymentReference>${x(r.nummer)}</ram:PaymentReference>
+${lastschrift ? `      <ram:CreditorReferenceID>${x(r.absender.glaeubigerId)}</ram:CreditorReferenceID>
+` : ""}      <ram:PaymentReference>${x(r.nummer)}</ram:PaymentReference>
       <ram:InvoiceCurrencyCode>${r.waehrung}</ram:InvoiceCurrencyCode>
-      <ram:SpecifiedTradeSettlementPaymentMeans>
-        <ram:TypeCode>${XRECHNUNG.zahlungsart}</ram:TypeCode>
-        <ram:PayeePartyCreditorFinancialAccount>
-          <ram:IBANID>${x(r.bank.iban)}</ram:IBANID>
-          <ram:AccountName>${x(r.absender.name)}</ram:AccountName>
-        </ram:PayeePartyCreditorFinancialAccount>
-${r.bank.bic ? `        <ram:PayeeSpecifiedCreditorFinancialInstitution>
-          <ram:BICID>${x(r.bank.bic)}</ram:BICID>
-        </ram:PayeeSpecifiedCreditorFinancialInstitution>
-` : ""}      </ram:SpecifiedTradeSettlementPaymentMeans>
-${gruppen.map((g) => steuerXml(g, r.steuerfall)).join("")}${zeitraum.einTag || !zeitraum.von ? "" : `      <ram:BillingSpecifiedPeriod>
+${lastschrift ? lastschriftXml(r) : ueberweisungXml(r)}${gruppen.map((g) => steuerXml(g, r.steuerfall)).join("")}${zeitraum.einTag || !zeitraum.von ? "" : `      <ram:BillingSpecifiedPeriod>
         <ram:StartDateTime>${datum102(zeitraum.von)}</ram:StartDateTime>
         <ram:EndDateTime>${datum102(zeitraum.bis)}</ram:EndDateTime>
       </ram:BillingSpecifiedPeriod>
-`}      <ram:SpecifiedTradePaymentTerms>
-        <ram:Description>${x(TEXTE.zahlbarBis(alsDatum(r.faellig)))}</ram:Description>
-        <ram:DueDateDateTime>${datum102(r.faellig)}</ram:DueDateDateTime>
-      </ram:SpecifiedTradePaymentTerms>
-      <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+`}${zahlungsbedingungXml(r)}      <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
         <ram:LineTotalAmount>${betrag(netto)}</ram:LineTotalAmount>
         <ram:TaxBasisTotalAmount>${betrag(netto)}</ram:TaxBasisTotalAmount>
         <ram:TaxTotalAmount currencyID="${r.waehrung}">${betrag(steuer)}</ram:TaxTotalAmount>
@@ -1386,6 +1440,46 @@ ${gruppen.map((g) => steuerXml(g, r.steuerfall)).join("")}${zeitraum.einTag || !
     </ram:ApplicableHeaderTradeSettlement>
   </rsm:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoice>
+`;
+}
+
+/** Zahlung per Überweisung (BG-17): IBAN und BIC des Rechnungsstellers */
+function ueberweisungXml(r) {
+  return `      <ram:SpecifiedTradeSettlementPaymentMeans>
+        <ram:TypeCode>${XRECHNUNG.zahlungsart.ueberweisung}</ram:TypeCode>
+        <ram:PayeePartyCreditorFinancialAccount>
+          <ram:IBANID>${x(r.bank.iban)}</ram:IBANID>
+          <ram:AccountName>${x(r.absender.name)}</ram:AccountName>
+        </ram:PayeePartyCreditorFinancialAccount>
+${r.bank.bic ? `        <ram:PayeeSpecifiedCreditorFinancialInstitution>
+          <ram:BICID>${x(r.bank.bic)}</ram:BICID>
+        </ram:PayeeSpecifiedCreditorFinancialInstitution>
+` : ""}      </ram:SpecifiedTradeSettlementPaymentMeans>
+`;
+}
+
+/** Zahlung per SEPA-Lastschrift (BG-19): das Konto des Kunden (BT-91); die Gläubiger-ID steht weiter oben */
+function lastschriftXml(r) {
+  return `      <ram:SpecifiedTradeSettlementPaymentMeans>
+        <ram:TypeCode>${XRECHNUNG.zahlungsart.lastschrift}</ram:TypeCode>
+        <ram:PayerPartyDebtorFinancialAccount>
+          <ram:IBANID>${x(r.empfaenger.iban)}</ram:IBANID>
+        </ram:PayerPartyDebtorFinancialAccount>
+      </ram:SpecifiedTradeSettlementPaymentMeans>
+`;
+}
+
+/** Zahlungsbedingungen (BT-20), Fälligkeit bzw. Einzugsdatum (BT-9), Mandatsreferenz (BT-89) */
+function zahlungsbedingungXml(r) {
+  const lastschrift = r.zahlungsart === "lastschrift";
+  const text = lastschrift
+    ? r.zahlungsbedingungen || TEXTE.lastschrift(r.faellig && alsDatum(r.faellig))
+    : TEXTE.zahlbarBis(alsDatum(r.faellig));
+  return `      <ram:SpecifiedTradePaymentTerms>
+        <ram:Description>${x(text)}</ram:Description>
+${r.faellig ? `        <ram:DueDateDateTime>${datum102(r.faellig)}</ram:DueDateDateTime>
+` : ""}${lastschrift && r.empfaenger.mandatsreferenz ? `        <ram:DirectDebitMandateID>${x(r.empfaenger.mandatsreferenz)}</ram:DirectDebitMandateID>
+` : ""}      </ram:SpecifiedTradePaymentTerms>
 `;
 }
 
@@ -1671,8 +1765,8 @@ const GEDAECHTNIS = {
   speicherSchluessel: "xfact.gedaechtnis",
   logbuchMaximal: 1000,
   // Diese Angaben werden gemerkt, wenn der Nutzer sie ergänzt hat
-  absenderFelder: ["email", "telefon", "kontakt", "ustId", "steuernummer"],
-  kundenFelder: ["email", "ustId"],
+  absenderFelder: ["email", "telefon", "kontakt", "ustId", "steuernummer", "glaeubigerId"],
+  kundenFelder: ["email", "ustId", "iban", "mandatsreferenz"],
 };
 
 function leeresGedaechtnis() {
@@ -1881,7 +1975,7 @@ window.XFact = {
   lesePdf, zuZeilen, ohneDoppelte, alsLayoutText, hatText,
   kiEingerichtet, ueberOpenRouter, frageKi, pruefeVerbindung, befundAusKi, jevFragen, frageJev,
   baueRechnung, steuerfallAusBefund, summenDerRechnung, einheitSchluessel,
-  pruefeRechnung, hinweiseZurRechnung, ibanPruefzifferOk, ustIdAufbauOk, leitwegIdOk, datumGueltig, stehtImText,
+  pruefeRechnung, hinweiseZurRechnung, ibanPruefzifferOk, ustIdAufbauOk, leitwegIdOk, glaeubigerIdOk, datumGueltig, stehtImText,
   erzeugeXml, xmlDateiname,
   GEDAECHTNIS, leeresGedaechtnis, firmaSchluessel, kundeSchluessel, vorgabenAusGedaechtnis, merkeRechnung,
   insLogbuch, hinweiseAusGedaechtnis, exportiereGedaechtnis, importiereGedaechtnis, ladeGedaechtnis, speichereGedaechtnis,
@@ -2307,7 +2401,10 @@ function positionen(r) {
       ? [feld({ pfad: pfad("von"), wert: p.von, art: "datum", hinweise: [] }), " – ",
         feld({ pfad: pfad("bis"), wert: p.bis, art: "datum", hinweise: [] }), hinweisMarken(zustand.hinweise, pfad("datum"))]
       : feld({ pfad: pfad("von"), wert: p.von, art: "datum", hinweise: [pfad("datum")] });
-    const marken = hinweisMarken(zustand.hinweise, pfad("gesamt"), pfad("menge"), pfad("einzelpreis"), pfad("einheit"));
+    // Die Hinweise zu Menge, Einheit, Preis und Betrag stehen gesammelt unter der Zeile; sie nennen deshalb ihr Feld
+    const spalten = { [pfad("menge")]: t.menge, [pfad("einheit")]: t.einheit, [pfad("einzelpreis")]: t.einzelpreis, [pfad("gesamt")]: t.gesamt };
+    const mitFeld = zustand.hinweise.map((h) => (spalten[h.feld] ? { ...h, text: `${spalten[h.feld]}: ${h.text}` } : h));
+    const marken = hinweisMarken(mitFeld, ...Object.keys(spalten));
     rumpf.append(el("tr", { class: marken.length ? "mit-hinweis" : "" },
       el("td", { class: "datum" }, datum),
       el("td", {},
@@ -2367,10 +2464,20 @@ function summen(r) {
 
 function zahlung(r) {
   const a = TEXTE.ansicht;
+  const angabe = (bezeichnung, inhalt) => el("span", {}, el("span", { class: "leise" }, `${bezeichnung} `), inhalt);
+  const lastschrift = r.zahlungsart === "lastschrift";
+  const art = el("select", { class: "eingabe", "data-pfad": "zahlungsart", onchange: (ereignis) => setze("zahlungsart", ereignis.target.value) },
+    Object.entries(a.zahlungsarten).map(([wert, name]) => el("option", { value: wert, selected: (r.zahlungsart || "ueberweisung") === wert }, name)));
   return el("div", { class: "zahlung" },
-    el("span", {}, el("span", { class: "leise" }, `${a.zahlbarBis} `), feld({ pfad: "faellig", wert: r.faellig, art: "datum" })),
-    el("span", {}, el("span", { class: "leise" }, "IBAN "), feld({ pfad: "iban", wert: r.bank.iban, art: "iban" })),
-    el("span", {}, el("span", { class: "leise" }, "BIC "), feld({ pfad: "bic", wert: r.bank.bic, optional: true })));
+    el("span", {}, art, hinweisMarken(zustand.hinweise, "zahlungsart")),
+    lastschrift
+      ? [angabe(a.einzugAm, feld({ pfad: "faellig", wert: r.faellig, art: "datum", optional: true })),
+        angabe(a.glaeubigerId, feld({ pfad: "absender.glaeubigerId", wert: r.absender.glaeubigerId })),
+        angabe(a.kundenIban, feld({ pfad: "empfaenger.iban", wert: r.empfaenger.iban, art: "iban" })),
+        angabe(a.mandatsreferenz, feld({ pfad: "empfaenger.mandatsreferenz", wert: r.empfaenger.mandatsreferenz, optional: true }))]
+      : [angabe(a.zahlbarBis, feld({ pfad: "faellig", wert: r.faellig, art: "datum" })),
+        angabe("IBAN", feld({ pfad: "iban", wert: r.bank.iban, art: "iban" })),
+        angabe("BIC", feld({ pfad: "bic", wert: r.bank.bic, optional: true }))]);
 }
 
 function weitereAngaben(r) {
@@ -2520,13 +2627,14 @@ function kundenTabelle(schluessel, firma, speichern) {
   if (!kunden.length) return el("div", { class: "leise" }, TEXTE.daten.keineKunden);
   const s = TEXTE.daten.kundenSpalten;
   const zeile = ([kundeSchl, kunde]) => {
-    const felder = ["email", "ustId", "leitwegId"].map((feld) => el("td", {},
+    const felder = ["email", "ustId", "leitwegId", "iban", "mandatsreferenz"].map((feld) => el("td", {},
       datenFeld(kunde[feld], (wert) => speichern((neu) => { setzeOderLoesche(neu.firmen[schluessel].kunden[kundeSchl], feld, wert); }))));
     const loeschen = loeschKnopf(() => speichern((neu) => { delete neu.firmen[schluessel].kunden[kundeSchl]; }));
     const name = el("td", {}, kunde.name, el("div", { class: "leise" }, [kunde.plz, kunde.ort].filter(Boolean).join(" ")));
     return el("tr", {}, name, felder, el("td", {}, loeschen));
   };
-  const kopf = el("tr", {}, el("th", {}, s.name), el("th", {}, s.email), el("th", {}, s.ustId), el("th", {}, s.leitwegId), el("th"));
+  const kopf = el("tr", {}, el("th", {}, s.name), el("th", {}, s.email), el("th", {}, s.ustId), el("th", {}, s.leitwegId),
+    el("th", {}, s.iban), el("th", {}, s.mandatsreferenz), el("th"));
   return el("table", { class: "liste" }, el("thead", {}, kopf), el("tbody", {}, kunden.map(zeile)));
 }
 
