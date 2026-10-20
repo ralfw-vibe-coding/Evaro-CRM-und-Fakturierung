@@ -1,5 +1,5 @@
 import type { Config } from "@netlify/functions";
-import { billInvoiceRpu, changeInvoiceStatusRpu, createInvoiceDraftRpu, deleteInvoiceDraftRpu, listInvoicingDataRpu, updateInvoiceDraftRpu } from "../../composition.js";
+import { billInvoiceRpu, changeInvoiceStatusRpu, copyInvoiceRpu, createInvoiceDraftRpu, deleteInvoiceDraftRpu, listInvoicingDataRpu, updateInvoiceDraftRpu } from "../../composition.js";
 import type { InvoiceStatus } from "../../domain/model.js";
 import { authenticate } from "../http/auth.js";
 import { error, json, methodNotAllowed } from "../http/responses.js";
@@ -13,11 +13,21 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   if (req.method === "POST") {
-    let body: { business_partner_id?: string };
+    let body: { business_partner_id?: string; copy_of?: string };
     try {
       body = (await req.json()) as typeof body;
     } catch {
       return error("Ungültiger Request-Body.", 400);
+    }
+
+    // Kopieren legt ebenfalls einen Entwurf an, nur eben einen vorbefüllten.
+    if (body.copy_of) {
+      const copied = await copyInvoiceRpu()({ user_id: client.user_id, id: body.copy_of });
+      if (!copied.ok) {
+        const status = copied.error === "Rechnung nicht gefunden." ? 404 : 422;
+        return error(copied.error, status);
+      }
+      return json({ invoice: copied.invoice }, 201);
     }
 
     const result = await createInvoiceDraftRpu()({

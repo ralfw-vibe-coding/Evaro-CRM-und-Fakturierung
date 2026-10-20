@@ -57,6 +57,7 @@ import { listActiveContacts } from "./domain/rpus/list-active-contacts/list-acti
 import { listBusinessPartners } from "./domain/rpus/list-business-partners/list-business-partners.js";
 import { listInvoicingData } from "./domain/rpus/list-invoicing-data/list-invoicing-data.js";
 import { createInvoiceDraft } from "./domain/rpus/create-invoice-draft/create-invoice-draft.js";
+import { copyInvoice } from "./domain/rpus/copy-invoice/copy-invoice.js";
 import { updateInvoiceDraft } from "./domain/rpus/update-invoice-draft/update-invoice-draft.js";
 import { deleteInvoiceDraft } from "./domain/rpus/delete-invoice-draft/delete-invoice-draft.js";
 import { billInvoice } from "./domain/rpus/bill-invoice/bill-invoice.js";
@@ -309,6 +310,14 @@ export function createInvoiceDraftRpu() {
     invoices: buildInvoices(),
     businessPartners: buildBusinessPartners(),
     appSettings: buildAppSettings(),
+    activityLog: buildActivityLog(),
+  });
+}
+
+export function copyInvoiceRpu() {
+  return copyInvoice({
+    invoices: buildInvoices(),
+    businessPartners: buildBusinessPartners(),
     activityLog: buildActivityLog(),
   });
 }

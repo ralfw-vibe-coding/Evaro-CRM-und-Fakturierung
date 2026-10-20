@@ -154,7 +154,7 @@ export class PostgresInvoicesProvider implements InvoicesProvider {
       [
         input.business_partner_id,
         input.gp_snapshot,
-        { lines: [], reverse_charge: input.reverse_charge === true, payment_due_days: input.payment_due_days },
+        input.data ?? { lines: [], reverse_charge: input.reverse_charge === true, payment_due_days: input.payment_due_days },
         input.vat_rate,
       ],
     );

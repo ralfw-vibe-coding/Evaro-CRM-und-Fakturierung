@@ -6,6 +6,8 @@ export interface NewInvoiceDraft {
   vat_rate: number;
   reverse_charge?: boolean;
   payment_due_days?: number;
+  /** Vorbefüllte Daten, etwa beim Kopieren. Ohne sie entsteht ein leerer Entwurf. */
+  data?: InvoiceData;
 }
 
 export interface InvoiceDraftUpdate {

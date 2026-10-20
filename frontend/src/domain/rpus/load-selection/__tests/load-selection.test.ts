@@ -35,6 +35,7 @@ function fakeBackendApi(overrides: Partial<BackendApiProvider> = {}): BackendApi
     lookupBusinessPartner: async () => ({ ok: false, error: "not used" }),
     loadInvoicingData: async () => ({ ok: false, error: "not used" }),
     createInvoiceDraft: async () => ({ ok: false, error: "not used" }),
+    copyInvoice: async () => ({ ok: false, error: "not used" }),
     updateInvoiceDraft: async () => ({ ok: false, error: "not used" }),
     billInvoice: async () => ({ ok: false, error: "not used" }),
     changeInvoiceStatus: async () => ({ ok: false, error: "not used" }),

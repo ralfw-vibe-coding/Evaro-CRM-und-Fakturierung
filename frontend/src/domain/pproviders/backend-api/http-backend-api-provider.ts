@@ -237,6 +237,14 @@ export const httpBackendApiProvider: BackendApiProvider = {
     });
   },
 
+  async copyInvoice(token, invoiceId: string) {
+    return request<{ invoice: Invoice }>("/invoices", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify({ copy_of: invoiceId }),
+    });
+  },
+
   async updateInvoiceDraft(token, input: UpdateInvoiceDraftInput) {
     return request<{ invoice: Invoice; conflict: boolean }>("/invoices", {
       method: "PATCH",

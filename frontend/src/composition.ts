@@ -36,6 +36,7 @@ import { unlinkContactGp } from "./domain/rpus/unlink-contact-gp/unlink-contact-
 import { getTagOptions } from "./domain/rpus/get-tag-options/get-tag-options.js";
 import { loadInvoicingData } from "./domain/rpus/load-invoicing-data/load-invoicing-data.js";
 import { createInvoiceDraft } from "./domain/rpus/create-invoice-draft/create-invoice-draft.js";
+import { copyInvoice } from "./domain/rpus/copy-invoice/copy-invoice.js";
 import { updateInvoiceDraft } from "./domain/rpus/update-invoice-draft/update-invoice-draft.js";
 import { deleteInvoiceDraft } from "./domain/rpus/delete-invoice-draft/delete-invoice-draft.js";
 import { billInvoice } from "./domain/rpus/bill-invoice/bill-invoice.js";
@@ -121,6 +122,7 @@ export const unlinkContactGpRpu = unlinkContactGp({ backendApi, session, selecti
 export const getTagOptionsRpu = getTagOptions({ selectionStore });
 export const loadInvoicingDataRpu = loadInvoicingData({ backendApi, session, invoiceStore });
 export const createInvoiceDraftRpu = createInvoiceDraft({ backendApi, session, invoiceStore });
+export const copyInvoiceRpu = copyInvoice({ backendApi, session, invoiceStore });
 export const updateInvoiceDraftRpu = updateInvoiceDraft({ backendApi, session, invoiceStore });
 export const deleteInvoiceDraftRpu = deleteInvoiceDraft({ backendApi, session, invoiceStore });
 export const billInvoiceRpu = billInvoice({ backendApi, session, invoiceStore });

@@ -157,6 +157,8 @@ export interface BackendApiProvider {
     token: string,
     businessPartnerId: string,
   ): Promise<ApiResult<{ invoice: Invoice }>>;
+  /** Legt die Rechnung als neuen, vorbefüllten Entwurf noch einmal an. */
+  copyInvoice(token: string, invoiceId: string): Promise<ApiResult<{ invoice: Invoice }>>;
   updateInvoiceDraft(
     token: string,
     input: UpdateInvoiceDraftInput,

@@ -1,6 +1,7 @@
 import * as React from "react";
 import {
   Copy,
+  CopyPlus,
   Download,
   FileCode2,
   FileText,
@@ -21,6 +22,7 @@ import type { AppSettings, BusinessPartner, Invoice, InvoiceData, InvoiceLine, I
 import {
   billInvoiceRpu,
   changeInvoiceStatusRpu,
+  copyInvoiceRpu,
   createInvoiceDraftRpu,
   deleteInvoiceDraftRpu,
   getRouteRpu,
@@ -202,6 +204,7 @@ export function InvoicingArea() {
             invoice={selected}
             allInvoices={invoices}
             onChanged={refresh}
+            onCopied={selectInvoice}
             onError={setError}
             onClose={closeDetail}
             closeRequestToken={closeRequestToken}
@@ -444,6 +447,7 @@ function InvoiceDetail({
   invoice,
   allInvoices,
   onChanged,
+  onCopied,
   onError,
   onClose,
   closeRequestToken = 0,
@@ -451,6 +455,7 @@ function InvoiceDetail({
   invoice: Invoice;
   allInvoices: Invoice[];
   onChanged: () => void;
+  onCopied: (invoiceId: string) => void;
   onError: (error: string | null) => void;
   onClose: () => void;
   closeRequestToken?: number;
@@ -462,6 +467,7 @@ function InvoiceDetail({
   const [draftResetArmed, setDraftResetArmed] = React.useState(false);
   const [deleteInvoiceArmed, setDeleteInvoiceArmed] = React.useState(false);
   const [loadingPrint, setLoadingPrint] = React.useState(false);
+  const [copying, setCopying] = React.useState(false);
   const [printInvoice, setPrintInvoice] = React.useState<Invoice | null>(null);
   const [printSettings, setPrintSettings] = React.useState<AppSettings>(EMPTY_APP_SETTINGS);
   const [savedInfo, setSavedInfo] = React.useState<string | null>(null);
@@ -673,6 +679,30 @@ function InvoiceDetail({
     onChanged();
   }
 
+  // Kopiert wird die gespeicherte Rechnung, nicht der Bildschirminhalt — ein
+  // offener Entwurf wandert deshalb vorher in die Datenbank.
+  async function copyInvoice() {
+    if (!invoice || copying || saving || billing) return;
+    setCopying(true);
+    if (dirty && invoice.status === "draft") {
+      const savedInvoice = await saveDraft();
+      if (!savedInvoice) {
+        setCopying(false);
+        return;
+      }
+    }
+    const result = await copyInvoiceRpu(invoice.id);
+    setCopying(false);
+    if (!result.ok) {
+      onError(result.error);
+      return;
+    }
+    onError(null);
+    setSavedInfo(null);
+    onChanged();
+    onCopied(result.invoice.id);
+  }
+
   async function openPrintPreview() {
     if (!invoice || !canPrint || loadingPrint) return;
     setLoadingPrint(true);
@@ -749,6 +779,17 @@ function InvoiceDetail({
             onClick={openPrintPreview}
           >
             {loadingPrint ? <Loader2 className="animate-spin" /> : <FileText />}
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            disabled={copying || saving || billing}
+            aria-label="Rechnung kopieren"
+            title="Rechnung als neuen Entwurf kopieren"
+            onClick={copyInvoice}
+          >
+            {copying ? <Loader2 className="animate-spin" /> : <CopyPlus />}
           </Button>
           <Button
             type="button"
