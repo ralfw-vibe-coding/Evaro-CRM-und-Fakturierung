@@ -78,8 +78,27 @@ describe("copyInvoice RPU", () => {
     expect(result.invoice.vat_rate).toBe(19);
     expect(result.invoice.data).toEqual({
       ...SOURCE_DATA,
-      lines: [{ ...SOURCE_DATA.lines[0], id: result.invoice.data.lines[0].id }],
+      lines: [
+        {
+          ...SOURCE_DATA.lines[0],
+          id: result.invoice.data.lines[0].id,
+          service_date: undefined,
+        },
+      ],
     });
+  });
+
+  it("leaves the service date empty so it cannot be billed for the old period", async () => {
+    const { invoice } = await givenBilledInvoice();
+
+    const result = await env.process({ user_id: USER, id: invoice.id });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.invoice.data.lines[0].service_date).toBeUndefined();
+
+    const source = await env.invoices.findById(invoice.id);
+    expect(source?.data.lines[0].service_date).toBe("2026-09-14");
   });
 
   it("gives the copied positions their own ids and leaves the original alone", async () => {

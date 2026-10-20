@@ -30,20 +30,28 @@ function text(value: string | undefined): string | undefined {
  * Positionen bekommen frische IDs. Innerhalb einer Rechnung müssen sie
  * eindeutig sein; geteilte IDs über zwei Rechnungen hinweg wären zwar heute
  * folgenlos, aber verwirrend, sobald jemand danach sucht.
+ *
+ * Das Leistungsdatum bleibt leer. Eine Kopie entsteht für einen neuen
+ * Zeitraum; stünde das alte Datum drin, wäre es plausibel genug, um
+ * unbemerkt mit abgerechnet zu werden.
  */
 function copyData(data: InvoiceData): InvoiceData {
   return {
     ...structuredClone(data),
-    lines: data.lines.map((line) => ({ ...structuredClone(line), id: randomUUID() })),
+    lines: data.lines.map((line) => ({
+      ...structuredClone(line),
+      id: randomUUID(),
+      service_date: undefined,
+    })),
   };
 }
 
 /**
  * RPU (Command): legt eine Rechnung als neuen Entwurf noch einmal an.
  *
- * Übernommen werden Kunde, Steuersatz und sämtliche Rechnungsdaten. Nicht
- * übernommen wird, was zur abgerechneten Rechnung gehört: Nummer, Datum und
- * Status. Der Kundenschnappschuss wird frisch gezogen statt kopiert — bei
+ * Übernommen werden Kunde, Steuersatz und sämtliche Rechnungsdaten bis auf
+ * die Leistungsdaten der Positionen. Nicht übernommen wird, was zur
+ * abgerechneten Rechnung gehört: Nummer, Datum und Status. Der Kundenschnappschuss wird frisch gezogen statt kopiert — bei
  * Entwürfen zeigt die App ohnehin immer den aktuellen Stand des
  * Geschäftspartners (siehe withCurrentDraftSnapshot).
  */
