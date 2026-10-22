@@ -1,145 +1,2508 @@
 <!doctype html>
 <html lang="de">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Evaro API</title>
-    <meta
-      name="description"
-      content="HTTP-Schnittstelle von Evaro: Kontakte, Geschäftspartner, Rechnungen."
-    />
-    <link rel="icon" href="/favicon.ico" />
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Evaro API</title>
+<meta name="description" content="CRM und Fakturierung — Kontakte, Geschäftspartner, Rechnungen." />
+<link rel="icon" href="/favicon.ico" />
+<link rel="alternate" type="application/yaml" href="/api-docs/openapi.yaml" title="OpenAPI 3.1" />
+<style>
+:root {
+  color-scheme: light;
+  --brand: #d81b78;
+  --bg: #fff;
+  --fg: #18181b;
+  --muted: #52525b;
+  --border: #e4e4e7;
+  --soft: #fafafa;
+  --code-bg: #f4f4f5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+code {
+  background: var(--code-bg);
+  border-radius: .25rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .875em;
+  padding: .1em .35em;
+}
+pre {
+  background: var(--code-bg);
+  border-radius: .4rem;
+  overflow-x: auto;
+  padding: .875rem 1rem;
+}
+pre code { background: none; padding: 0; }
+a { color: var(--brand); }
 
-    <!-- Für Agenten: die Spezifikation selbst, ohne den Umweg über diese Seite. -->
-    <link rel="alternate" type="application/yaml" href="/api-docs/openapi.yaml" title="OpenAPI 3.1" />
+header { border-bottom: 1px solid var(--border); padding: 2.5rem 16px 2rem; }
+.wrap { margin: 0 auto; max-width: 62rem; }
+header h1 { font-size: 1.75rem; letter-spacing: -.02em; margin: 0 0 .25rem; }
+header h1 span { color: var(--brand); }
+.lede { color: var(--muted); margin: 0 0 1.5rem; max-width: 44rem; }
+.links { display: flex; flex-wrap: wrap; gap: .5rem; }
+.links a {
+  border: 1px solid var(--border); border-radius: .4rem; color: inherit;
+  font-size: .875rem; padding: .4rem .75rem; text-decoration: none;
+}
+.links a:hover { border-color: var(--brand); color: var(--brand); }
+.links a.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
 
-    <style>
-      /*
-       * Bewusst nur hell: Redoc bringt ausschliesslich ein helles Theme mit.
-       * Ein dunkler Seitenhintergrund liesse seinen Text unlesbar werden, und
-       * die Anwendung selbst ist ebenfalls hell.
-       */
-      :root {
-        color-scheme: light;
-        --brand: #d81b78;
-        --bg: #ffffff;
-        --fg: #18181b;
-        --muted: #52525b;
-        --border: #e4e4e7;
-        --code-bg: #f4f4f5;
-      }
+main { margin: 0 auto; max-width: 62rem; padding: 2.5rem 16px 5rem; }
 
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--fg);
-        font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-      }
+nav.toc {
+  background: var(--soft); border: 1px solid var(--border);
+  border-radius: .5rem; margin-bottom: 3rem; padding: 1.25rem 1.5rem;
+}
+nav.toc h2 { font-size: .8rem; letter-spacing: .06em; margin: 0 0 .75rem; text-transform: uppercase; color: var(--muted); }
+nav.toc ul { list-style: none; margin: 0; padding: 0; }
+nav.toc > ul > li { margin-bottom: .75rem; }
+nav.toc > ul > li > a { font-weight: 600; text-decoration: none; }
+nav.toc ul ul { margin: .35rem 0 0; }
+nav.toc ul ul li { margin: .15rem 0; }
+nav.toc ul ul a { color: var(--muted); font-size: .875rem; text-decoration: none; }
+nav.toc ul ul a:hover { color: var(--brand); }
 
-      header {
-        border-bottom: 1px solid var(--border);
-        padding: 2rem 16px;
-      }
-      .inner { margin: 0 auto; max-width: 68rem; }
-      h1 {
-        margin: 0 0 0.25rem;
-        font-size: 1.6rem;
-        letter-spacing: -0.02em;
-      }
-      h1 span { color: var(--brand); }
-      .lede { margin: 0 0 1.5rem; color: var(--muted); max-width: 46rem; }
+section.tag { margin-bottom: 4rem; }
+section.tag > h1 {
+  border-bottom: 2px solid var(--brand); font-size: 1.4rem;
+  margin: 0 0 1rem; padding-bottom: .5rem;
+}
 
-      .links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-      .links a {
-        border: 1px solid var(--border);
-        border-radius: 0.4rem;
-        color: inherit;
-        font-size: 0.875rem;
-        padding: 0.4rem 0.75rem;
-        text-decoration: none;
-      }
-      .links a:hover { border-color: var(--brand); color: var(--brand); }
-      .links a.primary {
-        background: var(--brand);
-        border-color: var(--brand);
-        color: #fff;
-      }
-      .links a.primary:hover { opacity: 0.9; color: #fff; }
+section.op {
+  border: 1px solid var(--border); border-radius: .5rem;
+  margin: 2rem 0; padding: 1.5rem;
+}
+section.op > h2 {
+  align-items: center; display: flex; flex-wrap: wrap; gap: .6rem;
+  font-size: 1rem; margin: 0 0 .5rem;
+}
+.path { font-size: 1rem; }
+.summary { font-size: 1.05rem; font-weight: 600; margin: 0 0 .5rem; }
+.meta {
+  color: var(--muted); display: flex; flex-wrap: wrap; gap: 1.25rem;
+  font-size: .8rem; margin: 0 0 1rem;
+}
 
-      .note {
-        border-left: 3px solid var(--brand);
-        color: var(--muted);
-        font-size: 0.875rem;
-        margin: 1.5rem 0 0;
-        max-width: 46rem;
-        padding: 0.25rem 0 0.25rem 0.875rem;
-      }
-      code {
-        background: var(--code-bg);
-        border-radius: 0.25rem;
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 0.875em;
-        padding: 0.1em 0.35em;
-      }
+.method {
+  border-radius: .25rem; color: #fff; font-family: ui-monospace, Menlo, monospace;
+  font-size: .72rem; font-weight: 700; letter-spacing: .04em; padding: .2em .5em;
+}
+.method.get { background: #0369a1; }
+.method.post { background: #15803d; }
+.method.patch { background: #b45309; }
+.method.put { background: #b45309; }
+.method.delete { background: #b91c1c; }
 
-      #spec { min-height: 50vh; }
-      #fallback { padding: 2rem 16px; }
-      #fallback:not([hidden]) ~ #spec { display: none; }
-    </style>
-  </head>
+h3 { font-size: .8rem; letter-spacing: .06em; margin: 1.75rem 0 .6rem; text-transform: uppercase; color: var(--muted); }
+h3.md, h4.md, h5.md {
+  color: var(--fg); letter-spacing: -.01em; text-transform: none;
+}
+h3.md { font-size: 1.25rem; margin: 2.25rem 0 .75rem; }
+h4.md { font-size: 1.05rem; margin: 1.75rem 0 .5rem; }
+h5.md { font-size: .95rem; margin: 1.5rem 0 .4rem; }
+h4 { font-size: .95rem; margin: 0 0 .35rem; }
 
-  <body>
-    <header>
-      <div class="inner">
-        <h1><span>Evaro</span> API</h1>
-        <p class="lede">
-          Die HTTP-Schnittstelle für Kontakte, Geschäftspartner und Rechnungen.
-          Es ist dieselbe, über die die Weboberfläche selbst arbeitet.
-        </p>
-        <div class="links">
-          <a class="primary" href="/api-docs/openapi.yaml">OpenAPI 3.1 (YAML)</a>
-          <a href="/llms.txt">llms.txt — Kurzfassung für Agenten</a>
-          <a href="/">Zur Anwendung</a>
-        </div>
-        <p class="note">
-          Alles unter <code>/api</code> verlangt eine Anmeldung, entweder per
-          <code>x-api-key</code> oder per <code>Authorization: Bearer</code>.
-          Den API-Schlüssel erzeugst du in der Anwendung unter „Profil“.
-        </p>
-      </div>
-    </header>
+table { border-collapse: collapse; font-size: .9rem; margin: .5rem 0 0; width: 100%; }
+th, td { border-bottom: 1px solid var(--border); padding: .55rem .6rem; text-align: left; vertical-align: top; }
+th { color: var(--muted); font-size: .75rem; letter-spacing: .05em; text-transform: uppercase; }
+td p { margin: 0 0 .4rem; }
+td p:last-child { margin-bottom: 0; }
+td ul, td ol { margin: .2rem 0; padding-left: 1.1rem; }
 
-    <div id="fallback" hidden>
-      <div class="inner">
-        <p>
-          Die Darstellung konnte nicht geladen werden. Die Spezifikation selbst
-          liegt unverändert unter
-          <a href="/api-docs/openapi.yaml">/api-docs/openapi.yaml</a>.
-        </p>
-      </div>
+.req { color: var(--brand); font-size: .7rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.status { font-family: ui-monospace, Menlo, monospace; font-weight: 700; }
+.status.ok { color: #15803d; }
+.status.warn { color: #b45309; }
+.status.bad { color: #b91c1c; }
+
+.variants { color: var(--muted); font-size: .875rem; margin: .5rem 0; }
+.variant { border-left: 3px solid var(--border); margin: 1rem 0; padding-left: 1rem; }
+.variant .keys { color: var(--muted); font-size: .8rem; margin: 0 0 .4rem; }
+.label { color: var(--muted); font-size: .75rem; letter-spacing: .05em; margin: 1.25rem 0 .35rem; text-transform: uppercase; }
+
+.auth { border-left: 3px solid var(--brand); margin: 1.25rem 0; padding-left: 1rem; }
+.auth h3 { margin-top: 0; text-transform: none; letter-spacing: 0; font-size: .95rem; color: var(--fg); }
+.muted { color: var(--muted); }
+
+section.schema {
+  border-top: 1px solid var(--border); margin: 0; padding: 1.75rem 0 .5rem;
+}
+section.schema h2 {
+  font-family: ui-monospace, Menlo, monospace; font-size: 1rem; margin: 0 0 .5rem;
+}
+footer {
+  border-top: 1px solid var(--border); color: var(--muted);
+  font-size: .85rem; margin-top: 4rem; padding-top: 1.5rem;
+}
+
+/* Auf dem Telefon stehen die Spalten untereinander. Seitliches Scrollen
+   in einer Tabelle mit langen Beschreibungen liest sich schlechter als
+   drei kurze Zeilen pro Feld. */
+@media (max-width: 640px) {
+  table, thead, tbody, tr, td { display: block; width: 100%; }
+  thead { display: none; }
+  tr { border-bottom: 1px solid var(--border); padding: .7rem 0; }
+  tr:last-child { border-bottom: 0; }
+  td { border: 0; padding: .1rem 0; }
+  td:first-child { font-weight: 600; }
+  td:nth-child(2) { color: var(--muted); font-size: .85rem; }
+  section.op { padding: 1.1rem; }
+  code { overflow-wrap: anywhere; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1><span>Evaro</span> API</h1>
+    <p class="lede">CRM und Fakturierung — Kontakte, Geschäftspartner, Rechnungen. Es ist dieselbe Schnittstelle, über die die Weboberfläche selbst arbeitet.</p>
+    <div class="links">
+      <a class="primary" href="/api-docs/openapi.yaml">OpenAPI 3.1 (YAML)</a>
+      <a href="/llms.txt">llms.txt — Kurzfassung für Agenten</a>
+      <a href="/">Zur Anwendung</a>
     </div>
+  </div>
+</header>
 
-    <div id="spec"></div>
+<main>
 
-    <script
-      src="https://cdn.jsdelivr.net/npm/redoc@2.5.0/bundles/redoc.standalone.js"
-      onerror="document.getElementById('fallback').hidden = false"
-    ></script>
-    <script>
-      // Ohne Renderer bleibt die Seite brauchbar: der Hinweis oben verweist auf
-      // die YAML-Datei, die ohnehin die maßgebliche Quelle ist.
-      window.addEventListener("load", function () {
-        if (typeof Redoc === "undefined") {
-          document.getElementById("fallback").hidden = false;
-          return;
-        }
-        Redoc.init(
-          "/api-docs/openapi.yaml",
-          { hideDownloadButton: false, theme: { colors: { primary: { main: "#d81b78" } } } },
-          document.getElementById("spec"),
-        );
-      });
-    </script>
-  </body>
+<p>Die HTTP-Schnittstelle von Evaro. Es ist dieselbe Schnittstelle, über die die Weboberfläche selbst arbeitet — es gibt keinen zweiten, davon abweichenden Weg in die Daten.</p>
+<h3 class="md">Zwei Dinge, die anders sind als erwartet</h3>
+<p><strong>1. Kein <code>/api/kontakte/{id}</code>.</strong> Es gibt pro Ressource genau einen Pfad. Welcher Datensatz gemeint ist, steht als <code>id</code> im <strong>Body</strong>, auch bei <code>PATCH</code> und <code>DELETE</code>.</p>
+<p><strong>2. <code>DELETE</code> braucht einen Body.</strong> Das ist nach RFC 9110 erlaubt, aber manche HTTP-Clients senden bei <code>DELETE</code> grundsätzlich keinen Body und laufen dann in einen 400er. Im Zweifel den Body explizit erzwingen (<code>curl -X DELETE -d '{&quot;id&quot;:&quot;...&quot;}'</code>, <code>fetch(url, {method:'DELETE', body: ...})</code>).</p>
+<h3 class="md">Authentifizierung</h3>
+<p>Jeder Pfad außer <code>/api/auth/request-otp</code> und <code>/api/auth/verify-otp</code> verlangt eine der beiden Identitäten:</p>
+<ul>
+<li><code>Authorization: Bearer &lt;JWT&gt;</code> — aus dem Login per Einmalcode. Läuft nach 7 Tagen ab, lässt sich aber über <code>/api/auth/refresh</code> verlängern.</li>
+<li><code>x-api-key: &lt;Schlüssel&gt;</code> — für Skripte und Agenten. Wird im Profil erzeugt (<code>POST /api/profile</code>), läuft nicht ab und ist der empfohlene Weg für alles Nicht-Interaktive.</li>
+</ul>
+<p>Beide führen auf denselben Benutzer und dieselben Rechte; eine Rollentrennung gibt es nicht. Ein API-Schlüssel kann alles, was der Benutzer in der Oberfläche auch kann — auch löschen.</p>
+<h3 class="md">Fehler</h3>
+<p>Jede Fehlerantwort ist JSON mit mindestens <code>error</code> (deutscher Klartext). Bei <code>422</code> kommt zusätzlich <code>fields</code> dazu: ein Objekt, das pro beanstandetem Feld die Meldung nennt, bei Rechnungspositionen mit Pfad (<code>&quot;lines.0.quantity&quot;</code>).</p>
+
+<h3>Server</h3>
+<ul>
+<li><code>https://wwe-evaro.netlify.app</code> — Produktion</li>
+<li><code>http://localhost:8888</code> — Lokale Entwicklung (netlify dev)</li>
+</ul>
+
+<h3>Anmeldeverfahren</h3>
+<div class="auth">
+  <h3><code>apiKey</code></h3>
+  <p class="muted">Header x-api-key</p>
+  <p>Dauerhafter Schlüssel für nicht-interaktive Clients, erzeugt über <code>POST /api/profile</code>. Der empfohlene Weg für Skripte und Agenten.</p>
+</div>
+<div class="auth">
+  <h3><code>bearerAuth</code></h3>
+  <p class="muted">bearer JWT</p>
+  <p>Token aus <code>POST /api/auth/verify-otp</code>, 7 Tage gültig, über <code>POST /api/auth/refresh</code> verlängerbar.</p>
+</div>
+
+<nav class="toc">
+  <h2>Inhalt</h2>
+  <ul>
+<li><a href="#tag-anmeldung">Anmeldung</a>
+  <ul><li><a href="#op-requestotp"><span class="method post">POST</span> /api/auth/request-otp</a></li><li><a href="#op-verifyotp"><span class="method post">POST</span> /api/auth/verify-otp</a></li><li><a href="#op-refreshtoken"><span class="method post">POST</span> /api/auth/refresh</a></li></ul></li>
+<li><a href="#tag-crm">CRM</a>
+  <ul><li><a href="#op-getselection"><span class="method get">GET</span> /api/selection</a></li><li><a href="#op-createcontact"><span class="method post">POST</span> /api/contacts</a></li><li><a href="#op-updatecontact"><span class="method patch">PATCH</span> /api/contacts</a></li><li><a href="#op-deletecontact"><span class="method delete">DELETE</span> /api/contacts</a></li><li><a href="#op-createbusinesspartner"><span class="method post">POST</span> /api/business-partners</a></li><li><a href="#op-updatebusinesspartner"><span class="method patch">PATCH</span> /api/business-partners</a></li><li><a href="#op-deletebusinesspartner"><span class="method delete">DELETE</span> /api/business-partners</a></li><li><a href="#op-linkcontacttobusinesspartner"><span class="method post">POST</span> /api/contact-gps</a></li><li><a href="#op-unlinkcontactfrombusinesspartner"><span class="method delete">DELETE</span> /api/contact-gps</a></li></ul></li>
+<li><a href="#tag-fakturierung">Fakturierung</a>
+  <ul><li><a href="#op-getinvoicingdata"><span class="method get">GET</span> /api/invoices</a></li><li><a href="#op-createinvoicedraft"><span class="method post">POST</span> /api/invoices</a></li><li><a href="#op-updateinvoice"><span class="method patch">PATCH</span> /api/invoices</a></li><li><a href="#op-deleteinvoicedraft"><span class="method delete">DELETE</span> /api/invoices</a></li><li><a href="#op-createpaymentterm"><span class="method post">POST</span> /api/payment-terms</a></li><li><a href="#op-getappsettings"><span class="method get">GET</span> /api/app-settings</a></li><li><a href="#op-updateappsettings"><span class="method patch">PATCH</span> /api/app-settings</a></li></ul></li>
+<li><a href="#tag-profil">Profil</a>
+  <ul><li><a href="#op-createapikey"><span class="method post">POST</span> /api/profile</a></li><li><a href="#op-updateprofile"><span class="method patch">PATCH</span> /api/profile</a></li><li><a href="#op-revokeapikey"><span class="method delete">DELETE</span> /api/profile</a></li></ul></li>
+<li><a href="#tag-posteingang">Posteingang</a>
+  <ul><li><a href="#op-listingests"><span class="method get">GET</span> /api/ingests</a></li><li><a href="#op-createingest"><span class="method post">POST</span> /api/ingests</a></li><li><a href="#op-updateingeststatus"><span class="method patch">PATCH</span> /api/ingests</a></li></ul></li>
+<li><a href="#tag-ki-hilfen">KI-Hilfen</a>
+  <ul><li><a href="#op-analyzeemailimport"><span class="method post">POST</span> /api/email-import/analyze</a></li><li><a href="#op-lookupbusinesspartner"><span class="method post">POST</span> /api/business-partner-lookup</a></li></ul></li>
+    <li><a href="#schemata">Datentypen</a></li>
+  </ul>
+</nav>
+
+<section class="tag" id="tag-anmeldung">
+  <h1>Anmeldung</h1>
+  <p>Login per Einmalcode; Token verlängern.</p>
+  <section class="op" id="op-requestotp">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/auth/request-otp</code>
+  </h2>
+  <p class="summary">Einmalcode anfordern</p>
+  <p class="meta">
+    <span>operationId <code>requestOtp</code></span>
+    <span>Anmeldung: keine — offen zugänglich</span>
+  </p>
+  <p>Schritt 1 des Logins. Erzeugt einen kurzlebigen Code und schickt ihn an die angegebene Adresse. Die Antwort ist immer <code>{&quot;ok&quot;: true}</code>, sobald die Adresse formal gültig ist — ob es den Benutzer gibt, verrät sie nicht.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>email</code> <span class="req">Pflicht</span></td>
+  <td>string, email</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table><p class="label">Beispiel</p><pre><code>{
+  &quot;email&quot;: &quot;du@firma.de&quot;
+}</code></pre>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Code verschickt.</p></td>
+  <td><code>ok</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-verifyotp">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/auth/verify-otp</code>
+  </h2>
+  <p class="summary">Einmalcode einlösen, Token erhalten</p>
+  <p class="meta">
+    <span>operationId <code>verifyOtp</code></span>
+    <span>Anmeldung: keine — offen zugänglich</span>
+  </p>
+  <p>Schritt 2 des Logins. Beim ersten erfolgreichen Einlösen wird das Benutzerprofil angelegt — Registrierung und Anmeldung sind derselbe Vorgang.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>email</code> <span class="req">Pflicht</span></td>
+  <td>string, email</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>otp</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Angemeldet.</p></td>
+  <td><code>token</code>, <code>user</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-refreshtoken">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/auth/refresh</code>
+  </h2>
+  <p class="summary">Token verlängern</p>
+  <p class="meta">
+    <span>operationId <code>refreshToken</code></span>
+    <span>Anmeldung: <code>bearerAuth</code></span>
+  </p>
+  <p>Tauscht ein noch gültiges Token gegen eines mit voller Restlaufzeit, so dass eine regelmäßig genutzte Sitzung nicht nach 7 Tagen hart endet.</p>
+<p>Nimmt <strong>ausschließlich</strong> <code>Authorization: Bearer</code>. Ein API-Schlüssel wird hier abgewiesen: er läuft ohnehin nicht ab, und ihm ein JWT auszustellen wäre eine stillschweigende Rechteausweitung.</p>
+<p>Die Antwort enthält bewusst kein Benutzerprofil — der Client behält das vorhandene und tauscht nur das Token.</p>
+  
+  
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Frisches Token.</p></td>
+  <td><code>token</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section class="tag" id="tag-crm">
+  <h1>CRM</h1>
+  <p>Kontakte, Geschäftspartner und ihre Verknüpfungen.</p>
+  <section class="op" id="op-getselection">
+  <h2>
+    <span class="method get">GET</span>
+    <code class="path">/api/selection</code>
+  </h2>
+  <p class="summary">Kontakte, Geschäftspartner und Verknüpfungen laden</p>
+  <p class="meta">
+    <span>operationId <code>getSelection</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Der Einstiegspunkt ins CRM: liefert den gesamten Bestand in <strong>einer</strong> Antwort. Es gibt keine Paginierung und keine serverseitige Suche — Filtern und Suchen passiert im Client auf diesem Ergebnis.</p>
+<p>Standardmäßig nur Aktive. Inaktive sind nicht gelöscht, sondern stillgelegt (siehe <code>active</code>).</p>
+  <h3>Query-Parameter</h3><table><thead><tr><th>Name</th><th>Ort</th><th>Bedeutung</th></tr></thead><tbody><tr>
+  <td><code>include_inactive</code></td>
+  <td>query</td>
+  <td><p>Genau der Wert <code>true</code> schaltet Inaktive hinzu. Jeder andere Wert wird als „nein“ gelesen.</p></td>
+</tr></tbody></table>
+  
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Der Bestand.</p></td>
+  <td><code>contacts</code>, <code>business_partners</code>, <code>contact_gps</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-createcontact">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/contacts</code>
+  </h2>
+  <p class="summary">Kontakt anlegen</p>
+  <p class="meta">
+    <span>operationId <code>createContact</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>active</code></td>
+  <td>boolean</td>
+  <td><p>Vorgabe: <code>true</code>.</p></td>
+</tr>
+<tr>
+  <td><code>data</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-contactdata">ContactData</a></td>
+  <td><p>Pflicht sind ein <code>last_name</code> <strong>und</strong> mindestens ein Kanal vom Typ E-Mail oder Telefon. Alles andere ist frei.</p></td>
+</tr>
+</tbody>
+</table><p class="label">Beispiel</p><pre><code>{
+  &quot;data&quot;: {
+    &quot;first_name&quot;: &quot;Petra&quot;,
+    &quot;last_name&quot;: &quot;Paulsen&quot;,
+    &quot;channels&quot;: [
+      {
+        &quot;type&quot;: &quot;email&quot;,
+        &quot;address&quot;: &quot;petra.paulsen@aok.de&quot;
+      }
+    ]
+  }
+}</code></pre>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">201</span></td>
+  <td><p>Angelegt.</p></td>
+  <td><code>contact</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-updatecontact">
+  <h2>
+    <span class="method patch">PATCH</span>
+    <code class="path">/api/contacts</code>
+  </h2>
+  <p class="summary">Kontakt ändern</p>
+  <p class="meta">
+    <span>operationId <code>updateContact</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p><strong>Vollständiges Überschreiben, kein Teil-Update.</strong> <code>data</code> ersetzt den bisherigen Datensatz als Ganzes; weggelassene Felder werden geleert, nicht beibehalten. Also immer erst den aktuellen Stand aus <code>/api/selection</code> holen, dort ändern und das vollständige Objekt zurückschicken.</p>
+<p><code>expected_updated_at</code> ist optional und dient der Erkennung paralleler Änderungen: stimmt der Wert nicht mehr mit dem gespeicherten überein, wird trotzdem geschrieben, die Antwort meldet aber <code>conflict: true</code>.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>active</code></td>
+  <td>boolean</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>data</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-contactdata">ContactData</a></td>
+  <td><p>Pflicht sind ein <code>last_name</code> <strong>und</strong> mindestens ein Kanal vom Typ E-Mail oder Telefon. Alles andere ist frei.</p></td>
+</tr>
+<tr>
+  <td><code>expected_updated_at</code></td>
+  <td>string, date-time</td>
+  <td><p>Der <code>updated_at</code>-Wert, von dem der Client ausgeht.</p></td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Geändert.</p></td>
+  <td><code>contact</code>, <code>conflict</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">404</span></td>
+  <td><p>Der Datensatz existiert nicht (mehr).</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-deletecontact">
+  <h2>
+    <span class="method delete">DELETE</span>
+    <code class="path">/api/contacts</code>
+  </h2>
+  <p class="summary">Kontakt löschen</p>
+  <p class="meta">
+    <span>operationId <code>deleteContact</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Endgültig. Wer einen Kontakt nur aus der Ansicht nehmen will, setzt stattdessen <code>active: false</code> per <code>PATCH</code> — dann bleibt er über <code>include_inactive=true</code> erreichbar.</p>
+<p>Die <code>id</code> steht im Body, nicht im Pfad.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Erledigt.</p></td>
+  <td><code>ok</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">404</span></td>
+  <td><p>Der Datensatz existiert nicht (mehr).</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-createbusinesspartner">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/business-partners</code>
+  </h2>
+  <p class="summary">Geschäftspartner anlegen</p>
+  <p class="meta">
+    <span>operationId <code>createBusinessPartner</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>types</code></td>
+  <td>Liste von <a href="#schema-businesspartnertype">BusinessPartnerType</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>data</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-businesspartnerdata">BusinessPartnerData</a></td>
+  <td>—</td>
+</tr>
+</tbody>
+</table><p class="label">Beispiel</p><pre><code>{
+  &quot;types&quot;: [
+    &quot;customer&quot;
+  ],
+  &quot;data&quot;: {
+    &quot;name&quot;: &quot;AOK Rheinland/Hamburg&quot;,
+    &quot;address&quot;: {
+      &quot;street&quot;: &quot;Kasernenstr. 61&quot;,
+      &quot;zip&quot;: &quot;40213&quot;,
+      &quot;city&quot;: &quot;Düsseldorf&quot;,
+      &quot;country&quot;: &quot;DE&quot;
+    },
+    &quot;channels&quot;: [
+      {
+        &quot;type&quot;: &quot;email&quot;,
+        &quot;address&quot;: &quot;rechnung@aok.de&quot;
+      }
+    ]
+  }
+}</code></pre>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">201</span></td>
+  <td><p>Angelegt.</p></td>
+  <td><code>business_partner</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-updatebusinesspartner">
+  <h2>
+    <span class="method patch">PATCH</span>
+    <code class="path">/api/business-partners</code>
+  </h2>
+  <p class="summary">Geschäftspartner ändern</p>
+  <p class="meta">
+    <span>operationId <code>updateBusinessPartner</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Wie bei Kontakten: <code>data</code> überschreibt vollständig, <code>types</code> ebenso. Siehe <code>PATCH /api/contacts</code> zu <code>expected_updated_at</code> und <code>conflict</code>.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>active</code></td>
+  <td>boolean</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>types</code></td>
+  <td>Liste von <a href="#schema-businesspartnertype">BusinessPartnerType</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>data</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-businesspartnerdata">BusinessPartnerData</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>expected_updated_at</code></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Geändert.</p></td>
+  <td><code>business_partner</code>, <code>conflict</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">404</span></td>
+  <td><p>Der Datensatz existiert nicht (mehr).</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-deletebusinesspartner">
+  <h2>
+    <span class="method delete">DELETE</span>
+    <code class="path">/api/business-partners</code>
+  </h2>
+  <p class="summary">Geschäftspartner löschen</p>
+  <p class="meta">
+    <span>operationId <code>deleteBusinessPartner</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Endgültig. Stilllegen geht über <code>active: false</code> per <code>PATCH</code>.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Erledigt.</p></td>
+  <td><code>ok</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">404</span></td>
+  <td><p>Der Datensatz existiert nicht (mehr).</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-linkcontacttobusinesspartner">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/contact-gps</code>
+  </h2>
+  <p class="summary">Kontakt mit Geschäftspartner verknüpfen</p>
+  <p class="meta">
+    <span>operationId <code>linkContactToBusinessPartner</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Legt die Verbindung „diese Person gehört zu dieser Organisation“ an, wahlweise mit einer Rolle („Einkauf“, „Geschäftsführung“ …).</p>
+<p>Die Verknüpfung ist ihr eigener Datensatz, ohne ID: identifiziert wird sie durch das Paar <code>contact_id</code> + <code>gp_id</code>. Dasselbe Paar erneut zu senden legt keine zweite an, sondern aktualisiert die bestehende.</p>
+<p>Antwortet mit <strong>200</strong>, nicht mit 201.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>contact_id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>gp_id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>role</code></td>
+  <td>string</td>
+  <td><p>Freitext, z.B. &quot;Einkauf&quot;.</p></td>
+</tr>
+<tr>
+  <td><code>primary</code></td>
+  <td>boolean</td>
+  <td><p>Hauptzugehörigkeit der Person.</p></td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Verknüpft.</p></td>
+  <td><code>link</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-unlinkcontactfrombusinesspartner">
+  <h2>
+    <span class="method delete">DELETE</span>
+    <code class="path">/api/contact-gps</code>
+  </h2>
+  <p class="summary">Verknüpfung lösen</p>
+  <p class="meta">
+    <span>operationId <code>unlinkContactFromBusinessPartner</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Entfernt nur die Verbindung. Kontakt und Geschäftspartner bleiben.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>contact_id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>gp_id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Erledigt.</p></td>
+  <td><code>ok</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section class="tag" id="tag-fakturierung">
+  <h1>Fakturierung</h1>
+  <p>Rechnungen, Zahlungsbedingungen, Firmeneinstellungen.</p>
+  <section class="op" id="op-getinvoicingdata">
+  <h2>
+    <span class="method get">GET</span>
+    <code class="path">/api/invoices</code>
+  </h2>
+  <p class="summary">Rechnungen, Zahlungsbedingungen und Geschäftspartner laden</p>
+  <p class="meta">
+    <span>operationId <code>getInvoicingData</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Wie <code>/api/selection</code> eine Komplettladung ohne Paginierung — hier für die Fakturierung.</p>
+<p>Beachte: bei <strong>Entwürfen</strong> wird <code>gp_snapshot</code> beim Lesen aus dem aktuellen Geschäftspartner frisch erzeugt. Ein Entwurf zeigt also immer die heutige Anschrift. Erst beim Abrechnen friert der Schnappschuss ein; bei abgerechneten und bezahlten Rechnungen bekommst du den eingefrorenen Stand.</p>
+  
+  
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Die Fakturierungsdaten.</p></td>
+  <td><code>invoices</code>, <code>payment_terms</code>, <code>business_partners</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-createinvoicedraft">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/invoices</code>
+  </h2>
+  <p class="summary">Rechnungsentwurf anlegen — leer oder als Kopie</p>
+  <p class="meta">
+    <span>operationId <code>createInvoiceDraft</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Zwei Varianten, unterschieden allein durch das gesetzte Feld:</p>
+<ul>
+<li><code>{&quot;business_partner_id&quot;: &quot;…&quot;}</code> — leerer Entwurf für diesen Kunden. Steuersatz und Zahlungsziel kommen aus den Firmeneinstellungen.</li>
+<li><code>{&quot;copy_of&quot;: &quot;…&quot;}</code> — Kopie einer bestehenden Rechnung, gleich welchen Status sie hat. Übernommen werden Kunde, Steuersatz und sämtliche Rechnungsdaten. <strong>Nicht</strong> übernommen: Rechnungsnummer, Rechnungsdatum, Status — und die <strong>Leistungsdaten der Positionen bleiben leer</strong>, weil eine Kopie für einen neuen Zeitraum entsteht. Positionen bekommen neue IDs.</li>
+</ul>
+<p>Ist <code>copy_of</code> gesetzt, wird <code>business_partner_id</code> ignoriert.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>business_partner_id</code></td>
+  <td>string, uuid</td>
+  <td><p>Kunde des neuen, leeren Entwurfs.</p></td>
+</tr>
+<tr>
+  <td><code>copy_of</code></td>
+  <td>string, uuid</td>
+  <td><p>Rechnung, von der kopiert wird. Hat Vorrang.</p></td>
+</tr>
+</tbody>
+</table><p class="variants">Mindestens eine dieser Formen:</p><div class="variant">
+  <h4>Variante 1</h4>
+  <p class="keys">erkannt an <code>business_partner_id</code></p>
+  
+</div>
+<div class="variant">
+  <h4>Variante 2</h4>
+  <p class="keys">erkannt an <code>copy_of</code></p>
+  
+</div>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">201</span></td>
+  <td><p>Entwurf angelegt.</p></td>
+  <td><code>invoice</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">404</span></td>
+  <td><p>Der Datensatz existiert nicht (mehr).</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-updateinvoice">
+  <h2>
+    <span class="method patch">PATCH</span>
+    <code class="path">/api/invoices</code>
+  </h2>
+  <p class="summary">Entwurf ändern, abrechnen oder Status setzen</p>
+  <p class="meta">
+    <span>operationId <code>updateInvoice</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Ein Pfad, drei Vorgänge. Welcher gemeint ist, entscheidet das Feld <code>action</code> (bzw. <code>status</code>):</p>
+<p><strong>1. <code>{&quot;id&quot;, &quot;data&quot;, &quot;vat_rate&quot;}</code></strong> — ohne <code>action</code>: Entwurf überschreiben. Wie im CRM ein vollständiges Ersetzen, kein Teil-Update. Nur bei Entwürfen möglich. Antwortet mit <code>{invoice, conflict}</code>.</p>
+<p><strong>2. <code>{&quot;id&quot;, &quot;action&quot;: &quot;bill&quot;}</code></strong> — abrechnen. Vergibt die nächste Rechnungsnummer, setzt das Rechnungsdatum auf heute, friert <code>gp_snapshot</code> ein und schaltet den Status auf <code>billed</code>. Nicht umkehrbar im Sinne der Nummer: ein späterer Rücksprung auf <code>draft</code> behält die vergebene Nummer.</p>
+<p><strong>3. <code>{&quot;id&quot;, &quot;action&quot;: &quot;status&quot;, &quot;status&quot;: …}</code></strong> — Status setzen (<code>draft</code> | <code>billed</code> | <code>paid</code>). <code>action</code> darf weggelassen werden, wenn <code>status</code> gesetzt ist. Vergibt <strong>keine</strong> Rechnungsnummer — für den regulären Weg vom Entwurf zur Rechnung ist <code>action: &quot;bill&quot;</code> zuständig.</p>
+  
+  <h3>Request-Body</h3><p class="variants">Genau eine dieser Formen:</p><div class="variant">
+  <h4>Entwurf überschreiben</h4>
+  <p class="keys">erkannt an <code>id</code>, <code>data</code></p>
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>data</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-invoicedata">InvoiceData</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>vat_rate</code></td>
+  <td>number</td>
+  <td><p>Steuersatz in Prozent, z.B. 19.</p></td>
+</tr>
+<tr>
+  <td><code>expected_updated_at</code></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="variant">
+  <h4>Abrechnen</h4>
+  <p class="keys">erkannt an <code>id</code>, <code>action</code></p>
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>action</code> <span class="req">Pflicht</span></td>
+  <td><code>bill</code></td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="variant">
+  <h4>Status setzen</h4>
+  <p class="keys">erkannt an <code>id</code>, <code>status</code></p>
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>action</code></td>
+  <td><code>status</code></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>status</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-invoicestatus">InvoiceStatus</a></td>
+  <td><p><code>draft</code> = Entwurf ohne Nummer, änderbar. <code>billed</code> = abgerechnet, mit Nummer und eingefrorenem Kundenschnappschuss. <code>paid</code> = bezahlt.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Geändert. <code>conflict</code> erscheint nur beim Überschreiben eines Entwurfs.</p></td>
+  <td><code>invoice</code>, <code>conflict</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">404</span></td>
+  <td><p>Der Datensatz existiert nicht (mehr).</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-deleteinvoicedraft">
+  <h2>
+    <span class="method delete">DELETE</span>
+    <code class="path">/api/invoices</code>
+  </h2>
+  <p class="summary">Rechnungsentwurf löschen</p>
+  <p class="meta">
+    <span>operationId <code>deleteInvoiceDraft</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Nur Entwürfe <strong>ohne</strong> vergebene Rechnungsnummer lassen sich löschen. Eine einmal abgerechnete Rechnung bleibt, auch wenn sie wieder auf <code>draft</code> zurückgesetzt wurde — sonst entstünde eine Lücke im Nummernkreis.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Erledigt.</p></td>
+  <td><code>ok</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">404</span></td>
+  <td><p>Der Datensatz existiert nicht (mehr).</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Nicht löschbar, etwa weil die Rechnung bereits eine Nummer trägt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-createpaymentterm">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/payment-terms</code>
+  </h2>
+  <p class="summary">Zahlungsbedingung anlegen</p>
+  <p class="meta">
+    <span>operationId <code>createPaymentTerm</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Legt einen wiederverwendbaren Textbaustein für den Zahlungshinweis an. Gleicher <code>template</code>-Text ersetzt den vorhandenen Eintrag, statt einen zweiten anzulegen. Gelesen werden die Bausteine über <code>GET /api/invoices</code>.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>label</code></td>
+  <td>string</td>
+  <td><p>Kurzbezeichnung für die Auswahlliste.</p></td>
+</tr>
+<tr>
+  <td><code>template</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td><p>Der Text, wie er auf der Rechnung steht.</p></td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">201</span></td>
+  <td><p>Angelegt.</p></td>
+  <td><code>payment_term</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-getappsettings">
+  <h2>
+    <span class="method get">GET</span>
+    <code class="path">/api/app-settings</code>
+  </h2>
+  <p class="summary">Firmeneinstellungen lesen</p>
+  <p class="meta">
+    <span>operationId <code>getAppSettings</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Absender, Bankverbindung, Steuernummern — alles, was auf jeder Rechnung gleich ist. Die Einstellungen gelten für die Installation, nicht pro Benutzer.</p>
+  
+  
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Die Einstellungen.</p></td>
+  <td><code>settings</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-updateappsettings">
+  <h2>
+    <span class="method patch">PATCH</span>
+    <code class="path">/api/app-settings</code>
+  </h2>
+  <p class="summary">Firmeneinstellungen ändern</p>
+  <p class="meta">
+    <span>operationId <code>updateAppSettings</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Trotz <code>PATCH</code> ein vollständiges Ersetzen: <code>invoicing</code> überschreibt den bisherigen Block als Ganzes. Unbekannte Felder werden verworfen. Also erst <code>GET</code>, dann ändern, dann das vollständige Objekt senden.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>invoicing</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-invoicingappsettings">InvoicingAppSettings</a></td>
+  <td><p>Die Freitextfelder (<code>sender_address</code>, <code>bank_details</code> …) drucken das PDF; die strukturierten Entsprechungen darunter braucht die XRechnung, die die Bestandteile einzeln verlangt. Beide pflegen, sonst stimmt eines von beidem nicht.</p></td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Geändert.</p></td>
+  <td><code>settings</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section class="tag" id="tag-profil">
+  <h1>Profil</h1>
+  <p>Kürzel und API-Schlüssel des angemeldeten Benutzers.</p>
+  <section class="op" id="op-createapikey">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/profile</code>
+  </h2>
+  <p class="summary">API-Schlüssel erzeugen</p>
+  <p class="meta">
+    <span>operationId <code>createApiKey</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Erzeugt einen Schlüssel für <code>x-api-key</code> und gibt ihn <strong>genau dieses eine Mal</strong> im Klartext zurück; gespeichert wird nur sein Hash. Ein zweiter Aufruf ersetzt den vorhandenen Schlüssel — der alte gilt dann nicht mehr.</p>
+<p>Kein Request-Body nötig.</p>
+  
+  
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">201</span></td>
+  <td><p>Schlüssel erzeugt.</p></td>
+  <td><code>user</code>, <code>api_key</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-updateprofile">
+  <h2>
+    <span class="method patch">PATCH</span>
+    <code class="path">/api/profile</code>
+  </h2>
+  <p class="summary">Kürzel ändern</p>
+  <p class="meta">
+    <span>operationId <code>updateProfile</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Das Namenskürzel, mit dem Aktivitäten gezeichnet werden.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>abbr</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Geändert.</p></td>
+  <td><code>user</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-revokeapikey">
+  <h2>
+    <span class="method delete">DELETE</span>
+    <code class="path">/api/profile</code>
+  </h2>
+  <p class="summary">API-Schlüssel widerrufen</p>
+  <p class="meta">
+    <span>operationId <code>revokeApiKey</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Löscht <strong>den Schlüssel</strong>, nicht den Benutzer. Danach ist der Zugang nur noch per Login möglich, bis ein neuer Schlüssel erzeugt wird.</p>
+  
+  
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Widerrufen.</p></td>
+  <td><code>user</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section class="tag" id="tag-posteingang">
+  <h1>Posteingang</h1>
+  <p>Eingehende Texte (Zwischenablage, E-Mail) zur Übernahme ins CRM.</p>
+  <section class="op" id="op-listingests">
+  <h2>
+    <span class="method get">GET</span>
+    <code class="path">/api/ingests</code>
+  </h2>
+  <p class="summary">Eingänge auflisten</p>
+  <p class="meta">
+    <span>operationId <code>listIngests</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Eingegangene Texte, aus denen Kontakte werden können — eingefügt aus der Zwischenablage oder aus einem überwachten Postfach geholt. Jeder Eintrag trägt das KI-Analyseergebnis in <code>analysis</code>.</p>
+  
+  
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Die Eingänge.</p></td>
+  <td><code>ingests</code>, <code>pending_count</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-createingest">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/ingests</code>
+  </h2>
+  <p class="summary">Text einliefern oder Postfach abfragen</p>
+  <p class="meta">
+    <span>operationId <code>createIngest</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Zwei Vorgänge, unterschieden über <code>action</code>:</p>
+<ul>
+<li>ohne <code>action</code> — <code>raw_text</code> als neuen Eingang ablegen und sofort analysieren. Ein schon vorhandener, gleichlautender Text legt keinen zweiten Eintrag an; die Antwort meldet dann <code>duplicate: true</code>.</li>
+<li><code>{&quot;action&quot;: &quot;check_email&quot;}</code> — das konfigurierte IMAP-Postfach auf ungelesene Nachrichten prüfen und sie als Eingänge übernehmen.</li>
+</ul>
+  
+  <h3>Request-Body</h3><p class="variants">Genau eine dieser Formen:</p><div class="variant">
+  <h4>Text einliefern</h4>
+  <p class="keys">erkannt an <code>raw_text</code></p>
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>raw_text</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>source_label</code></td>
+  <td>string</td>
+  <td><p>Vorgabe: <code>Zwischenablage</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="variant">
+  <h4>Postfach abfragen</h4>
+  <p class="keys">erkannt an <code>action</code></p>
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>action</code> <span class="req">Pflicht</span></td>
+  <td><code>check_email</code></td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</div>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Ergebnis der Postfachabfrage.</p></td>
+  <td><code>imported</code>, <code>duplicates</code></td>
+</tr>
+<tr>
+  <td><span class="status ok">201</span></td>
+  <td><p>Eingang angelegt.</p></td>
+  <td><code>ingest</code>, <code>duplicate</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status bad">500</span></td>
+  <td><p>Das Postfach war nicht erreichbar.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-updateingeststatus">
+  <h2>
+    <span class="method patch">PATCH</span>
+    <code class="path">/api/ingests</code>
+  </h2>
+  <p class="summary">Eingang abhaken</p>
+  <p class="meta">
+    <span>operationId <code>updateIngestStatus</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>status</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-ingeststatus">IngestStatus</a></td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Geändert.</p></td>
+  <td><code>ingest</code></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">404</span></td>
+  <td><p>Der Datensatz existiert nicht (mehr).</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section class="tag" id="tag-ki-hilfen">
+  <h1>KI-Hilfen</h1>
+  <p>Vorschläge aus Freitext bzw. aus öffentlichen Quellen.</p>
+  <section class="op" id="op-analyzeemailimport">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/email-import/analyze</code>
+  </h2>
+  <p class="summary">Kontaktdaten aus einem E-Mail-Text vorschlagen</p>
+  <p class="meta">
+    <span>operationId <code>analyzeEmailImport</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Liest eine E-Mail (typischerweise wegen der Signatur) und schlägt einen Kontakt samt Geschäftspartner vor, dazu mögliche Treffer im Bestand, um Dubletten zu vermeiden.</p>
+<p><strong>Schreibt nichts.</strong> Der Vorschlag muss, wenn er taugt, über <code>POST /api/contacts</code> bzw. <code>POST /api/business-partners</code> selbst angelegt werden. Läuft über ein externes Sprachmodell und dauert entsprechend ein paar Sekunden.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>email_text</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Der Vorschlag.</p></td>
+  <td><a href="#schema-emailimportanalysis">EmailImportAnalysis</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status bad">500</span></td>
+  <td><p>Die Analyse ist fehlgeschlagen.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="op" id="op-lookupbusinesspartner">
+  <h2>
+    <span class="method post">POST</span>
+    <code class="path">/api/business-partner-lookup</code>
+  </h2>
+  <p class="summary">Firmendaten aus öffentlichen Quellen ergänzen</p>
+  <p class="meta">
+    <span>operationId <code>lookupBusinessPartner</code></span>
+    <span>Anmeldung: <code>apiKey</code> oder <code>bearerAuth</code></span>
+  </p>
+  <p>Sucht zu einem angefangenen Geschäftspartner (meist nur der Name) Anschrift, USt-IdNr. und Kontaktwege im Netz und liefert Kandidaten mit Konfidenz und Quellenangabe.</p>
+<p><strong>Schreibt nichts</strong> — das Übernehmen ist Sache des Aufrufers. Externes Sprachmodell, dauert ein paar Sekunden.</p>
+  
+  <h3>Request-Body</h3><table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>business_partner</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-businesspartnerdata">BusinessPartnerData</a></td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+  <h3>Antworten</h3>
+<table>
+<thead><tr><th>Status</th><th>Bedeutung</th><th>Inhalt</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="status ok">200</span></td>
+  <td><p>Die Kandidaten.</p></td>
+  <td><a href="#schema-businesspartnerlookupresult">BusinessPartnerLookupResult</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">400</span></td>
+  <td><p>Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie <code>id</code> fehlt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">401</span></td>
+  <td><p>Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status warn">422</span></td>
+  <td><p>Inhaltlich abgelehnt. <code>fields</code> nennt, wo es klemmt.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+<tr>
+  <td><span class="status bad">500</span></td>
+  <td><p>Die Suche ist fehlgeschlagen.</p></td>
+  <td><a href="#schema-error">Error</a></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+<section id="schemata">
+  <h1 style="border-bottom:2px solid var(--brand);font-size:1.4rem;margin:0 0 1rem;padding-bottom:.5rem;">Datentypen</h1>
+<section class="schema" id="schema-error">
+  <h2>Error</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>error</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td><p>Klartextmeldung auf Deutsch, für Menschen gedacht.</p></td>
+</tr>
+<tr>
+  <td><code>fields</code></td>
+  <td>object</td>
+  <td><p>Nur bei 422. Feldname → Meldung. Bei Rechnungspositionen als Pfad, z.B. <code>&quot;lines.0.quantity&quot;</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-sessionuser">
+  <h2>SessionUser</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>email</code> <span class="req">Pflicht</span></td>
+  <td>string, email</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>abbr</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td><p>Namenskürzel, zeichnet Aktivitäten.</p></td>
+</tr>
+<tr>
+  <td><code>api_key_created_at</code></td>
+  <td>string | null, date-time</td>
+  <td><p>Wann der aktuelle API-Schlüssel erzeugt wurde; <code>null</code>, wenn keiner existiert. Der Schlüssel selbst steht hier nie.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-channel">
+  <h2>Channel</h2>
+  <p>Ein Kommunikationsweg. <code>type</code> ist bewusst Freitext; üblich sind <code>email</code>, <code>phone</code>, <code>mobile</code>, <code>whatsapp</code>, <code>website</code>. Mehrere Einträge desselben Typs sind erlaubt.</p>
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>type</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>address</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-address">
+  <h2>Address</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>street</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>zip</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>city</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>country</code></td>
+  <td>string</td>
+  <td><p>ISO-3166-1-Alpha-2, z.B. &quot;DE&quot;. Für die XRechnung zwingend als Code; ein ausgeschriebener Ländername lässt sich dort nicht verwenden.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-contactdata">
+  <h2>ContactData</h2>
+  <p>Pflicht sind ein <code>last_name</code> <strong>und</strong> mindestens ein Kanal vom Typ E-Mail oder Telefon. Alles andere ist frei.</p>
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>title</code></td>
+  <td>string</td>
+  <td><p>Akademischer Titel, z.B. &quot;Dr.&quot;.</p></td>
+</tr>
+<tr>
+  <td><code>first_name</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>last_name</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>gender</code></td>
+  <td><code>m</code> | <code>f</code> | <code>d</code></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>salutation</code></td>
+  <td><code>formal</code> | <code>informal</code></td>
+  <td><p>formal = Sie, informal = Du.</p></td>
+</tr>
+<tr>
+  <td><code>origin</code></td>
+  <td>string</td>
+  <td><p>Woher der Kontakt stammt.</p></td>
+</tr>
+<tr>
+  <td><code>company_text</code></td>
+  <td>string</td>
+  <td><p>Firmenzugehörigkeit als Freitext — für Fälle ohne eigenen Geschäftspartner-Datensatz. Die belastbare Verbindung läuft über <code>/api/contact-gps</code>.</p></td>
+</tr>
+<tr>
+  <td><code>channels</code> <span class="req">Pflicht</span></td>
+  <td>Liste von <a href="#schema-channel">Channel</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>relationship</code></td>
+  <td>Liste von string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>role</code></td>
+  <td>Liste von string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>work_area</code></td>
+  <td>Liste von string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>interests</code></td>
+  <td>Liste von string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>tags</code></td>
+  <td>Liste von string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>notes</code></td>
+  <td>string</td>
+  <td><p>Freitext, beliebig lang.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-contact">
+  <h2>Contact</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>active</code> <span class="req">Pflicht</span></td>
+  <td>boolean</td>
+  <td><p>false = stillgelegt, nicht gelöscht. Erscheint nur mit <code>include_inactive=true</code>.</p></td>
+</tr>
+<tr>
+  <td><code>data</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-contactdata">ContactData</a></td>
+  <td><p>Pflicht sind ein <code>last_name</code> <strong>und</strong> mindestens ein Kanal vom Typ E-Mail oder Telefon. Alles andere ist frei.</p></td>
+</tr>
+<tr>
+  <td><code>created_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>updated_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-businesspartnertype">
+  <h2>BusinessPartnerType</h2>
+  
+  <p class="muted"><code>customer</code> | <code>supplier</code> | <code>partner</code> | <code>authority</code></p>
+</section>
+<section class="schema" id="schema-businesspartnerdata">
+  <h2>BusinessPartnerData</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>name</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td><p>Pflicht.</p></td>
+</tr>
+<tr>
+  <td><code>vat_id</code></td>
+  <td>string</td>
+  <td><p>USt-IdNr. Für die XRechnung wird beim Erzeugen normalisiert (Leerzeichen, Punkte, Bindestriche raus, Großschreibung) und muss dann dem Muster Länderkürzel + 2–12 Zeichen entsprechen; bei DE genau 9 Ziffern.</p></td>
+</tr>
+<tr>
+  <td><code>leitweg_id</code></td>
+  <td>string</td>
+  <td><p>Routing-Adresse öffentlicher Auftraggeber. Wird beim Abrechnen in die Rechnung übernommen und landet in der XRechnung als BT-10. Vergibt die Behörde selbst; es gibt kein zentrales Verzeichnis.</p></td>
+</tr>
+<tr>
+  <td><code>address</code></td>
+  <td><a href="#schema-address">Address</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>invoice_language</code></td>
+  <td><code>de</code> | <code>en</code></td>
+  <td><p>Sprache des Rechnungs-PDF.</p></td>
+</tr>
+<tr>
+  <td><code>channels</code> <span class="req">Pflicht</span></td>
+  <td>Liste von <a href="#schema-channel">Channel</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>business_relationship</code></td>
+  <td>Liste von string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>tags</code></td>
+  <td>Liste von string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>memo</code></td>
+  <td>string</td>
+  <td><p>Kurznotiz, in Listen sichtbar.</p></td>
+</tr>
+<tr>
+  <td><code>notes</code></td>
+  <td>string</td>
+  <td><p>Ausführliche Notizen.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-businesspartner">
+  <h2>BusinessPartner</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>active</code> <span class="req">Pflicht</span></td>
+  <td>boolean</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>types</code> <span class="req">Pflicht</span></td>
+  <td>Liste von <a href="#schema-businesspartnertype">BusinessPartnerType</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>data</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-businesspartnerdata">BusinessPartnerData</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>created_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>updated_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-contactgp">
+  <h2>ContactGp</h2>
+  <p>Verknüpfung Person ↔ Organisation. Hat keine eigene ID; das Paar <code>contact_id</code> + <code>gp_id</code> identifiziert sie.</p>
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>contact_id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>gp_id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>role</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>primary</code> <span class="req">Pflicht</span></td>
+  <td>boolean</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>created_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-invoicestatus">
+  <h2>InvoiceStatus</h2>
+  <p><code>draft</code> = Entwurf ohne Nummer, änderbar. <code>billed</code> = abgerechnet, mit Nummer und eingefrorenem Kundenschnappschuss. <code>paid</code> = bezahlt.</p>
+  <p class="muted"><code>draft</code> | <code>billed</code> | <code>paid</code></p>
+</section>
+<section class="schema" id="schema-invoiceline">
+  <h2>InvoiceLine</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td><p>Nur innerhalb der Rechnung eindeutig. Fehlt sie beim Schreiben, wird eine erzeugt.</p></td>
+</tr>
+<tr>
+  <td><code>service_date</code></td>
+  <td>string, date</td>
+  <td><p>Leistungsdatum, <code>YYYY-MM-DD</code>. Für eine gültige XRechnung erforderlich; ohne es lässt sich die Rechnung nicht abrechnen.</p></td>
+</tr>
+<tr>
+  <td><code>product_form</code></td>
+  <td>string</td>
+  <td><p>Art der Leistung, z.B. &quot;Workshop&quot;, &quot;Beratung&quot;.</p></td>
+</tr>
+<tr>
+  <td><code>product_topic</code></td>
+  <td>string</td>
+  <td><p>Thema, z.B. &quot;Clean Code&quot;.</p></td>
+</tr>
+<tr>
+  <td><code>quantity</code> <span class="req">Pflicht</span></td>
+  <td>number</td>
+  <td><p>Muss größer als 0 sein.</p></td>
+</tr>
+<tr>
+  <td><code>unit</code></td>
+  <td>string</td>
+  <td><p>Als lesbare Beschriftung gespeichert. Für eine gültige XRechnung muss sie einer bekannten entsprechen, weil daraus der Code nach UN/ECE Rec. 20 wird: <code>Std</code>→HUR, <code>Tage</code>→DAY, <code>Pauschale</code>→LS, <code>km</code>→KMT, <code>Stück</code>→C62, <code>Monat</code>→MON. Andere Beschriftungen sind speicherbar, verhindern aber das Abrechnen.</p></td>
+</tr>
+<tr>
+  <td><code>unit_price</code> <span class="req">Pflicht</span></td>
+  <td>number</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>text</code></td>
+  <td>string</td>
+  <td><p>Freitext zur Position.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-invoicedata">
+  <h2>InvoiceData</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>reference</code></td>
+  <td>string</td>
+  <td><p>Bestell- oder Aktenzeichen des Kunden. Landet in der XRechnung als BT-13, oder als BT-10, wenn keine Leitweg-ID vorliegt.</p></td>
+</tr>
+<tr>
+  <td><code>comment</code></td>
+  <td>string</td>
+  <td><p>Freitext auf der Rechnung.</p></td>
+</tr>
+<tr>
+  <td><code>payment_due_days</code></td>
+  <td>integer</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>payment_free_text</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>payment_terms</code></td>
+  <td>string</td>
+  <td><p>Alter Freitextbaustein. Bleibt nur, damit Bestandsrechnungen unverändert aussehen; für Neues <code>payment_due_days</code> bzw. <code>payment_free_text</code> verwenden.</p>
+<p><strong>Veraltet.</strong></p></td>
+</tr>
+<tr>
+  <td><code>reverse_charge</code></td>
+  <td>boolean</td>
+  <td><p>Steuerschuldnerschaft des Leistungsempfängers.</p></td>
+</tr>
+<tr>
+  <td><code>lines</code> <span class="req">Pflicht</span></td>
+  <td>Liste von <a href="#schema-invoiceline">InvoiceLine</a></td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-invoicegpsnapshot">
+  <h2>InvoiceGpSnapshot</h2>
+  <p>Der Kunde, wie er auf dieser Rechnung steht. Bei Entwürfen beim Lesen aus dem aktuellen Geschäftspartner erzeugt, beim Abrechnen eingefroren — damit eine verschickte Rechnung nicht rückwirkend die Anschrift wechselt.</p>
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>name</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>vat_id</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>leitweg_id</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>address</code></td>
+  <td><a href="#schema-address">Address</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>email</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>invoice_language</code></td>
+  <td><code>de</code> | <code>en</code></td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-invoice">
+  <h2>Invoice</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>business_partner_id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>status</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-invoicestatus">InvoiceStatus</a></td>
+  <td><p><code>draft</code> = Entwurf ohne Nummer, änderbar. <code>billed</code> = abgerechnet, mit Nummer und eingefrorenem Kundenschnappschuss. <code>paid</code> = bezahlt.</p></td>
+</tr>
+<tr>
+  <td><code>invoice_number</code></td>
+  <td>string | null</td>
+  <td><p><code>null</code>, solange nicht abgerechnet. Danach fortlaufend, mit führenden Nullen auf feste Länge aufgefüllt.</p></td>
+</tr>
+<tr>
+  <td><code>invoice_date</code></td>
+  <td>string | null, date</td>
+  <td><p><code>null</code>, solange nicht abgerechnet.</p></td>
+</tr>
+<tr>
+  <td><code>vat_rate</code> <span class="req">Pflicht</span></td>
+  <td>number</td>
+  <td><p>Prozent, z.B. 19.</p></td>
+</tr>
+<tr>
+  <td><code>gp_snapshot</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-invoicegpsnapshot">InvoiceGpSnapshot</a></td>
+  <td><p>Der Kunde, wie er auf dieser Rechnung steht. Bei Entwürfen beim Lesen aus dem aktuellen Geschäftspartner erzeugt, beim Abrechnen eingefroren — damit eine verschickte Rechnung nicht rückwirkend die Anschrift wechselt.</p></td>
+</tr>
+<tr>
+  <td><code>data</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-invoicedata">InvoiceData</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>created_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>updated_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-paymentterm">
+  <h2>PaymentTerm</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>label</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>template</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>created_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>updated_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-invoicingappsettings">
+  <h2>InvoicingAppSettings</h2>
+  <p>Die Freitextfelder (<code>sender_address</code>, <code>bank_details</code> …) drucken das PDF; die strukturierten Entsprechungen darunter braucht die XRechnung, die die Bestandteile einzeln verlangt. Beide pflegen, sonst stimmt eines von beidem nicht.</p>
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>company_name</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>sender_address</code></td>
+  <td>string</td>
+  <td><p>Freitext fürs PDF.</p></td>
+</tr>
+<tr>
+  <td><code>bank_details</code></td>
+  <td>string</td>
+  <td><p>Freitext fürs PDF.</p></td>
+</tr>
+<tr>
+  <td><code>company_registration</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>default_payment_due_days</code></td>
+  <td>integer</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>vat_number</code></td>
+  <td>string</td>
+  <td><p>Eigene USt-IdNr.</p></td>
+</tr>
+<tr>
+  <td><code>contact_person</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>email</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>phone</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>website</code></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>address</code></td>
+  <td><a href="#schema-address">Address</a></td>
+  <td><p>Strukturierte Absenderanschrift (BT-35…BT-40).</p></td>
+</tr>
+<tr>
+  <td><code>iban</code></td>
+  <td>string</td>
+  <td><p>Ohne Leerzeichen (BT-84).</p></td>
+</tr>
+<tr>
+  <td><code>bic</code></td>
+  <td>string</td>
+  <td><p>BT-86.</p></td>
+</tr>
+<tr>
+  <td><code>trading_name</code></td>
+  <td>string</td>
+  <td><p>Firmierung in Landesschrift (BT-28).</p></td>
+</tr>
+<tr>
+  <td><code>registration_id</code></td>
+  <td>string</td>
+  <td><p>Handels-/Registernummer, nicht die USt-IdNr. (BT-30).</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-appsettings">
+  <h2>AppSettings</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>invoicing</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-invoicingappsettings">InvoicingAppSettings</a></td>
+  <td><p>Die Freitextfelder (<code>sender_address</code>, <code>bank_details</code> …) drucken das PDF; die strukturierten Entsprechungen darunter braucht die XRechnung, die die Bestandteile einzeln verlangt. Beide pflegen, sonst stimmt eines von beidem nicht.</p></td>
+</tr>
+<tr>
+  <td><code>updated_at</code></td>
+  <td>string | null, date-time</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-ingeststatus">
+  <h2>IngestStatus</h2>
+  
+  <p class="muted"><code>pending</code> | <code>accepted</code> | <code>ignored</code> | <code>error</code></p>
+</section>
+<section class="schema" id="schema-ingestitem">
+  <h2>IngestItem</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>id</code> <span class="req">Pflicht</span></td>
+  <td>string, uuid</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>source_type</code> <span class="req">Pflicht</span></td>
+  <td><code>clipboard</code> | <code>email</code></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>source_id</code></td>
+  <td>string | null</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>source_label</code></td>
+  <td>string | null</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>raw_text</code> <span class="req">Pflicht</span></td>
+  <td>string</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>analysis</code></td>
+  <td>beliebig</td>
+  <td><p>Das KI-Analyseergebnis, in der Form von <code>POST /api/email-import/analyze</code>. <code>null</code>, solange nichts vorliegt.</p></td>
+</tr>
+<tr>
+  <td><code>status</code> <span class="req">Pflicht</span></td>
+  <td><a href="#schema-ingeststatus">IngestStatus</a></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>error</code></td>
+  <td>string | null</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>created_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><code>updated_at</code> <span class="req">Pflicht</span></td>
+  <td>string, date-time</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-emailimportanalysis">
+  <h2>EmailImportAnalysis</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>proposal</code> <span class="req">Pflicht</span></td>
+  <td>object</td>
+  <td><p>Was sich aus dem Text lesen ließ.</p></td>
+</tr>
+<tr>
+  <td><code>matches</code> <span class="req">Pflicht</span></td>
+  <td>object</td>
+  <td><p>Mögliche Dubletten im Bestand, absteigend nach <code>score</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="schema" id="schema-businesspartnerlookupresult">
+  <h2>BusinessPartnerLookupResult</h2>
+  
+  <table>
+<thead><tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>candidates</code> <span class="req">Pflicht</span></td>
+  <td>Liste von object</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+<footer>
+  <p>
+    Erzeugt aus <a href="/api-docs/openapi.yaml">openapi.yaml</a> —
+    27 Operationen auf 14 Pfaden,
+    22 Datentypen.
+    Die YAML-Datei ist maßgeblich; diese Seite wird daraus beim Bauen erzeugt.
+  </p>
+</footer>
+
+</main>
+</body>
 </html>

@@ -76,6 +76,23 @@ describe("openapi.yaml beschreibt die tatsächlichen Portale", () => {
     expect(Object.keys(spec.paths ?? {}).filter((path) => !real.has(path))).toEqual([]);
   });
 
+  it("hat die gerenderte Seite aus der aktuellen Spezifikation erzeugt", () => {
+    // Die HTML-Seite wird aus der YAML gebaut und mit eingecheckt. Bleibt sie
+    // zurück, lesen Menschen und Agenten eine API, die es nicht mehr gibt —
+    // und zwar ohne Hinweis darauf. Der Build erzeugt sie neu; dieser Test
+    // merkt, wenn jemand nur die YAML angefasst hat.
+    const page = readFileSync(join(portalsDir, "../../../../frontend/public/api-docs/index.html"), "utf8");
+
+    for (const path of Object.keys(spec.paths ?? {})) {
+      expect(page, `${path} fehlt auf der Seite`).toContain(path);
+    }
+    for (const name of Object.keys(spec.components?.schemas ?? {})) {
+      expect(page, `Datentyp ${name} fehlt auf der Seite`).toContain(name);
+    }
+    // Ohne JavaScript muss der Inhalt dastehen: Agenten führen keines aus.
+    expect(page).not.toContain("<script");
+  });
+
   it("gibt jeder Operation eine eindeutige operationId", () => {
     // Agenten und Codegeneratoren adressieren Operationen darüber; doppelte
     // oder fehlende IDs brechen sie still.

@@ -7,7 +7,7 @@
     "dev": "netlify dev",
     "dev:memory": "PERSISTENCE=memory netlify dev",
     "dev:postgres": "PERSISTENCE=postgres netlify dev",
-    "build": "vite build",
+    "build": "node scripts/build-api-docs.mjs && vite build",
     "test": "vitest run",
     "validate:xrechnung": "node scripts/validate-xrechnung.mjs",
     "test:watch": "vitest",
