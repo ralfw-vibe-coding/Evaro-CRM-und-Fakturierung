@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Evaro API</title>
+    <meta
+      name="description"
+      content="HTTP-Schnittstelle von Evaro: Kontakte, Geschäftspartner, Rechnungen."
+    />
+    <link rel="icon" href="/favicon.ico" />
+
+    <!-- Für Agenten: die Spezifikation selbst, ohne den Umweg über diese Seite. -->
+    <link rel="alternate" type="application/yaml" href="/api-docs/openapi.yaml" title="OpenAPI 3.1" />
+
+    <style>
+      /*
+       * Bewusst nur hell: Redoc bringt ausschliesslich ein helles Theme mit.
+       * Ein dunkler Seitenhintergrund liesse seinen Text unlesbar werden, und
+       * die Anwendung selbst ist ebenfalls hell.
+       */
+      :root {
+        color-scheme: light;
+        --brand: #d81b78;
+        --bg: #ffffff;
+        --fg: #18181b;
+        --muted: #52525b;
+        --border: #e4e4e7;
+        --code-bg: #f4f4f5;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+
+      header {
+        border-bottom: 1px solid var(--border);
+        padding: 2rem 16px;
+      }
+      .inner { margin: 0 auto; max-width: 68rem; }
+      h1 {
+        margin: 0 0 0.25rem;
+        font-size: 1.6rem;
+        letter-spacing: -0.02em;
+      }
+      h1 span { color: var(--brand); }
+      .lede { margin: 0 0 1.5rem; color: var(--muted); max-width: 46rem; }
+
+      .links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .links a {
+        border: 1px solid var(--border);
+        border-radius: 0.4rem;
+        color: inherit;
+        font-size: 0.875rem;
+        padding: 0.4rem 0.75rem;
+        text-decoration: none;
+      }
+      .links a:hover { border-color: var(--brand); color: var(--brand); }
+      .links a.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+      }
+      .links a.primary:hover { opacity: 0.9; color: #fff; }
+
+      .note {
+        border-left: 3px solid var(--brand);
+        color: var(--muted);
+        font-size: 0.875rem;
+        margin: 1.5rem 0 0;
+        max-width: 46rem;
+        padding: 0.25rem 0 0.25rem 0.875rem;
+      }
+      code {
+        background: var(--code-bg);
+        border-radius: 0.25rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.875em;
+        padding: 0.1em 0.35em;
+      }
+
+      #spec { min-height: 50vh; }
+      #fallback { padding: 2rem 16px; }
+      #fallback:not([hidden]) ~ #spec { display: none; }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1><span>Evaro</span> API</h1>
+        <p class="lede">
+          Die HTTP-Schnittstelle für Kontakte, Geschäftspartner und Rechnungen.
+          Es ist dieselbe, über die die Weboberfläche selbst arbeitet.
+        </p>
+        <div class="links">
+          <a class="primary" href="/api-docs/openapi.yaml">OpenAPI 3.1 (YAML)</a>
+          <a href="/llms.txt">llms.txt — Kurzfassung für Agenten</a>
+          <a href="/">Zur Anwendung</a>
+        </div>
+        <p class="note">
+          Alles unter <code>/api</code> verlangt eine Anmeldung, entweder per
+          <code>x-api-key</code> oder per <code>Authorization: Bearer</code>.
+          Den API-Schlüssel erzeugst du in der Anwendung unter „Profil“.
+        </p>
+      </div>
+    </header>
+
+    <div id="fallback" hidden>
+      <div class="inner">
+        <p>
+          Die Darstellung konnte nicht geladen werden. Die Spezifikation selbst
+          liegt unverändert unter
+          <a href="/api-docs/openapi.yaml">/api-docs/openapi.yaml</a>.
+        </p>
+      </div>
+    </div>
+
+    <div id="spec"></div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/redoc@2.5.0/bundles/redoc.standalone.js"
+      onerror="document.getElementById('fallback').hidden = false"
+    ></script>
+    <script>
+      // Ohne Renderer bleibt die Seite brauchbar: der Hinweis oben verweist auf
+      // die YAML-Datei, die ohnehin die maßgebliche Quelle ist.
+      window.addEventListener("load", function () {
+        if (typeof Redoc === "undefined") {
+          document.getElementById("fallback").hidden = false;
+          return;
+        }
+        Redoc.init(
+          "/api-docs/openapi.yaml",
+          { hideDownloadButton: false, theme: { colors: { primary: { main: "#d81b78" } } } },
+          document.getElementById("spec"),
+        );
+      });
+    </script>
+  </body>
+</html>

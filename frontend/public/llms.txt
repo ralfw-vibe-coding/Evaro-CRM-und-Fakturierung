@@ -1,0 +1,119 @@
+# Evaro
+
+> CRM und Fakturierung: Kontakte, Geschäftspartner, Rechnungen — mit Ausgabe als
+> PDF und als XRechnung (EN 16931 / CII, Profil XRechnung 3.0). Die
+> Weboberfläche arbeitet über dieselbe HTTP-Schnittstelle, die hier beschrieben
+> ist; einen zweiten, davon abweichenden Weg in die Daten gibt es nicht.
+
+Basis-URL: `https://wwe-evaro.netlify.app`
+
+Alles unter `/api` verlangt eine Anmeldung. Die Daten sind die echten
+Geschäftsdaten eines Einzelunternehmens, keine Demo — Schreibzugriffe wirken
+sofort und es gibt keinen Papierkorb.
+
+## Spezifikation
+
+- [OpenAPI 3.1](https://wwe-evaro.netlify.app/api-docs/openapi.yaml): vollständige
+  Beschreibung aller 14 Pfade und 27 Operationen samt Schemata. Maßgeblich — die
+  Zusammenfassung hier ersetzt sie nicht.
+- [Übersicht im Browser](https://wwe-evaro.netlify.app/api-docs/): dieselbe
+  Spezifikation gerendert, für Menschen.
+
+## Anmeldung
+
+Zwei gleichwertige Identitäten, beide mit vollen Rechten des Benutzers:
+
+- `x-api-key: <Schlüssel>` — der Weg für Skripte und Agenten. Der Schlüssel wird
+  in der Oberfläche unter „Profil" erzeugt (`POST /api/profile`) und läuft nicht
+  ab. Er wird genau einmal im Klartext ausgegeben.
+- `Authorization: Bearer <JWT>` — aus dem Login per Einmalcode
+  (`POST /api/auth/request-otp`, dann `POST /api/auth/verify-otp`). 7 Tage
+  gültig, verlängerbar über `POST /api/auth/refresh`.
+
+Eine Rollentrennung gibt es nicht: Wer lesen darf, darf auch löschen.
+
+## Drei Dinge, die anders sind als erwartet
+
+1. **Kein `/api/kontakte/{id}`.** Pro Ressource gibt es genau einen Pfad. Welcher
+   Datensatz gemeint ist, steht als `id` im Body — auch bei `PATCH` und `DELETE`.
+2. **`DELETE` braucht einen Body.** Erlaubt nach RFC 9110, aber manche Clients
+   senden bei `DELETE` grundsätzlich keinen und laufen dann in einen 400er.
+3. **`PATCH` ist ein vollständiges Ersetzen.** `data` überschreibt den Datensatz
+   als Ganzes; weggelassene Felder werden geleert, nicht beibehalten. Also immer
+   erst den aktuellen Stand lesen, darin ändern, das vollständige Objekt
+   zurückschicken.
+
+## Die Pfade
+
+CRM:
+
+- `GET /api/selection` — Kontakte, Geschäftspartner und ihre Verknüpfungen in
+  einer Antwort. Keine Paginierung, keine serverseitige Suche; gefiltert wird im
+  Client. `?include_inactive=true` nimmt Stillgelegte dazu.
+- `POST|PATCH|DELETE /api/contacts` — Kontakte.
+- `POST|PATCH|DELETE /api/business-partners` — Geschäftspartner (Organisationen).
+- `POST|DELETE /api/contact-gps` — Person ↔ Organisation verknüpfen. Die
+  Verknüpfung hat keine eigene ID; sie wird durch das Paar `contact_id` + `gp_id`
+  identifiziert.
+
+Fakturierung:
+
+- `GET /api/invoices` — Rechnungen, Zahlungsbedingungen und Geschäftspartner.
+- `POST /api/invoices` — Entwurf anlegen: `{business_partner_id}` für einen
+  leeren, `{copy_of}` für eine Kopie.
+- `PATCH /api/invoices` — ein Pfad, drei Vorgänge, unterschieden über `action`:
+  ohne `action` den Entwurf überschreiben, `"bill"` abrechnen, `"status"` den
+  Status setzen.
+- `DELETE /api/invoices` — nur Entwürfe ohne vergebene Rechnungsnummer.
+- `POST /api/payment-terms` — Textbaustein für den Zahlungshinweis.
+- `GET|PATCH /api/app-settings` — Absender, Bankverbindung, Steuernummern.
+
+Profil und Posteingang:
+
+- `PATCH|POST|DELETE /api/profile` — Kürzel ändern, API-Schlüssel erzeugen bzw.
+  widerrufen. `DELETE` löscht **den Schlüssel**, nicht den Benutzer.
+- `GET|POST|PATCH /api/ingests` — eingegangene Texte zur Übernahme ins CRM.
+
+KI-gestützte Vorschläge (lesen nur, schreiben nichts; dauern einige Sekunden):
+
+- `POST /api/email-import/analyze` — Kontaktdaten aus einem E-Mail-Text.
+- `POST /api/business-partner-lookup` — Firmendaten aus öffentlichen Quellen.
+
+## Begriffe
+
+- **Geschäftspartner** ist eine Organisation, **Kontakt** eine Person. Beide
+  existieren unabhängig voneinander; `/api/contact-gps` verbindet sie.
+- **Inaktiv** heißt stillgelegt, nicht gelöscht (`active: false`). Inaktive
+  erscheinen nur mit `include_inactive=true`. Löschen ist endgültig und sollte
+  die Ausnahme sein.
+- **Entwurf → abgerechnet → bezahlt** ist der Weg einer Rechnung. Die
+  Rechnungsnummer wird erst beim Abrechnen vergeben und bleibt danach, auch wenn
+  die Rechnung wieder auf Entwurf zurückgesetzt wird — sonst entstünde eine Lücke
+  im Nummernkreis.
+- **Kundenschnappschuss** (`gp_snapshot`): Bei Entwürfen wird er beim Lesen aus
+  dem aktuellen Geschäftspartner erzeugt, beim Abrechnen eingefroren. Eine
+  verschickte Rechnung wechselt so nicht rückwirkend die Anschrift.
+
+## Fehler
+
+Jede Fehlerantwort ist JSON mit `error` (deutscher Klartext). Bei `422` kommt
+`fields` dazu: pro beanstandetem Feld eine Meldung, bei Rechnungspositionen mit
+Pfad (`"lines.0.quantity"`).
+
+`401` heißt fehlende oder ungültige Anmeldung, `404` den Datensatz gibt es nicht,
+`422` inhaltlich abgelehnt, `400` Body fehlt oder ist kein gültiges JSON.
+
+## Für eine gültige XRechnung
+
+Beim Abrechnen prüft Evaro, ob sich eine normkonforme XRechnung erzeugen lässt,
+und verweigert sonst den Statuswechsel. Die üblichen Stolpersteine:
+
+- Jede Position braucht ein `service_date`.
+- `unit` muss einer bekannten Beschriftung entsprechen, weil daraus der Code nach
+  UN/ECE Rec. 20 wird: `Std`→HUR, `Tage`→DAY, `Pauschale`→LS, `km`→KMT,
+  `Stück`→C62, `Monat`→MON. Andere Werte lassen sich speichern, verhindern aber
+  das Abrechnen.
+- Anschriften brauchen `country` als ISO-3166-1-Alpha-2-Code (`"DE"`), nicht
+  ausgeschrieben.
+- Bei öffentlichen Auftraggebern gehört die `leitweg_id` an den
+  Geschäftspartner; sie wird beim Abrechnen übernommen.

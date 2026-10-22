@@ -1,0 +1,1446 @@
+openapi: 3.1.0
+
+info:
+  title: Evaro API
+  version: "1.0.0"
+  summary: CRM und Fakturierung — Kontakte, Geschäftspartner, Rechnungen.
+  description: |
+    Die HTTP-Schnittstelle von Evaro. Es ist dieselbe Schnittstelle, über die
+    die Weboberfläche selbst arbeitet — es gibt keinen zweiten, davon
+    abweichenden Weg in die Daten.
+
+    ## Zwei Dinge, die anders sind als erwartet
+
+    **1. Kein `/api/kontakte/{id}`.** Es gibt pro Ressource genau einen Pfad.
+    Welcher Datensatz gemeint ist, steht als `id` im **Body**, auch bei
+    `PATCH` und `DELETE`.
+
+    **2. `DELETE` braucht einen Body.** Das ist nach RFC 9110 erlaubt, aber
+    manche HTTP-Clients senden bei `DELETE` grundsätzlich keinen Body und
+    laufen dann in einen 400er. Im Zweifel den Body explizit erzwingen
+    (`curl -X DELETE -d '{"id":"..."}'`, `fetch(url, {method:'DELETE',
+    body: ...})`).
+
+    ## Authentifizierung
+
+    Jeder Pfad außer `/api/auth/request-otp` und `/api/auth/verify-otp`
+    verlangt eine der beiden Identitäten:
+
+    * `Authorization: Bearer <JWT>` — aus dem Login per Einmalcode. Läuft nach
+      7 Tagen ab, lässt sich aber über `/api/auth/refresh` verlängern.
+    * `x-api-key: <Schlüssel>` — für Skripte und Agenten. Wird im Profil
+      erzeugt (`POST /api/profile`), läuft nicht ab und ist der empfohlene Weg
+      für alles Nicht-Interaktive.
+
+    Beide führen auf denselben Benutzer und dieselben Rechte; eine
+    Rollentrennung gibt es nicht. Ein API-Schlüssel kann alles, was der
+    Benutzer in der Oberfläche auch kann — auch löschen.
+
+    ## Fehler
+
+    Jede Fehlerantwort ist JSON mit mindestens `error` (deutscher Klartext).
+    Bei `422` kommt zusätzlich `fields` dazu: ein Objekt, das pro beanstandetem
+    Feld die Meldung nennt, bei Rechnungspositionen mit Pfad
+    (`"lines.0.quantity"`).
+
+  contact:
+    name: Ralf Westphal
+  license:
+    name: proprietär
+
+servers:
+  - url: https://wwe-evaro.netlify.app
+    description: Produktion
+  - url: http://localhost:8888
+    description: Lokale Entwicklung (netlify dev)
+
+security:
+  - apiKey: []
+  - bearerAuth: []
+
+tags:
+  - name: Anmeldung
+    description: Login per Einmalcode; Token verlängern.
+  - name: CRM
+    description: Kontakte, Geschäftspartner und ihre Verknüpfungen.
+  - name: Fakturierung
+    description: Rechnungen, Zahlungsbedingungen, Firmeneinstellungen.
+  - name: Profil
+    description: Kürzel und API-Schlüssel des angemeldeten Benutzers.
+  - name: Posteingang
+    description: Eingehende Texte (Zwischenablage, E-Mail) zur Übernahme ins CRM.
+  - name: KI-Hilfen
+    description: Vorschläge aus Freitext bzw. aus öffentlichen Quellen.
+
+paths:
+
+  /api/auth/request-otp:
+    post:
+      operationId: requestOtp
+      tags: [Anmeldung]
+      summary: Einmalcode anfordern
+      description: |
+        Schritt 1 des Logins. Erzeugt einen kurzlebigen Code und schickt ihn an
+        die angegebene Adresse. Die Antwort ist immer `{"ok": true}`, sobald die
+        Adresse formal gültig ist — ob es den Benutzer gibt, verrät sie nicht.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+            example: { email: "du@firma.de" }
+      responses:
+        "200":
+          description: Code verschickt.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/auth/verify-otp:
+    post:
+      operationId: verifyOtp
+      tags: [Anmeldung]
+      summary: Einmalcode einlösen, Token erhalten
+      description: |
+        Schritt 2 des Logins. Beim ersten erfolgreichen Einlösen wird das
+        Benutzerprofil angelegt — Registrierung und Anmeldung sind derselbe
+        Vorgang.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email: { type: string, format: email }
+                otp: { type: string }
+      responses:
+        "200":
+          description: Angemeldet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: "JWT für `Authorization: Bearer …`, 7 Tage gültig."
+                  user: { $ref: "#/components/schemas/SessionUser" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/auth/refresh:
+    post:
+      operationId: refreshToken
+      tags: [Anmeldung]
+      summary: Token verlängern
+      description: |
+        Tauscht ein noch gültiges Token gegen eines mit voller Restlaufzeit, so
+        dass eine regelmäßig genutzte Sitzung nicht nach 7 Tagen hart endet.
+
+        Nimmt **ausschließlich** `Authorization: Bearer`. Ein API-Schlüssel wird
+        hier abgewiesen: er läuft ohnehin nicht ab, und ihm ein JWT auszustellen
+        wäre eine stillschweigende Rechteausweitung.
+
+        Die Antwort enthält bewusst kein Benutzerprofil — der Client behält das
+        vorhandene und tauscht nur das Token.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Frisches Token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/selection:
+    get:
+      operationId: getSelection
+      tags: [CRM]
+      summary: Kontakte, Geschäftspartner und Verknüpfungen laden
+      description: |
+        Der Einstiegspunkt ins CRM: liefert den gesamten Bestand in **einer**
+        Antwort. Es gibt keine Paginierung und keine serverseitige Suche —
+        Filtern und Suchen passiert im Client auf diesem Ergebnis.
+
+        Standardmäßig nur Aktive. Inaktive sind nicht gelöscht, sondern
+        stillgelegt (siehe `active`).
+      parameters:
+        - name: include_inactive
+          in: query
+          required: false
+          schema: { type: string, enum: ["true"] }
+          description: |
+            Genau der Wert `true` schaltet Inaktive hinzu. Jeder andere Wert
+            wird als „nein“ gelesen.
+      responses:
+        "200":
+          description: Der Bestand.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [contacts, business_partners, contact_gps]
+                properties:
+                  contacts:
+                    type: array
+                    items: { $ref: "#/components/schemas/Contact" }
+                  business_partners:
+                    type: array
+                    items: { $ref: "#/components/schemas/BusinessPartner" }
+                  contact_gps:
+                    type: array
+                    items: { $ref: "#/components/schemas/ContactGp" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/contacts:
+    post:
+      operationId: createContact
+      tags: [CRM]
+      summary: Kontakt anlegen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                active:
+                  type: boolean
+                  default: true
+                data: { $ref: "#/components/schemas/ContactData" }
+            example:
+              data:
+                first_name: "Petra"
+                last_name: "Paulsen"
+                channels:
+                  - { type: "email", address: "petra.paulsen@aok.de" }
+      responses:
+        "201":
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contact: { $ref: "#/components/schemas/Contact" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    patch:
+      operationId: updateContact
+      tags: [CRM]
+      summary: Kontakt ändern
+      description: |
+        **Vollständiges Überschreiben, kein Teil-Update.** `data` ersetzt den
+        bisherigen Datensatz als Ganzes; weggelassene Felder werden geleert,
+        nicht beibehalten. Also immer erst den aktuellen Stand aus
+        `/api/selection` holen, dort ändern und das vollständige Objekt
+        zurückschicken.
+
+        `expected_updated_at` ist optional und dient der Erkennung paralleler
+        Änderungen: stimmt der Wert nicht mehr mit dem gespeicherten überein,
+        wird trotzdem geschrieben, die Antwort meldet aber `conflict: true`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, data]
+              properties:
+                id: { type: string, format: uuid }
+                active: { type: boolean }
+                data: { $ref: "#/components/schemas/ContactData" }
+                expected_updated_at:
+                  type: string
+                  format: date-time
+                  description: Der `updated_at`-Wert, von dem der Client ausgeht.
+      responses:
+        "200":
+          description: Geändert.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contact: { $ref: "#/components/schemas/Contact" }
+                  conflict:
+                    type: boolean
+                    description: true = es wurde eine fremde Änderung überschrieben.
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    delete:
+      operationId: deleteContact
+      tags: [CRM]
+      summary: Kontakt löschen
+      description: |
+        Endgültig. Wer einen Kontakt nur aus der Ansicht nehmen will, setzt
+        stattdessen `active: false` per `PATCH` — dann bleibt er über
+        `include_inactive=true` erreichbar.
+
+        Die `id` steht im Body, nicht im Pfad.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string, format: uuid }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/business-partners:
+    post:
+      operationId: createBusinessPartner
+      tags: [CRM]
+      summary: Geschäftspartner anlegen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                types:
+                  type: array
+                  items: { $ref: "#/components/schemas/BusinessPartnerType" }
+                data: { $ref: "#/components/schemas/BusinessPartnerData" }
+            example:
+              types: ["customer"]
+              data:
+                name: "AOK Rheinland/Hamburg"
+                address: { street: "Kasernenstr. 61", zip: "40213", city: "Düsseldorf", country: "DE" }
+                channels: [{ type: "email", address: "rechnung@aok.de" }]
+      responses:
+        "201":
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  business_partner: { $ref: "#/components/schemas/BusinessPartner" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    patch:
+      operationId: updateBusinessPartner
+      tags: [CRM]
+      summary: Geschäftspartner ändern
+      description: |
+        Wie bei Kontakten: `data` überschreibt vollständig, `types` ebenso.
+        Siehe `PATCH /api/contacts` zu `expected_updated_at` und `conflict`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, data]
+              properties:
+                id: { type: string, format: uuid }
+                active: { type: boolean }
+                types:
+                  type: array
+                  items: { $ref: "#/components/schemas/BusinessPartnerType" }
+                data: { $ref: "#/components/schemas/BusinessPartnerData" }
+                expected_updated_at: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Geändert.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  business_partner: { $ref: "#/components/schemas/BusinessPartner" }
+                  conflict: { type: boolean }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    delete:
+      operationId: deleteBusinessPartner
+      tags: [CRM]
+      summary: Geschäftspartner löschen
+      description: "Endgültig. Stilllegen geht über `active: false` per `PATCH`."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string, format: uuid }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/contact-gps:
+    post:
+      operationId: linkContactToBusinessPartner
+      tags: [CRM]
+      summary: Kontakt mit Geschäftspartner verknüpfen
+      description: |
+        Legt die Verbindung „diese Person gehört zu dieser Organisation“ an,
+        wahlweise mit einer Rolle („Einkauf“, „Geschäftsführung“ …).
+
+        Die Verknüpfung ist ihr eigener Datensatz, ohne ID: identifiziert wird
+        sie durch das Paar `contact_id` + `gp_id`. Dasselbe Paar erneut zu
+        senden legt keine zweite an, sondern aktualisiert die bestehende.
+
+        Antwortet mit **200**, nicht mit 201.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contact_id, gp_id]
+              properties:
+                contact_id: { type: string, format: uuid }
+                gp_id: { type: string, format: uuid }
+                role:
+                  type: string
+                  description: Freitext, z.B. "Einkauf".
+                primary:
+                  type: boolean
+                  description: Hauptzugehörigkeit der Person.
+      responses:
+        "200":
+          description: Verknüpft.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  link: { $ref: "#/components/schemas/ContactGp" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    delete:
+      operationId: unlinkContactFromBusinessPartner
+      tags: [CRM]
+      summary: Verknüpfung lösen
+      description: Entfernt nur die Verbindung. Kontakt und Geschäftspartner bleiben.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contact_id, gp_id]
+              properties:
+                contact_id: { type: string, format: uuid }
+                gp_id: { type: string, format: uuid }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/invoices:
+    get:
+      operationId: getInvoicingData
+      tags: [Fakturierung]
+      summary: Rechnungen, Zahlungsbedingungen und Geschäftspartner laden
+      description: |
+        Wie `/api/selection` eine Komplettladung ohne Paginierung — hier für
+        die Fakturierung.
+
+        Beachte: bei **Entwürfen** wird `gp_snapshot` beim Lesen aus dem
+        aktuellen Geschäftspartner frisch erzeugt. Ein Entwurf zeigt also immer
+        die heutige Anschrift. Erst beim Abrechnen friert der Schnappschuss
+        ein; bei abgerechneten und bezahlten Rechnungen bekommst du den
+        eingefrorenen Stand.
+      responses:
+        "200":
+          description: Die Fakturierungsdaten.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [invoices, payment_terms, business_partners]
+                properties:
+                  invoices:
+                    type: array
+                    items: { $ref: "#/components/schemas/Invoice" }
+                  payment_terms:
+                    type: array
+                    items: { $ref: "#/components/schemas/PaymentTerm" }
+                  business_partners:
+                    type: array
+                    items: { $ref: "#/components/schemas/BusinessPartner" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: createInvoiceDraft
+      tags: [Fakturierung]
+      summary: Rechnungsentwurf anlegen — leer oder als Kopie
+      description: |
+        Zwei Varianten, unterschieden allein durch das gesetzte Feld:
+
+        * `{"business_partner_id": "…"}` — leerer Entwurf für diesen Kunden.
+          Steuersatz und Zahlungsziel kommen aus den Firmeneinstellungen.
+        * `{"copy_of": "…"}` — Kopie einer bestehenden Rechnung, gleich welchen
+          Status sie hat. Übernommen werden Kunde, Steuersatz und sämtliche
+          Rechnungsdaten. **Nicht** übernommen: Rechnungsnummer, Rechnungsdatum,
+          Status — und die **Leistungsdaten der Positionen bleiben leer**, weil
+          eine Kopie für einen neuen Zeitraum entsteht. Positionen bekommen
+          neue IDs.
+
+        Ist `copy_of` gesetzt, wird `business_partner_id` ignoriert.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                business_partner_id:
+                  type: string
+                  format: uuid
+                  description: Kunde des neuen, leeren Entwurfs.
+                copy_of:
+                  type: string
+                  format: uuid
+                  description: Rechnung, von der kopiert wird. Hat Vorrang.
+              anyOf:
+                - required: [business_partner_id]
+                - required: [copy_of]
+      responses:
+        "201":
+          description: Entwurf angelegt.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoice: { $ref: "#/components/schemas/Invoice" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    patch:
+      operationId: updateInvoice
+      tags: [Fakturierung]
+      summary: Entwurf ändern, abrechnen oder Status setzen
+      description: |
+        Ein Pfad, drei Vorgänge. Welcher gemeint ist, entscheidet das Feld
+        `action` (bzw. `status`):
+
+        **1. `{"id", "data", "vat_rate"}`** — ohne `action`: Entwurf
+        überschreiben. Wie im CRM ein vollständiges Ersetzen, kein Teil-Update.
+        Nur bei Entwürfen möglich. Antwortet mit `{invoice, conflict}`.
+
+        **2. `{"id", "action": "bill"}`** — abrechnen. Vergibt die nächste
+        Rechnungsnummer, setzt das Rechnungsdatum auf heute, friert
+        `gp_snapshot` ein und schaltet den Status auf `billed`. Nicht
+        umkehrbar im Sinne der Nummer: ein späterer Rücksprung auf `draft`
+        behält die vergebene Nummer.
+
+        **3. `{"id", "action": "status", "status": …}`** — Status setzen
+        (`draft` | `billed` | `paid`). `action` darf weggelassen werden, wenn
+        `status` gesetzt ist. Vergibt **keine** Rechnungsnummer — für den
+        regulären Weg vom Entwurf zur Rechnung ist `action: "bill"` zuständig.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - title: Entwurf überschreiben
+                  type: object
+                  required: [id, data]
+                  properties:
+                    id: { type: string, format: uuid }
+                    data: { $ref: "#/components/schemas/InvoiceData" }
+                    vat_rate:
+                      type: number
+                      description: Steuersatz in Prozent, z.B. 19.
+                    expected_updated_at: { type: string, format: date-time }
+                - title: Abrechnen
+                  type: object
+                  required: [id, action]
+                  properties:
+                    id: { type: string, format: uuid }
+                    action: { type: string, const: "bill" }
+                - title: Status setzen
+                  type: object
+                  required: [id, status]
+                  properties:
+                    id: { type: string, format: uuid }
+                    action: { type: string, const: "status" }
+                    status: { $ref: "#/components/schemas/InvoiceStatus" }
+      responses:
+        "200":
+          description: |
+            Geändert. `conflict` erscheint nur beim Überschreiben eines
+            Entwurfs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoice: { $ref: "#/components/schemas/Invoice" }
+                  conflict: { type: boolean }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    delete:
+      operationId: deleteInvoiceDraft
+      tags: [Fakturierung]
+      summary: Rechnungsentwurf löschen
+      description: |
+        Nur Entwürfe **ohne** vergebene Rechnungsnummer lassen sich löschen.
+        Eine einmal abgerechnete Rechnung bleibt, auch wenn sie wieder auf
+        `draft` zurückgesetzt wurde — sonst entstünde eine Lücke im
+        Nummernkreis.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string, format: uuid }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422":
+          description: |
+            Nicht löschbar, etwa weil die Rechnung bereits eine Nummer trägt.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/payment-terms:
+    post:
+      operationId: createPaymentTerm
+      tags: [Fakturierung]
+      summary: Zahlungsbedingung anlegen
+      description: |
+        Legt einen wiederverwendbaren Textbaustein für den Zahlungshinweis an.
+        Gleicher `template`-Text ersetzt den vorhandenen Eintrag, statt einen
+        zweiten anzulegen. Gelesen werden die Bausteine über
+        `GET /api/invoices`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [template]
+              properties:
+                label:
+                  type: string
+                  description: Kurzbezeichnung für die Auswahlliste.
+                template:
+                  type: string
+                  description: Der Text, wie er auf der Rechnung steht.
+      responses:
+        "201":
+          description: Angelegt.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payment_term: { $ref: "#/components/schemas/PaymentTerm" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/app-settings:
+    get:
+      operationId: getAppSettings
+      tags: [Fakturierung]
+      summary: Firmeneinstellungen lesen
+      description: |
+        Absender, Bankverbindung, Steuernummern — alles, was auf jeder Rechnung
+        gleich ist. Die Einstellungen gelten für die Installation, nicht pro
+        Benutzer.
+      responses:
+        "200":
+          description: Die Einstellungen.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: "#/components/schemas/AppSettings" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: updateAppSettings
+      tags: [Fakturierung]
+      summary: Firmeneinstellungen ändern
+      description: |
+        Trotz `PATCH` ein vollständiges Ersetzen: `invoicing` überschreibt den
+        bisherigen Block als Ganzes. Unbekannte Felder werden verworfen. Also
+        erst `GET`, dann ändern, dann das vollständige Objekt senden.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invoicing]
+              properties:
+                invoicing: { $ref: "#/components/schemas/InvoicingAppSettings" }
+      responses:
+        "200":
+          description: Geändert.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: "#/components/schemas/AppSettings" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/profile:
+    patch:
+      operationId: updateProfile
+      tags: [Profil]
+      summary: Kürzel ändern
+      description: Das Namenskürzel, mit dem Aktivitäten gezeichnet werden.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [abbr]
+              properties:
+                abbr: { type: string, examples: ["RW"] }
+      responses:
+        "200":
+          description: Geändert.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/SessionUser" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    post:
+      operationId: createApiKey
+      tags: [Profil]
+      summary: API-Schlüssel erzeugen
+      description: |
+        Erzeugt einen Schlüssel für `x-api-key` und gibt ihn **genau dieses
+        eine Mal** im Klartext zurück; gespeichert wird nur sein Hash. Ein
+        zweiter Aufruf ersetzt den vorhandenen Schlüssel — der alte gilt dann
+        nicht mehr.
+
+        Kein Request-Body nötig.
+      responses:
+        "201":
+          description: Schlüssel erzeugt.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/SessionUser" }
+                  api_key:
+                    type: string
+                    description: Im Klartext, nur in dieser einen Antwort.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    delete:
+      operationId: revokeApiKey
+      tags: [Profil]
+      summary: API-Schlüssel widerrufen
+      description: |
+        Löscht **den Schlüssel**, nicht den Benutzer. Danach ist der Zugang nur
+        noch per Login möglich, bis ein neuer Schlüssel erzeugt wird.
+      responses:
+        "200":
+          description: Widerrufen.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/SessionUser" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /api/ingests:
+    get:
+      operationId: listIngests
+      tags: [Posteingang]
+      summary: Eingänge auflisten
+      description: |
+        Eingegangene Texte, aus denen Kontakte werden können — eingefügt aus
+        der Zwischenablage oder aus einem überwachten Postfach geholt. Jeder
+        Eintrag trägt das KI-Analyseergebnis in `analysis`.
+      responses:
+        "200":
+          description: Die Eingänge.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ingests:
+                    type: array
+                    items: { $ref: "#/components/schemas/IngestItem" }
+                  pending_count:
+                    type: integer
+                    description: Wie viele noch unbearbeitet sind.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: createIngest
+      tags: [Posteingang]
+      summary: Text einliefern oder Postfach abfragen
+      description: |
+        Zwei Vorgänge, unterschieden über `action`:
+
+        * ohne `action` — `raw_text` als neuen Eingang ablegen und sofort
+          analysieren. Ein schon vorhandener, gleichlautender Text legt keinen
+          zweiten Eintrag an; die Antwort meldet dann `duplicate: true`.
+        * `{"action": "check_email"}` — das konfigurierte IMAP-Postfach auf
+          ungelesene Nachrichten prüfen und sie als Eingänge übernehmen.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - title: Text einliefern
+                  type: object
+                  required: [raw_text]
+                  properties:
+                    raw_text: { type: string }
+                    source_label:
+                      type: string
+                      default: Zwischenablage
+                - title: Postfach abfragen
+                  type: object
+                  required: [action]
+                  properties:
+                    action: { type: string, const: "check_email" }
+      responses:
+        "200":
+          description: Ergebnis der Postfachabfrage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: array
+                    items: { $ref: "#/components/schemas/IngestItem" }
+                  duplicates: { type: integer }
+        "201":
+          description: Eingang angelegt.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ingest: { $ref: "#/components/schemas/IngestItem" }
+                  duplicate: { type: boolean }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+        "500":
+          description: Das Postfach war nicht erreichbar.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    patch:
+      operationId: updateIngestStatus
+      tags: [Posteingang]
+      summary: Eingang abhaken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, status]
+              properties:
+                id: { type: string, format: uuid }
+                status: { $ref: "#/components/schemas/IngestStatus" }
+      responses:
+        "200":
+          description: Geändert.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ingest: { $ref: "#/components/schemas/IngestItem" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/email-import/analyze:
+    post:
+      operationId: analyzeEmailImport
+      tags: [KI-Hilfen]
+      summary: Kontaktdaten aus einem E-Mail-Text vorschlagen
+      description: |
+        Liest eine E-Mail (typischerweise wegen der Signatur) und schlägt einen
+        Kontakt samt Geschäftspartner vor, dazu mögliche Treffer im Bestand, um
+        Dubletten zu vermeiden.
+
+        **Schreibt nichts.** Der Vorschlag muss, wenn er taugt, über
+        `POST /api/contacts` bzw. `POST /api/business-partners` selbst angelegt
+        werden. Läuft über ein externes Sprachmodell und dauert entsprechend
+        ein paar Sekunden.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email_text]
+              properties:
+                email_text: { type: string }
+      responses:
+        "200":
+          description: Der Vorschlag.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EmailImportAnalysis" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+        "500":
+          description: Die Analyse ist fehlgeschlagen.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/business-partner-lookup:
+    post:
+      operationId: lookupBusinessPartner
+      tags: [KI-Hilfen]
+      summary: Firmendaten aus öffentlichen Quellen ergänzen
+      description: |
+        Sucht zu einem angefangenen Geschäftspartner (meist nur der Name)
+        Anschrift, USt-IdNr. und Kontaktwege im Netz und liefert Kandidaten mit
+        Konfidenz und Quellenangabe.
+
+        **Schreibt nichts** — das Übernehmen ist Sache des Aufrufers. Externes
+        Sprachmodell, dauert ein paar Sekunden.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [business_partner]
+              properties:
+                business_partner: { $ref: "#/components/schemas/BusinessPartnerData" }
+      responses:
+        "200":
+          description: Die Kandidaten.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BusinessPartnerLookupResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+        "500":
+          description: Die Suche ist fehlgeschlagen.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+components:
+
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: |
+        Dauerhafter Schlüssel für nicht-interaktive Clients, erzeugt über
+        `POST /api/profile`. Der empfohlene Weg für Skripte und Agenten.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token aus `POST /api/auth/verify-otp`, 7 Tage gültig, über
+        `POST /api/auth/refresh` verlängerbar.
+
+  responses:
+    Ok:
+      description: Erledigt.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok: { type: boolean, const: true }
+    BadRequest:
+      description: |
+        Body fehlt, ist kein gültiges JSON, oder eine Pflichtangabe wie `id`
+        fehlt.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: |
+        Kein oder ungültiges Token bzw. kein gültiger API-Schlüssel.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Der Datensatz existiert nicht (mehr).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unprocessable:
+      description: |
+        Inhaltlich abgelehnt. `fields` nennt, wo es klemmt.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "Validierung fehlgeschlagen."
+            fields:
+              last_name: "Bitte einen Nachnamen angeben."
+
+  schemas:
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Klartextmeldung auf Deutsch, für Menschen gedacht.
+        fields:
+          type: object
+          additionalProperties: { type: string }
+          description: |
+            Nur bei 422. Feldname → Meldung. Bei Rechnungspositionen als Pfad,
+            z.B. `"lines.0.quantity"`.
+
+    SessionUser:
+      type: object
+      required: [id, email, abbr]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        abbr:
+          type: string
+          description: Namenskürzel, zeichnet Aktivitäten.
+        api_key_created_at:
+          type: [string, "null"]
+          format: date-time
+          description: |
+            Wann der aktuelle API-Schlüssel erzeugt wurde; `null`, wenn keiner
+            existiert. Der Schlüssel selbst steht hier nie.
+
+    Channel:
+      type: object
+      required: [type, address]
+      description: |
+        Ein Kommunikationsweg. `type` ist bewusst Freitext; üblich sind
+        `email`, `phone`, `mobile`, `whatsapp`, `website`. Mehrere Einträge
+        desselben Typs sind erlaubt.
+      properties:
+        type: { type: string, examples: ["email", "phone", "mobile", "website"] }
+        address: { type: string }
+
+    Address:
+      type: object
+      properties:
+        street: { type: string }
+        zip: { type: string }
+        city: { type: string }
+        country:
+          type: string
+          description: |
+            ISO-3166-1-Alpha-2, z.B. "DE". Für die XRechnung zwingend als Code;
+            ein ausgeschriebener Ländername lässt sich dort nicht verwenden.
+
+    ContactData:
+      type: object
+      required: [channels]
+      description: |
+        Pflicht sind ein `last_name` **und** mindestens ein Kanal vom Typ
+        E-Mail oder Telefon. Alles andere ist frei.
+      properties:
+        title: { type: string, description: 'Akademischer Titel, z.B. "Dr.".' }
+        first_name: { type: string }
+        last_name: { type: string }
+        gender: { type: string, enum: [m, f, d] }
+        salutation:
+          type: string
+          enum: [formal, informal]
+          description: formal = Sie, informal = Du.
+        origin: { type: string, description: Woher der Kontakt stammt. }
+        company_text:
+          type: string
+          description: |
+            Firmenzugehörigkeit als Freitext — für Fälle ohne eigenen
+            Geschäftspartner-Datensatz. Die belastbare Verbindung läuft über
+            `/api/contact-gps`.
+        channels:
+          type: array
+          items: { $ref: "#/components/schemas/Channel" }
+        relationship: { type: array, items: { type: string } }
+        role: { type: array, items: { type: string } }
+        work_area: { type: array, items: { type: string } }
+        interests: { type: array, items: { type: string } }
+        tags: { type: array, items: { type: string } }
+        notes: { type: string, description: 'Freitext, beliebig lang.' }
+
+    Contact:
+      type: object
+      required: [id, active, data, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        active:
+          type: boolean
+          description: |
+            false = stillgelegt, nicht gelöscht. Erscheint nur mit
+            `include_inactive=true`.
+        data: { $ref: "#/components/schemas/ContactData" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    BusinessPartnerType:
+      type: string
+      enum: [customer, supplier, partner, authority]
+
+    BusinessPartnerData:
+      type: object
+      required: [name, channels]
+      properties:
+        name: { type: string, description: Pflicht. }
+        vat_id:
+          type: string
+          description: |
+            USt-IdNr. Für die XRechnung wird beim Erzeugen normalisiert
+            (Leerzeichen, Punkte, Bindestriche raus, Großschreibung) und muss
+            dann dem Muster Länderkürzel + 2–12 Zeichen entsprechen; bei DE
+            genau 9 Ziffern.
+        leitweg_id:
+          type: string
+          description: |
+            Routing-Adresse öffentlicher Auftraggeber. Wird beim Abrechnen in
+            die Rechnung übernommen und landet in der XRechnung als BT-10.
+            Vergibt die Behörde selbst; es gibt kein zentrales Verzeichnis.
+        address: { $ref: "#/components/schemas/Address" }
+        invoice_language:
+          type: string
+          enum: [de, en]
+          description: Sprache des Rechnungs-PDF.
+        channels:
+          type: array
+          items: { $ref: "#/components/schemas/Channel" }
+        business_relationship: { type: array, items: { type: string } }
+        tags: { type: array, items: { type: string } }
+        memo: { type: string, description: 'Kurznotiz, in Listen sichtbar.' }
+        notes: { type: string, description: Ausführliche Notizen. }
+
+    BusinessPartner:
+      type: object
+      required: [id, active, types, data, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        active: { type: boolean }
+        types:
+          type: array
+          items: { $ref: "#/components/schemas/BusinessPartnerType" }
+        data: { $ref: "#/components/schemas/BusinessPartnerData" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ContactGp:
+      type: object
+      required: [contact_id, gp_id, role, primary, created_at]
+      description: |
+        Verknüpfung Person ↔ Organisation. Hat keine eigene ID; das Paar
+        `contact_id` + `gp_id` identifiziert sie.
+      properties:
+        contact_id: { type: string, format: uuid }
+        gp_id: { type: string, format: uuid }
+        role: { type: string }
+        primary: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    InvoiceStatus:
+      type: string
+      enum: [draft, billed, paid]
+      description: |
+        `draft` = Entwurf ohne Nummer, änderbar. `billed` = abgerechnet, mit
+        Nummer und eingefrorenem Kundenschnappschuss. `paid` = bezahlt.
+
+    InvoiceLine:
+      type: object
+      required: [id, quantity, unit_price]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            Nur innerhalb der Rechnung eindeutig. Fehlt sie beim Schreiben,
+            wird eine erzeugt.
+        service_date:
+          type: string
+          format: date
+          description: |
+            Leistungsdatum, `YYYY-MM-DD`. Für eine gültige XRechnung
+            erforderlich; ohne es lässt sich die Rechnung nicht abrechnen.
+        product_form:
+          type: string
+          description: 'Art der Leistung, z.B. "Workshop", "Beratung".'
+        product_topic:
+          type: string
+          description: 'Thema, z.B. "Clean Code".'
+        quantity:
+          type: number
+          minimum: 0
+          description: Muss größer als 0 sein.
+        unit:
+          type: string
+          description: |
+            Als lesbare Beschriftung gespeichert. Für eine gültige XRechnung
+            muss sie einer bekannten entsprechen, weil daraus der Code nach
+            UN/ECE Rec. 20 wird: `Std`→HUR, `Tage`→DAY, `Pauschale`→LS,
+            `km`→KMT, `Stück`→C62, `Monat`→MON. Andere Beschriftungen sind
+            speicherbar, verhindern aber das Abrechnen.
+        unit_price: { type: number, minimum: 0 }
+        text: { type: string, description: Freitext zur Position. }
+
+    InvoiceData:
+      type: object
+      required: [lines]
+      properties:
+        reference:
+          type: string
+          description: |
+            Bestell- oder Aktenzeichen des Kunden. Landet in der XRechnung als
+            BT-13, oder als BT-10, wenn keine Leitweg-ID vorliegt.
+        comment: { type: string, description: Freitext auf der Rechnung. }
+        payment_due_days: { type: integer, minimum: 0 }
+        payment_free_text: { type: string }
+        payment_terms:
+          type: string
+          deprecated: true
+          description: |
+            Alter Freitextbaustein. Bleibt nur, damit Bestandsrechnungen
+            unverändert aussehen; für Neues `payment_due_days` bzw.
+            `payment_free_text` verwenden.
+        reverse_charge:
+          type: boolean
+          description: Steuerschuldnerschaft des Leistungsempfängers.
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/InvoiceLine" }
+
+    InvoiceGpSnapshot:
+      type: object
+      required: [name]
+      description: |
+        Der Kunde, wie er auf dieser Rechnung steht. Bei Entwürfen beim Lesen
+        aus dem aktuellen Geschäftspartner erzeugt, beim Abrechnen eingefroren
+        — damit eine verschickte Rechnung nicht rückwirkend die Anschrift
+        wechselt.
+      properties:
+        name: { type: string }
+        vat_id: { type: string }
+        leitweg_id: { type: string }
+        address: { $ref: "#/components/schemas/Address" }
+        email: { type: string }
+        invoice_language: { type: string, enum: [de, en] }
+
+    Invoice:
+      type: object
+      required: [id, business_partner_id, status, vat_rate, gp_snapshot, data, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        business_partner_id: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/InvoiceStatus" }
+        invoice_number:
+          type: [string, "null"]
+          description: |
+            `null`, solange nicht abgerechnet. Danach fortlaufend, mit
+            führenden Nullen auf feste Länge aufgefüllt.
+        invoice_date:
+          type: [string, "null"]
+          format: date
+          description: "`null`, solange nicht abgerechnet."
+        vat_rate: { type: number, description: 'Prozent, z.B. 19.' }
+        gp_snapshot: { $ref: "#/components/schemas/InvoiceGpSnapshot" }
+        data: { $ref: "#/components/schemas/InvoiceData" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    PaymentTerm:
+      type: object
+      required: [id, label, template, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        label: { type: string }
+        template: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    InvoicingAppSettings:
+      type: object
+      description: |
+        Die Freitextfelder (`sender_address`, `bank_details` …) drucken das
+        PDF; die strukturierten Entsprechungen darunter braucht die XRechnung,
+        die die Bestandteile einzeln verlangt. Beide pflegen, sonst stimmt
+        eines von beidem nicht.
+      properties:
+        company_name: { type: string }
+        sender_address: { type: string, description: Freitext fürs PDF. }
+        bank_details: { type: string, description: Freitext fürs PDF. }
+        company_registration: { type: string }
+        default_payment_due_days: { type: integer, minimum: 0 }
+        vat_number: { type: string, description: Eigene USt-IdNr. }
+        contact_person: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        website: { type: string }
+        address:
+          allOf: [{ $ref: "#/components/schemas/Address" }]
+          description: Strukturierte Absenderanschrift (BT-35…BT-40).
+        iban: { type: string, description: Ohne Leerzeichen (BT-84). }
+        bic: { type: string, description: BT-86. }
+        trading_name:
+          type: string
+          description: Firmierung in Landesschrift (BT-28).
+        registration_id:
+          type: string
+          description: Handels-/Registernummer, nicht die USt-IdNr. (BT-30).
+
+    AppSettings:
+      type: object
+      required: [invoicing]
+      properties:
+        invoicing: { $ref: "#/components/schemas/InvoicingAppSettings" }
+        updated_at: { type: [string, "null"], format: date-time }
+
+    IngestStatus:
+      type: string
+      enum: [pending, accepted, ignored, error]
+
+    IngestItem:
+      type: object
+      required: [id, source_type, raw_text, status, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        source_type: { type: string, enum: [clipboard, email] }
+        source_id: { type: [string, "null"] }
+        source_label: { type: [string, "null"] }
+        raw_text: { type: string }
+        analysis:
+          description: |
+            Das KI-Analyseergebnis, in der Form von
+            `POST /api/email-import/analyze`. `null`, solange nichts vorliegt.
+        status: { $ref: "#/components/schemas/IngestStatus" }
+        error: { type: [string, "null"] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    EmailImportAnalysis:
+      type: object
+      required: [proposal, matches]
+      properties:
+        proposal:
+          type: object
+          description: Was sich aus dem Text lesen ließ.
+          properties:
+            contact: { $ref: "#/components/schemas/ContactData" }
+            business_partner: { $ref: "#/components/schemas/BusinessPartnerData" }
+        matches:
+          type: object
+          description: |
+            Mögliche Dubletten im Bestand, absteigend nach `score`.
+          properties:
+            contacts:
+              type: array
+              items:
+                type: object
+                properties:
+                  entity: { $ref: "#/components/schemas/Contact" }
+                  score: { type: number }
+                  reason: { type: string }
+            business_partners:
+              type: array
+              items:
+                type: object
+                properties:
+                  entity: { $ref: "#/components/schemas/BusinessPartner" }
+                  score: { type: number }
+                  reason: { type: string }
+
+    BusinessPartnerLookupResult:
+      type: object
+      required: [candidates]
+      properties:
+        candidates:
+          type: array
+          items:
+            type: object
+            required: [company_name, confidence, channels, sources]
+            properties:
+              company_name: { type: string }
+              confidence: { type: number, description: 0 bis 1. }
+              address: { $ref: "#/components/schemas/Address" }
+              vat_id: { type: string }
+              channels:
+                type: array
+                items: { $ref: "#/components/schemas/Channel" }
+              contacts_note: { type: string }
+              sources:
+                type: array
+                description: Belege — ungeprüft, aus dem Netz.
+                items:
+                  type: object
+                  required: [url]
+                  properties:
+                    url: { type: string, format: uri }
+                    title: { type: string }
+                    fields:
+                      type: array
+                      items: { type: string }
+                      description: Welche Felder diese Quelle belegt.
